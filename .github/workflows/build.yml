@@ -1,20 +1,8 @@
 name: Build
 
+# Automatic builds are disabled for the Oppkey trial.
+# This workflow still exists so we can run image builds by hand later.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/**'
-      - 'docs/**'
-      - 'packages/**'
-      - '.npmrc'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'tsconfig.json'
-      - 'turbo.json'
-      - 'docker-compose.yml'
-      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 env:
