@@ -1,6 +1,5 @@
 import { env } from "@/env";
 import { APP_NAME } from "@/lib/branding";
-import { trackUserSignup } from "@/lib/telemetry";
 import { db, schema } from "@oneglanse/db";
 import * as authSchema from "@oneglanse/db";
 import { betterAuth } from "better-auth";
@@ -47,13 +46,6 @@ export const auth = betterAuth({
 		enabled: true,
 	},
 	databaseHooks: {
-		user: {
-			create: {
-				after: async (user) => {
-					await trackUserSignup(user.id);
-				},
-			},
-		},
 		session: {
 			create: {
 				before: async (session) => {

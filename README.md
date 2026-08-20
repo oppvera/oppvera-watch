@@ -107,7 +107,9 @@ Upstream scoring details are documented in the original [OneGlanse README](https
 
 ## Telemetry
 
-Upstream OneGlanse sends anonymous hashed user-activity events to PostHog. This fork has not removed that. Prompt text, responses, and scores are not part of that telemetry, but staff should know it is still in the app until we decide otherwise.
+Upstream OneGlanse sends anonymous hashed user-activity events to PostHog on signup and each authenticated page load. **This fork removes that.** Oppvera Watch does not phone home to OneGlanse or PostHog.
+
+Better Auth (the auth library) may still perform its own internal telemetry as part of the dependency. That is separate from the OneGlanse PostHog integration we removed.
 
 ## Acknowledgements
 
