@@ -1,4 +1,4 @@
-import { BrandLockup } from "@/components/brand-lockup";
+import { APP_NAME, BRAND_LOGO_FULL } from "@/lib/branding";
 import type { ReactNode } from "react";
 
 type AuthPageShellProps = {
@@ -13,8 +13,12 @@ export function AuthPageShell({
 	return (
 		<div className="flex min-h-svh min-w-0 items-center justify-center overflow-hidden bg-stone-50 px-4 py-6 dark:bg-neutral-950 sm:px-6 sm:py-8 md:px-8">
 			<div className="flex w-full min-w-0 max-w-[21.25rem] flex-col gap-5 sm:max-w-[22.5rem] sm:gap-6 lg:max-w-[23.5rem] xl:max-w-[25rem] xl:gap-7">
-				<div className="flex flex-col items-center gap-2">
-					<BrandLockup nameClassName="lg:text-[1.9rem] xl:text-[2rem]" />
+				<div className="flex flex-col items-center gap-3">
+					<img
+						src={BRAND_LOGO_FULL}
+						alt={APP_NAME}
+						className="h-auto w-full max-w-[17.5rem] object-contain sm:max-w-[19rem]"
+					/>
 					{subtitle ? (
 						<p className="text-center text-[0.78rem] text-gray-500 dark:text-gray-400 sm:text-[0.82rem] xl:text-[0.85rem]">
 							{subtitle}
