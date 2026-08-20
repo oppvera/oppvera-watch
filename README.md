@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/oppvera-watch-logo.png" alt="Oppvera Watch — AI Visibility Monitoring" width="480" />
+</p>
+
 # Oppvera Watch
 
 **Oppvera Watch** is Oppkey's evaluation fork of an AI visibility tracker. It measures how a brand appears inside real AI products: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
