@@ -1,28 +1,29 @@
+import { BRAND_LOGO_DARK, BRAND_LOGO_LIGHT } from "@/lib/branding";
 import type { Metadata } from "next";
 
 export const appIcons: Metadata["icons"] = {
 	icon: [
 		{
-			url: "/logo.png",
+			url: BRAND_LOGO_LIGHT,
 			media: "(prefers-color-scheme: light)",
-			type: "image/png",
+			type: "image/svg+xml",
 		},
 		{
-			url: "/logo-dark.png",
+			url: BRAND_LOGO_DARK,
 			media: "(prefers-color-scheme: dark)",
-			type: "image/png",
+			type: "image/svg+xml",
 		},
 	],
 	shortcut: [
 		{
-			url: "/logo.png",
-			type: "image/png",
+			url: BRAND_LOGO_LIGHT,
+			type: "image/svg+xml",
 		},
 	],
 	apple: [
 		{
-			url: "/logo.png",
-			type: "image/png",
+			url: BRAND_LOGO_LIGHT,
+			type: "image/svg+xml",
 		},
 	],
 };

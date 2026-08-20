@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { APP_NAME } from "@/lib/branding";
 import { trackUserSignup } from "@/lib/telemetry";
 import { db, schema } from "@oneglanse/db";
 import * as authSchema from "@oneglanse/db";
@@ -38,6 +39,7 @@ const socialProviders =
 		: {};
 
 export const auth = betterAuth({
+	appName: APP_NAME,
 	...(authBaseUrl ? { baseURL: authBaseUrl } : {}),
 	secret: authSecret,
 	socialProviders,

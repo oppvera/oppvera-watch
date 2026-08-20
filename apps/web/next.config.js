@@ -13,6 +13,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 const config = {
 	output: "standalone",
 	outputFileTracingRoot: path.join(process.cwd(), "../../"),
+	devIndicators: false,
 	env: {
 		// Pass SKIP_ENV_VALIDATION to the runtime so it's not inlined as undefined
 		SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,

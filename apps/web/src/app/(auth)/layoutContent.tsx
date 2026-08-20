@@ -3,6 +3,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
+import { UserInitials } from "@/components/user-initials";
 import { ProviderRunToastManager } from "@/components/provider-run-toast";
 import { ProvidersScreen } from "@/components/providers-screen";
 import { signOutAndRedirect } from "@/lib/auth/logout";
@@ -32,7 +33,7 @@ import {
 	toast,
 } from "@oneglanse/ui";
 import { cn } from "@oneglanse/utils";
-import { ChevronUp, Loader2, User2 } from "lucide-react";
+import { ChevronUp, Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { WorkspaceProvider } from "./workspace-context";
@@ -82,7 +83,6 @@ function UserMenu({
 	userName: string;
 	userEmail: string;
 }) {
-	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 
 	const handleLogout = async () => {
@@ -106,7 +106,7 @@ function UserMenu({
 						"flex items-center gap-2 px-4",
 					)}
 				>
-					<User2 className="h-4 w-4 shrink-0" />
+					<UserInitials name={userName} email={userEmail} />
 					<span className="max-w-[140px] truncate">
 						{userName || userEmail || "Account"}
 					</span>

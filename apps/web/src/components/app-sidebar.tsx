@@ -1,6 +1,8 @@
 "use client";
 
+import { BrandLockup } from "@/components/brand-lockup";
 import { formToolbarButtonClassName } from "@/components/forms/auth-form-chrome";
+import { UserInitials } from "@/components/user-initials";
 import { authClient } from "@/lib/auth/auth-client";
 import { signOutAndRedirect } from "@/lib/auth/logout";
 import { useSafeSearchParams } from "@/lib/navigation/use-safe-search-params";
@@ -42,7 +44,6 @@ import {
 	Plug,
 	Plus,
 	Settings,
-	User2,
 	UserPlus,
 	Users,
 } from "lucide-react";
@@ -183,6 +184,11 @@ export function AppSidebar({
 		<>
 			<Sidebar className="flex h-full min-h-full flex-col self-stretch bg-white dark:bg-neutral-950">
 				<SidebarHeader className="p-3">
+					<BrandLockup
+						className="px-3 pb-3 pt-1"
+						logoClassName="h-6 w-6 sm:h-6 sm:w-6"
+						nameClassName="text-[0.95rem] sm:text-[0.95rem] tracking-[-0.03em]"
+					/>
 					<SidebarMenu>
 						<SidebarMenuItem>
 							<DropdownMenu>
@@ -348,10 +354,12 @@ export function AppSidebar({
 											"h-11 px-4 hover:bg-stone-100 dark:hover:bg-neutral-900",
 										)}
 									>
-										<User2 />
-										<span className="truncate">
-											{userName || userEmail || "Account"}
-										</span>
+										<div className="flex min-w-0 items-center gap-2">
+											<UserInitials name={userName} email={userEmail} />
+											<span className="truncate">
+												{userName || userEmail || "Account"}
+											</span>
+										</div>
 										<ChevronUp className="ml-auto" />
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
