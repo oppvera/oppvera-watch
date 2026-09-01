@@ -1,9 +1,23 @@
 ---
 title: Self-Hosted Setup
-description: Deploy Oppvera Watch on your own VPS with nginx, SSL, and provider auth upload: step by step with copy-paste commands.
+description: Advanced VPS deployment for Oppvera Watch. Not recommended for classroom or marketing learners—use local setup instead.
 ---
 
-## Interactive setup (recommended)
+## Not for classroom use
+
+**Marketing and GEO learners should use [Local Setup](/local-setup) on a laptop**, not this guide.
+
+Self-hosted VPS setup is for advanced experimentation only. It adds complexity you do not need for learning GEO, and it raises separate compliance questions:
+
+- **AI provider terms.** Automated browser access to ChatGPT, Gemini, and similar products may be restricted by each provider's terms of use. Local learning on your own account is simpler to reason about than unattended server automation.
+- **Residential proxy services.** VPS deployments typically require a paid third-party proxy (for example ThorData). That is a separate subscription with its own vendor terms—not included in Oppvera Watch's MIT license.
+- **Server operations.** You are responsible for domain, TLS, firewall, and VPS billing.
+
+If you are teaching a course, point students at **local setup** and skip VPS unless you have explicitly cleared the operational and licensing context with your organization.
+
+---
+
+## Interactive setup (advanced)
 
 Before you run the setup script, make sure you are logged in as a non-root user with `sudo` access. The script is designed for that flow and will stop if you run it as `root`.
 
@@ -44,11 +58,11 @@ The script is interactive: it asks for your domain, LLM key, and proxy URL, then
 
 Do not use `curl ... | bash` here. Because the setup flow is interactive, piping the script body into `bash` steals stdin from the prompts. `bash <(...)` keeps stdin attached to your terminal, so the prompts work correctly.
 
-The VPS flow is intentionally simple:
+The VPS flow builds the app from the cloned repository:
 
-- it pulls the published Docker images
-- it does not build the app on your server by default
-- `git pull` updates the deployment files, and the next bootstrap pulls the latest published app images
+- it runs `docker compose up --build` for the web, agent, and Postgres services
+- it does not pull upstream OneGlanse published images by default
+- `git pull` updates the repo; rerun bootstrap to rebuild and restart from your fork's source
 
 ---
 
@@ -171,9 +185,9 @@ The proxy is what makes VPS-based scheduling viable. Without it, direct provider
 node scripts/run-compose.mjs bootstrap
 ```
 
-On a fresh server, this can take several minutes because Docker has to pull the published images.
+On a fresh server, this can take several minutes because Docker builds the app images from source and pulls infrastructure images (Redis, ClickHouse).
 
-This pulls the published Docker images and starts:
+This builds from the cloned repository and starts:
 - Web app on **127.0.0.1:3000** (loopback only, for nginx)
 - Agent worker (internal)
 - Postgres on port **5432** (internal)

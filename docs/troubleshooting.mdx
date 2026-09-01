@@ -122,17 +122,17 @@ Note: these control sign-in to the Oppvera Watch web app itself. They are separa
 
 ## Self-host: image pull fails
 
-**Symptom:** `node scripts/run-compose.mjs bootstrap` fails with a Docker pull error, `unauthorized`, or an architecture mismatch such as `no matching manifest`.
+**Symptom:** `node scripts/run-compose.mjs bootstrap` fails during Docker build or startup.
 
-**Cause:** Either the GHCR images are unavailable, you're not authenticated with GHCR, or the published image has not been published for your current CPU architecture yet.
+**Cause:** Missing Docker resources, insufficient disk/RAM, or a build error in the cloned repository.
 
-**Fix:** Check outbound access to GHCR and Docker Hub, then retry:
+**Fix:** Check Docker is running and retry:
 
 ```bash
 node scripts/run-compose.mjs bootstrap
 ```
 
-If the only problem is an architecture mismatch, bootstrap now automatically falls back to a local Docker build on that machine. If you're maintaining a fork or explicitly want a source build, you can still run `pnpm self-host:build` directly.
+You can also run `pnpm self-host:build` directly. Bootstrap always builds web, agent, and Postgres from the cloned repository rather than pulling upstream OneGlanse images.
 
 ---
 

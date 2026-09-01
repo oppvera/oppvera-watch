@@ -142,7 +142,7 @@ Oppvera Watch setup starts in this README. Deeper reference material lives in `d
 - [Introduction](docs/introduction.mdx) — what GEO measurement means in this tool
 - [Getting started](docs/getting-started.mdx) — start here for marketing / GEO learners
 - [Local setup](docs/local-setup.mdx) — **full install guide** (Node.js, pnpm, Docker Desktop, Git on Mac and Windows)
-- [Self-hosted setup](docs/self-hosted-setup.mdx)
+- [Self-hosted setup](docs/self-hosted-setup.mdx) — advanced VPS path; not recommended for classroom use
 - [Environment variables](docs/environment-variables.mdx)
 - [Troubleshooting](docs/troubleshooting.mdx)
 - [API reference](docs/api-reference.mdx)

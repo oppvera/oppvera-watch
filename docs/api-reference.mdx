@@ -9,8 +9,8 @@ description: Commands, routes, and runtime behavior reference for Oppvera Watch.
 pnpm local                   # Start full local stack from local source and refresh Docker service/base images when available
 pnpm auth                    # Capture provider sessions locally; prompts to upload to VPS at the end
 pnpm upload:vps              # Re-upload existing local sessions to VPS without re-running the auth flow
-pnpm self-host               # Pull latest published images and start the self-hosted stack; auto-builds locally if your architecture is not published yet
-pnpm self-host:build         # Build from source and start the self-hosted stack
+pnpm self-host               # Build from source and start the self-hosted stack
+pnpm self-host:build         # Same as self-host (build from cloned repository)
 pnpm typecheck               # Typecheck the monorepo
 pnpm build                   # Build all packages
 ```

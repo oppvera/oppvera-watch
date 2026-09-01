@@ -12,10 +12,6 @@ const DEFAULT_IMAGES = {
 	ONEGLANSE_POSTGRES_IMAGE: "ghcr.io/aryamantodkar/oneglanse-postgres:latest",
 	ONEGLANSE_WEB_IMAGE: "ghcr.io/aryamantodkar/oneglanse-web:latest",
 };
-const ARCH_MISMATCH_PATTERNS = [
-	"no matching manifest",
-	"no match for platform in manifest",
-];
 const PULLABLE_SERVICES = [
 	{ service: "redis" },
 	{ service: "clickhouse" },
@@ -65,13 +61,6 @@ async function runCompose(composeArgs) {
 	await runComposeCommand([...composeArgs]);
 }
 
-function isArchitectureMismatchError(error) {
-	const message = error instanceof Error ? error.message : String(error);
-	return ARCH_MISMATCH_PATTERNS.some((pattern) =>
-		message.toLowerCase().includes(pattern),
-	);
-}
-
 async function runComposeCommand(composeArgs) {
 	const { stdout, stderr } = await runCommandCapture("docker", [
 		"compose",
@@ -104,38 +93,11 @@ async function runSmartPull() {
 
 async function runBootstrap() {
 	await ensureDockerNetwork(edgeNetworkName);
-
-	if (process.arch === "arm64") {
-		console.warn(
-			[
-				"ARM64 architecture detected.",
-				"Published app images are amd64-only — building from source instead.",
-				"Infrastructure images (redis, clickhouse) will be pulled as usual.",
-			].join(" "),
-		);
-		await runCompose(["up", "-d", "--build", "--force-recreate"]);
-		console.log("Self-host stack started from a local build.");
-		return;
-	}
-
-	try {
-		await runSmartPull();
-		await runCompose(["up", "-d", "--force-recreate"]);
-		console.log("Self-host stack started from published images.");
-	} catch (error) {
-		if (!isArchitectureMismatchError(error)) {
-			throw error;
-		}
-
-		console.warn(
-			[
-				"Published self-host images are not available for this architecture yet.",
-				"Falling back to a local Docker build for this machine.",
-			].join(" "),
-		);
-		await runCompose(["up", "-d", "--build", "--force-recreate"]);
-		console.log("Self-host stack started from a local cross-platform build.");
-	}
+	console.log(
+		"Building and starting the self-host stack from the cloned repository...",
+	);
+	await runCompose(["up", "-d", "--build", "--force-recreate"]);
+	console.log("Self-host stack started from a local build.");
 }
 
 async function main() {

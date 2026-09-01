@@ -28,9 +28,22 @@ fi
 
 # ─── Gather inputs ────────────────────────────────────────────────────────────
 
-header "Oppvera Watch — VPS Setup"
-echo "This script installs all dependencies, clones the repo, configures nginx + HTTPS,"
-echo "and starts the app-only self-hosted stack."
+header "Oppvera Watch — VPS Setup (advanced)"
+echo "This script is for experienced operators experimenting with always-on self-hosting."
+echo "It is NOT the recommended path for Oppvera Watch courses or marketing learners."
+echo ""
+echo "Before continuing, review licensing and terms for:"
+echo "  - your AI provider accounts (automated browser access may be restricted)"
+echo "  - any residential proxy service you use (often a paid third-party subscription)"
+echo "  - your VPS provider and domain setup"
+echo ""
+warn "For GEO learning, use local setup on a laptop instead: docs/local-setup.mdx"
+echo ""
+read -rp "Continue with VPS setup? (y/N) " VPS_CONFIRM
+[[ "$VPS_CONFIRM" =~ ^[Yy]$ ]] || { echo "Aborted. Use pnpm local on your laptop instead."; exit 0; }
+echo ""
+echo "This script installs dependencies, clones the repo, configures nginx + HTTPS,"
+echo "and builds the self-hosted stack from source on this server."
 echo ""
 warn "Run this as the user who will own the Oppvera Watch process (not root)."
 echo ""
@@ -186,7 +199,7 @@ success ".env configured"
 
 header "4 / 6 — Starting Oppvera Watch"
 
-info "Starting the app from published Docker images..."
+info "Starting the app from a local Docker build..."
 if docker_socket_access; then
   node scripts/run-compose.mjs bootstrap
 elif [[ "$DOCKER_GROUP_PENDING" -eq 1 ]]; then
