@@ -1,0 +1,51 @@
+---
+description: Oppvera Watch fork remotes and OneGlanse upstream merge policy
+alwaysApply: true
+---
+
+# Oppvera Watch — remotes and upstream merges
+
+This repo is an educational fork of OneGlanse. Remotes:
+
+- **`oppvera`** → `oppvera/oppvera-watch` — our repo. Push here (`git push oppvera`).
+- **`origin`** → `aryamantodkar/oneglanse` — upstream. Fetch/merge only; do not push.
+
+## Upstream merge workflow
+
+1. `git fetch origin`
+2. `git merge origin/main` (or rebase only if the user asks)
+3. Resolve conflicts, then push to `oppvera`
+
+Clean merges need no intervention. Only act when Git reports conflicts or the user asks for help.
+
+## Conflict resolution policy
+
+**Prefer Oppvera (ours)** when the conflict is fork-specific:
+
+- Branding: Oppvera Watch name, logos, `apps/web/src/lib/branding.ts`
+- Docs/README aimed at marketers and GEO learners
+- Removed upstream telemetry (PostHog) and related wiring
+- Oppvera install/setup guides, org URLs (`oppvera/oppvera-watch`)
+- Disabled or fork-specific CI/GitHub Actions
+
+**Prefer upstream (theirs)** when the conflict is core product work:
+
+- New features, APIs, routes, or UI behavior we did not customize
+- Bug fixes and security patches in shared application code
+- Dependency and tooling updates unless they re-enable removed telemetry
+
+**Combine both** when upstream adds new code in an area we rebranded — take their logic, keep our Oppvera naming/docs where they diverge intentionally.
+
+**Ask the user** when:
+
+- Both sides changed the same business logic and the right merge is unclear
+- A change might be a bug fix or a branding/doc edit
+- Re-enabling telemetry, analytics, or upstream-only product behavior is involved
+- You would drop substantial upstream functionality to keep a local edit
+
+If there is no real conflict (different files or non-overlapping edits), merge silently — do not rewrite working Oppvera customizations.
+
+## After merging
+
+- Verify fork-specific removals still hold (no PostHog reintroduced)
+- Push to `oppvera`, never `origin`
