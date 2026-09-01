@@ -1,12 +1,12 @@
-# OneGlanse Lab — Learn GEO & AI Visibility
-
-**OneGlanse Lab** is an open-source educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). Run it locally to learn **GEO (Generative Engine Optimization)** and **AI visibility**: how brands show up inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
-
-This repo is meant for learners, instructors, and anyone experimenting with real AI product surfaces—not as a hosted product or Oppkey internal trial.
-
 <p align="center">
-  <img src="docs/images/hero-icon.png" alt="OneGlanse dashboard showing AI visibility, rank, sources, and prompt analytics" width="100%" />
+  <img src="docs/images/oppvera-watch-logo.png" alt="Oppvera Watch — AI Visibility Monitoring" width="480" />
 </p>
+
+# Oppvera Watch — Learn GEO & AI Visibility
+
+**Oppvera Watch** is an open-source educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). Run it locally to learn **GEO (Generative Engine Optimization)** and **AI visibility**: how brands show up inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
+
+This repo is meant for learners, instructors, and anyone experimenting with real AI product surfaces.
 
 ## What you'll learn
 
@@ -18,7 +18,7 @@ Upstream [OneGlanse docs](https://docs.oneglanse.com) explain the full product. 
 
 ## Status
 
-- **Synced with upstream:** This branch includes the latest [OneGlanse](https://github.com/aryamantodkar/oneglanse) changes through the current merge base, plus Lab-specific tweaks (branding, telemetry removal, install notes).
+- **Synced with upstream:** This branch includes the latest [OneGlanse](https://github.com/aryamantodkar/oneglanse) changes through the current merge base, plus Oppvera Watch tweaks (branding, telemetry removal, install notes).
 - **Work in progress:** Install and onboarding are still being simplified. Expect rough edges—issues and PRs welcome.
 
 ## Quick start
@@ -85,21 +85,21 @@ Scoring uses the prompt in [`packages/services/src/analysis/analysisPrompt.ts`](
 
 ## Telemetry
 
-Upstream OneGlanse sends anonymous hashed user-activity events to PostHog on signup and each authenticated page load. **This fork removes that.** OneGlanse Lab does not phone home to OneGlanse or PostHog.
+Upstream OneGlanse sends anonymous hashed user-activity events to PostHog on signup and each authenticated page load. **This fork removes that.** Oppvera Watch does not phone home to OneGlanse or PostHog.
 
 Better Auth (the auth library) may still perform its own internal telemetry as part of the dependency. That is separate from the OneGlanse PostHog integration removed here.
 
 ## Origin and attribution
 
-OneGlanse Lab is a modification of **[OneGlanse](https://github.com/aryamantodkar/oneglanse)** by [Aryaman Todkar](https://github.com/aryamantodkar).
+Oppvera Watch is a modification of **[OneGlanse](https://github.com/aryamantodkar/oneglanse)** by [Aryaman Todkar](https://github.com/aryamantodkar).
 
 - Original project: [github.com/aryamantodkar/oneglanse](https://github.com/aryamantodkar/oneglanse)
 - Original site: [oneglanse.com](https://oneglanse.com)
 - Original docs: [docs.oneglanse.com](https://docs.oneglanse.com)
 
-Most architecture, capture logic, and scoring design come from OneGlanse. Lab changes focus on educational use, local install, and privacy (no PostHog).
+Most architecture, capture logic, and scoring design come from OneGlanse. Oppvera Watch changes focus on educational use, local install, and privacy (no PostHog).
 
-**Trademark note:** "OneGlanse" is the upstream project name. This repo is an independent educational fork—not an official OneGlanse release. Please say so in courses and videos.
+**Trademark note:** "OneGlanse" is the upstream project name. Oppvera Watch is an independent educational fork—not an official OneGlanse release. Please say so in courses and videos.
 
 ## License
 
@@ -117,11 +117,11 @@ You must:
 
 - Keep the MIT copyright and permission notice (in `LICENSE` and substantial copies)
 - Credit the original author: **Aryaman Todkar / OneGlanse**
-- Credit this fork's modifications: **Craig Oda / OneGlanse Lab**
+- Credit this fork's modifications: **Craig Oda / Oppvera Watch**
 
 Suggested on-screen or description credit:
 
-> Based on [OneGlanse](https://github.com/aryamantodkar/oneglanse) (MIT) and [OneGlanse Lab](https://github.com/codetricity/oppvera-watch) (MIT).
+> Based on [OneGlanse](https://github.com/aryamantodkar/oneglanse) (MIT) and [Oppvera Watch](https://github.com/codetricity/oppvera-watch) (MIT).
 
 ### Dependencies
 

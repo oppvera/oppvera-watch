@@ -1,4 +1,4 @@
-# Contributing to OneGlanse Lab
+# Contributing to Oppvera Watch
 
 Thank you for helping improve this educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). The project is MIT-licensed and open source.
 
