@@ -1,15 +1,15 @@
-# Contributing to OneGlanse
+# Contributing to OneGlanse Lab
 
-I'm relatively new to open source. This is one of my first public projects. If you find something worth fixing or improving, I'd genuinely love a PR or even just an issue. Every bit of help makes this better.
+Thank you for helping improve this educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). The project is MIT-licensed and open source.
 
-Thank you for your interest in contributing. OneGlanse is MIT-licensed and fully open source.
+This repo is focused on making GEO and AI visibility concepts easier to learn and install locally. Bug fixes, clearer docs, and install improvements are especially welcome.
 
 ## Ways to Contribute
 
 - **Bug reports:** file a GitHub issue with reproduction steps
 - **Feature requests:** open an issue to discuss before building
-- **Code:** fix bugs, implement requested features, improve performance
-- **Docs:** improve `docs/` or `README.md`
+- **Code:** fix bugs, improve local setup, simplify onboarding
+- **Docs:** improve `README.md` and learning-oriented notes
 
 ---
 
@@ -18,8 +18,8 @@ Thank you for your interest in contributing. OneGlanse is MIT-licensed and fully
 **Requirements:** Node.js 20+, pnpm 10+, Docker + Docker Compose
 
 ```bash
-git clone https://github.com/aryamantodkar/oneglanse
-cd oneglanse
+git clone https://github.com/codetricity/oppvera-watch.git
+cd oppvera-watch
 pnpm local
 ```
 
@@ -36,7 +36,7 @@ packages/
   services/     # Shared business logic (LLM analysis, queue, redis)
   errors/       # Shared error types and Logger
   types/        # Shared TypeScript types
-docs/           # Mintlify docs
+docs/           # Mintlify docs (from upstream)
 ```
 
 ### Useful Commands
@@ -56,7 +56,7 @@ pnpm auth           # Open /providers for interactive auth setup
 ### Branching
 
 - Fork the repo and create a branch from `main`
-- Name branches descriptively: `fix/ai-overview-extraction`, `feat/export-csv`
+- Name branches descriptively: `fix/local-setup-docs`, `feat/simpler-env-bootstrap`
 
 ### Code Style
 
@@ -70,8 +70,8 @@ pnpm auth           # Open /providers for interactive auth setup
 Write clear, present-tense commit messages:
 
 ```
-Fix AI Overview extraction skipping clipped content
-Add CSV export for source attribution data
+Document Camoufox requirement for provider auth
+Simplify first-run messaging on login page
 Remove unused RateLimitError class
 ```
 
@@ -101,7 +101,7 @@ The agent (`apps/agent/`) runs Camoufox + Playwright to capture responses from r
 
 Use the [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml) template. Include:
 
-- OneGlanse version or commit hash
+- Commit hash or release tag
 - OS and Node.js version
 - Steps to reproduce
 - What you expected vs. what happened
@@ -115,6 +115,6 @@ Open a [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml) issue befor
 
 ---
 
-## Questions
+## Upstream OneGlanse
 
-For general questions, open a [Discussion](https://github.com/aryamantodkar/oneglanse/discussions) rather than an issue.
+Fixes that belong in the core product may be better contributed upstream at [aryamantodkar/oneglanse](https://github.com/aryamantodkar/oneglanse). Lab-specific learning and install improvements belong here.

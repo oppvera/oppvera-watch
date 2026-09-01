@@ -1,6 +1,6 @@
 name: Build
 
-# Automatic builds are disabled for the Oppkey trial.
+# Automatic builds are disabled for this educational fork.
 # This workflow still exists so we can run image builds by hand later.
 on:
   workflow_dispatch:

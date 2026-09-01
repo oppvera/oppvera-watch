@@ -6,24 +6,24 @@ export const appIcons: Metadata["icons"] = {
 		{
 			url: BRAND_LOGO_LIGHT,
 			media: "(prefers-color-scheme: light)",
-			type: "image/svg+xml",
+			type: "image/png",
 		},
 		{
 			url: BRAND_LOGO_DARK,
 			media: "(prefers-color-scheme: dark)",
-			type: "image/svg+xml",
+			type: "image/png",
 		},
 	],
 	shortcut: [
 		{
 			url: BRAND_LOGO_LIGHT,
-			type: "image/svg+xml",
+			type: "image/png",
 		},
 	],
 	apple: [
 		{
 			url: BRAND_LOGO_LIGHT,
-			type: "image/svg+xml",
+			type: "image/png",
 		},
 	],
 };
