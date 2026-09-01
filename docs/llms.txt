@@ -24,7 +24,7 @@ Upstream browsable docs: https://docs.oneglanse.com
 
 ## Links
 
-- GitHub: https://github.com/codetricity/oppvera-watch
+- GitHub: https://github.com/oppvera/oppvera-watch
 - Upstream OneGlanse: https://github.com/aryamantodkar/oneglanse
 - Upstream docs: https://docs.oneglanse.com
-- License (MIT): https://github.com/codetricity/oppvera-watch/blob/main/LICENSE
+- License (MIT): https://github.com/oppvera/oppvera-watch/blob/main/LICENSE

@@ -2,10 +2,10 @@
 	"name": "oppvera-watch",
 	"description": "Oppvera Watch — educational fork of OneGlanse for learning GEO and AI visibility",
 	"license": "MIT",
-	"homepage": "https://github.com/codetricity/oppvera-watch",
+	"homepage": "https://github.com/oppvera/oppvera-watch",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/codetricity/oppvera-watch"
+		"url": "https://github.com/oppvera/oppvera-watch"
 	},
 	"private": true,
 	"scripts": {

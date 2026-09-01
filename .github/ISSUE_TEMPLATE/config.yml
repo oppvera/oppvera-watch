@@ -1,8 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://docs.oneglanse.com
+    url: https://github.com/oppvera/oppvera-watch/tree/main/docs
     about: Setup guides, environment variables, VPS deployment, and troubleshooting.
   - name: Discussions and Q&A
-    url: https://github.com/aryamantodkar/oneglanse/discussions
+    url: https://github.com/oppvera/oppvera-watch/discussions
     about: Ask questions, share what you're tracking, or get help with your setup.
+  - name: Upstream OneGlanse
+    url: https://github.com/aryamantodkar/oneglanse/discussions
+    about: Questions about the core OneGlanse product may fit better upstream.

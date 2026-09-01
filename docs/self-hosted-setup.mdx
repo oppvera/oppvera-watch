@@ -11,7 +11,7 @@ If you're on Ubuntu 22.04 / 24.04, the setup script handles everything for the a
 
 ```bash
 # On your VPS (as a non-root user with sudo privileges):
-bash <(curl -fsSL https://raw.githubusercontent.com/codetricity/oppvera-watch/main/scripts/setup-vps.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/oppvera/oppvera-watch/main/scripts/setup-vps.sh)
 ```
 
 If your VPS is freshly reinstalled and only has `root`, create a non-root sudo user first, then reconnect as that user before running the setup script:
@@ -36,7 +36,7 @@ When the script prompts for `Your domain for the app`, enter the hostname you wa
 Or clone first and run locally:
 
 ```bash
-git clone https://github.com/codetricity/oppvera-watch /tmp/oppvera-watch
+git clone https://github.com/oppvera/oppvera-watch /tmp/oppvera-watch
 bash /tmp/oppvera-watch/scripts/setup-vps.sh
 ```
 
@@ -122,7 +122,7 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 ## 3. Clone and configure
 
 ```bash
-git clone https://github.com/codetricity/oppvera-watch /home/$USER/oppvera-watch
+git clone https://github.com/oppvera/oppvera-watch /home/$USER/oppvera-watch
 cd /home/$USER/oppvera-watch
 cp .env.example .env
 ```

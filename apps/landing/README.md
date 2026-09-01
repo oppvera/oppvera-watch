@@ -1,6 +1,6 @@
 # @oneglanse/landing
 
-Public marketing site for OneGlanse, deployed separately on Vercel.
+Optional marketing site for Oppvera Watch. Links point at the GitHub repo and in-repo docs rather than a hosted product domain.
 
 ## Responsibilities
 

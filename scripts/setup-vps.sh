@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OneGlanse VPS setup — Ubuntu 22.04 / 24.04
+# Oppvera Watch VPS setup — Ubuntu 22.04 / 24.04
 # Run as a non-root user with sudo privileges.
 set -euo pipefail
 
@@ -28,18 +28,18 @@ fi
 
 # ─── Gather inputs ────────────────────────────────────────────────────────────
 
-header "OneGlanse — VPS Setup"
+header "Oppvera Watch — VPS Setup"
 echo "This script installs all dependencies, clones the repo, configures nginx + HTTPS,"
 echo "and starts the app-only self-hosted stack."
 echo ""
-warn "Run this as the user who will own the OneGlanse process (not root)."
+warn "Run this as the user who will own the Oppvera Watch process (not root)."
 echo ""
 
 read -rp "Your domain for the app (e.g. app.yourdomain.com): " DOMAIN
 [[ -z "$DOMAIN" ]] && fatal "Domain is required."
 
-read -rp "Install directory [/home/$USER/oneglanse]: " INSTALL_DIR
-INSTALL_DIR="${INSTALL_DIR:-/home/$USER/oneglanse}"
+read -rp "Install directory [/home/$USER/oppvera-watch]: " INSTALL_DIR
+INSTALL_DIR="${INSTALL_DIR:-/home/$USER/oppvera-watch}"
 
 echo ""
 echo "LLM provider for response analysis:"
@@ -124,14 +124,14 @@ fi
 
 # ─── Clone / update repo ──────────────────────────────────────────────────────
 
-header "2 / 6 — Cloning OneGlanse"
+header "2 / 6 — Cloning Oppvera Watch"
 
 if [[ -d "$INSTALL_DIR/.git" ]]; then
   info "Repo exists at $INSTALL_DIR — pulling latest..."
   git -C "$INSTALL_DIR" pull
 else
   info "Cloning into $INSTALL_DIR..."
-  git clone --depth 1 https://github.com/aryamantodkar/oneglanse "$INSTALL_DIR"
+  git clone --depth 1 https://github.com/oppvera/oppvera-watch "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
@@ -184,7 +184,7 @@ success ".env configured"
 
 # ─── Start the stack ──────────────────────────────────────────────────────────
 
-header "4 / 6 — Starting OneGlanse"
+header "4 / 6 — Starting Oppvera Watch"
 
 info "Starting the app from published Docker images..."
 if docker_socket_access; then

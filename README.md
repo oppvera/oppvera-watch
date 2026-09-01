@@ -46,7 +46,7 @@ Install these once on your Mac or Windows laptop:
 After the tools above are installed and Docker Desktop is running:
 
 ```bash
-git clone https://github.com/codetricity/oppvera-watch.git
+git clone https://github.com/oppvera/oppvera-watch.git
 cd oppvera-watch
 cp .env.example .env
 ```
@@ -169,7 +169,7 @@ You must:
 
 Suggested on-screen or description credit:
 
-> Based on [OneGlanse](https://github.com/aryamantodkar/oneglanse) (MIT) and [Oppvera Watch](https://github.com/codetricity/oppvera-watch) (MIT).
+> Based on [OneGlanse](https://github.com/aryamantodkar/oneglanse) (MIT) and [Oppvera Watch](https://github.com/oppvera/oppvera-watch) (MIT).
 
 ### Dependencies
 

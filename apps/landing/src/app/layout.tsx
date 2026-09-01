@@ -8,11 +8,13 @@ const geist = Geist({
 	variable: "--font-geist-sans",
 });
 
+const REPO_URL = "https://github.com/oppvera/oppvera-watch";
+
 export const metadata: Metadata = {
-	metadataBase: new URL("https://oneglanse.com"),
-	title: "OneGlanse | Open-source GEO & AI Visibility Tracker",
+	metadataBase: new URL(REPO_URL),
+	title: "Oppvera Watch | Educational GEO & AI Visibility Tracker",
 	description:
-		"OneGlanse is the open-source GEO tracker that monitors how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. Self-hosted, free to run, your data stays on your machine.",
+		"Oppvera Watch is an educational fork of OneGlanse for learning GEO and AI visibility. Self-hosted, free to run, your data stays on your machine.",
 	keywords: [
 		"GEO",
 		"generative engine optimization",
@@ -28,10 +30,10 @@ export const metadata: Metadata = {
 		"LLM visibility",
 		"AI search optimization",
 		"AI mention tracking",
-		"oneglanse",
+		"oppvera watch",
 	],
 	alternates: {
-		canonical: "https://oneglanse.com",
+		canonical: REPO_URL,
 	},
 	icons: {
 		icon: [
@@ -60,26 +62,26 @@ export const metadata: Metadata = {
 		],
 	},
 	openGraph: {
-		title: "OneGlanse | Open-source GEO & AI Visibility Tracker",
+		title: "Oppvera Watch | Educational GEO & AI Visibility Tracker",
 		description:
-			"OneGlanse is the open-source GEO tracker that monitors how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. Self-hosted, free to run, your data stays on your machine.",
-		url: "https://oneglanse.com",
-		siteName: "OneGlanse",
+			"Oppvera Watch is an educational fork of OneGlanse for learning GEO and AI visibility. Self-hosted, free to run, your data stays on your machine.",
+		url: REPO_URL,
+		siteName: "Oppvera Watch",
 		type: "website",
 		images: [
 			{
 				url: "/opengraph-image",
 				width: 1200,
 				height: 630,
-				alt: "OneGlanse open-source AI visibility tracking",
+				alt: "Oppvera Watch educational AI visibility tracking",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "OneGlanse | Open-source GEO & AI Visibility Tracker",
+		title: "Oppvera Watch | Educational GEO & AI Visibility Tracker",
 		description:
-			"OneGlanse is the open-source GEO tracker that monitors how your brand appears in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. Self-hosted, free to run, your data stays on your machine.",
+			"Oppvera Watch is an educational fork of OneGlanse for learning GEO and AI visibility. Self-hosted, free to run, your data stays on your machine.",
 		images: ["/twitter-image"],
 	},
 };
@@ -87,10 +89,10 @@ export const metadata: Metadata = {
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "SoftwareApplication",
-	name: "OneGlanse",
-	url: "https://oneglanse.com",
+	name: "Oppvera Watch",
+	url: REPO_URL,
 	description:
-		"Open-source GEO and AI visibility tracking platform. Monitors how brands appear in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview using real browser automation.",
+		"Educational fork of OneGlanse for learning GEO and AI visibility. Monitors how brands appear in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview using real browser automation.",
 	applicationCategory: "BusinessApplication",
 	operatingSystem: "Linux, macOS, Windows",
 	offers: {
@@ -98,16 +100,16 @@ const jsonLd = {
 		price: "0",
 		priceCurrency: "USD",
 	},
-	license: "https://github.com/aryamantodkar/oneglanse/blob/main/LICENSE",
-	codeRepository: "https://github.com/aryamantodkar/oneglanse",
+	license: `${REPO_URL}/blob/main/LICENSE`,
+	codeRepository: REPO_URL,
 	author: {
 		"@type": "Organization",
-		name: "OneGlanse",
-		url: "https://oneglanse.com",
-		sameAs: ["https://github.com/aryamantodkar/oneglanse"],
+		name: "Oppvera",
+		url: "https://github.com/oppvera",
+		sameAs: [REPO_URL],
 	},
 	keywords:
-		"GEO, generative engine optimization, AI visibility, AI tracking, ChatGPT tracking, open source, self-hosted",
+		"GEO, generative engine optimization, AI visibility, AI tracking, ChatGPT tracking, open source, self-hosted, educational",
 };
 
 export default function RootLayout({

@@ -20,7 +20,7 @@ This repo is focused on making GEO and AI visibility easier for **marketing lear
 Marketing-friendly install steps (Node.js, pnpm, Docker Desktop, Git on macOS and Windows): [Local setup](docs/local-setup.mdx)
 
 ```bash
-git clone https://github.com/codetricity/oppvera-watch.git
+git clone https://github.com/oppvera/oppvera-watch.git
 cd oppvera-watch
 pnpm local
 ```

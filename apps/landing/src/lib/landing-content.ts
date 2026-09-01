@@ -13,15 +13,15 @@ import type { LucideIcon } from "lucide-react";
 
 const githubRepoUrl =
 	process.env.NEXT_PUBLIC_GITHUB_REPO_URL?.trim() ||
-	"https://github.com/aryamantodkar/oneglanse";
+	"https://github.com/oppvera/oppvera-watch";
 
 export const SITE_URLS = {
 	github: githubRepoUrl,
 	githubLicense: `${githubRepoUrl}/blob/main/LICENSE`,
-	signup: "https://oneglanse.com/signup",
-	login: "https://oneglanse.com/login",
-	docs: "https://docs.oneglanse.com/",
-	homepage: "https://oneglanse.com",
+	signup: `${githubRepoUrl}/blob/main/docs/local-setup.mdx`,
+	login: `${githubRepoUrl}/blob/main/docs/local-setup.mdx`,
+	docs: `${githubRepoUrl}/tree/main/docs`,
+	homepage: githubRepoUrl,
 } as const;
 
 type FeatureItem = {
@@ -77,7 +77,7 @@ export const FEATURE_ITEMS: FeatureItem[] = [
 	},
 ];
 
-export const STORAGE_KEY = "oneglanse-landing-theme" as const;
+export const STORAGE_KEY = "oppvera-watch-landing-theme" as const;
 
 export const METHOD_POINTS = [
 	"All five providers are monitored through their real web UIs: ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview. They are not monitored through model APIs.",
