@@ -2,7 +2,7 @@
 
 Thank you for helping improve this educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). The project is MIT-licensed and open source.
 
-This repo is focused on making GEO and AI visibility concepts easier to learn and install locally. Bug fixes, clearer docs, and install improvements are especially welcome.
+This repo is focused on making GEO and AI visibility easier for **marketing learners** to understand and install locally. Clearer docs, simpler onboarding, and install improvements are especially welcome.
 
 ## Ways to Contribute
 
@@ -15,7 +15,9 @@ This repo is focused on making GEO and AI visibility concepts easier to learn an
 
 ## Development Setup
 
-**Requirements:** Node.js 20+, pnpm 10+, Docker + Docker Compose
+**Requirements:** Node.js 20+, pnpm 10+, Docker Desktop running, Git
+
+Marketing-friendly install steps (Node.js, pnpm, Docker Desktop, Git on macOS and Windows): [Local setup](docs/local-setup.mdx)
 
 ```bash
 git clone https://github.com/codetricity/oppvera-watch.git

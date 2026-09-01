@@ -4,28 +4,46 @@
 
 # Oppvera Watch — Learn GEO & AI Visibility
 
-**Oppvera Watch** is an open-source educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). Run it locally to learn **GEO (Generative Engine Optimization)** and **AI visibility**: how brands show up inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
+**Oppvera Watch** is an open-source educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). It is built for **marketing staff and GEO learners** who want hands-on practice—not only for developers.
 
-This repo is meant for learners, instructors, and anyone experimenting with real AI product surfaces.
+Run it on your Mac or Windows laptop to learn **GEO (Generative Engine Optimization)** and **AI visibility**: how brands show up inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
+
+This repo is meant for learners, instructors, and marketing teams experimenting with real AI product surfaces.
 
 ## What you'll learn
 
 - **GEO measurement on real UIs.** The app opens provider chat interfaces in a browser (like a signed-in user), not model APIs. You see citations, source cards, and ranking the way users do.
 - **How visibility scores are built.** Captured answers are analyzed with your own OpenAI or Anthropic key. Scores combine visibility, rank, sentiment, and recommendation for a workspace brand.
-- **Self-hosted data flow.** Postgres, ClickHouse, Redis, and a browser worker run on your machine via Docker. Responses and analytics stay local.
+- **Self-hosted data flow.** Background databases run on your machine via Docker Desktop. Responses and analytics stay local.
 
-Upstream [OneGlanse docs](https://docs.oneglanse.com) explain the full product. This fork tracks upstream and adds educational framing, simpler local setup notes, and removes upstream PostHog telemetry.
+Upstream [OneGlanse docs](https://docs.oneglanse.com) explain the full product. This fork adds educational framing, marketing-friendly install guides, and removes upstream PostHog telemetry.
 
 ## Status
 
 - **Synced with upstream:** This branch includes the latest [OneGlanse](https://github.com/aryamantodkar/oneglanse) changes through the current merge base, plus Oppvera Watch tweaks (branding, telemetry removal, install notes).
-- **Work in progress:** Install and onboarding are still being simplified. Expect rough edges—issues and PRs welcome.
+- **Install is still manual.** You need Node.js, pnpm, Docker Desktop, and Git today. We plan to simplify this for marketing users over time—expect rough edges for now.
 
 ## Quick start
 
-**Requirements:** Node.js 20+, pnpm 10+, Docker Desktop running.
+**New to local setup?** Start with the full walkthrough: **[Local setup guide](docs/local-setup.mdx)** (written for marketing and GEO learners).
 
-**WSL is not supported** for Camoufox browser automation. Use native macOS, Linux, or Windows.
+### Before you run anything
+
+Install these once on your Mac or Windows laptop:
+
+| Tool | Why you need it |
+| --- | --- |
+| [Node.js 20+](docs/local-setup.mdx#install-nodejs) | Runs the app |
+| [pnpm 10+](docs/local-setup.mdx#install-pnpm) | Installs the project |
+| [Docker Desktop](docs/local-setup.mdx#install-docker-desktop) | Runs background databases—**keep it open while using the app** |
+| [Git](docs/local-setup.mdx#install-git) | Downloads the project |
+| OpenAI or Anthropic API key | Scores captured AI answers |
+
+**WSL is not supported** for provider sign-in. Use native macOS or native Windows.
+
+### Run the app
+
+After the tools above are installed and Docker Desktop is running:
 
 ```bash
 git clone https://github.com/codetricity/oppvera-watch.git
@@ -33,7 +51,7 @@ cd oppvera-watch
 cp .env.example .env
 ```
 
-Add one analysis LLM key to `.env`:
+Add one analysis LLM key to `.env` (open the file in any text editor):
 
 ```bash
 OPENAI_API_KEY=sk-...
@@ -52,10 +70,10 @@ Then:
 pnpm local
 ```
 
-Open [http://localhost:3000](http://localhost:3000). First run generates auth secrets, starts Postgres / ClickHouse / Redis, runs migrations, and bootstraps the browser runtime.
+Open [http://localhost:3000](http://localhost:3000). First run can take several minutes.
 
 1. Sign up with email (local to your machine).
-2. Connect providers at `/providers`. Finish sign-in, then close the provider browser window.
+2. Connect providers at `/providers`. Finish sign-in in the browser window that opens, then close it.
 3. Create a workspace with the brand you want to score.
 4. Add prompts and start a run from Workspace Runs.
 
@@ -71,7 +89,9 @@ GEO scores are about the **workspace brand** (name + domain), not whether the mo
 
 Scoring uses the prompt in [`packages/services/src/analysis/analysisPrompt.ts`](packages/services/src/analysis/analysisPrompt.ts). Upstream details: [OneGlanse README](https://github.com/aryamantodkar/oneglanse).
 
-## Stack
+## Technical stack (optional)
+
+For developers who want the underlying architecture:
 
 | Layer | Technology |
 | --- | --- |
@@ -100,6 +120,20 @@ Oppvera Watch is a modification of **[OneGlanse](https://github.com/aryamantodka
 Most architecture, capture logic, and scoring design come from OneGlanse. Oppvera Watch changes focus on educational use, local install, and privacy (no PostHog).
 
 **Trademark note:** "OneGlanse" is the upstream project name. Oppvera Watch is an independent educational fork—not an official OneGlanse release. Please say so in courses and videos.
+
+## Documentation
+
+Oppvera Watch setup starts in this README. Deeper reference material lives in `docs/`:
+
+- [Introduction](docs/introduction.mdx) — what GEO measurement means in this tool
+- [Getting started](docs/getting-started.mdx) — start here for marketing / GEO learners
+- [Local setup](docs/local-setup.mdx) — **full install guide** (Node.js, pnpm, Docker Desktop, Git on Mac and Windows)
+- [Self-hosted setup](docs/self-hosted-setup.mdx)
+- [Environment variables](docs/environment-variables.mdx)
+- [Troubleshooting](docs/troubleshooting.mdx)
+- [API reference](docs/api-reference.mdx)
+
+These pages are Mintlify source inherited from upstream OneGlanse and rebranded for Oppvera Watch. Install and onboarding here may change over time. The browsable upstream version is at [docs.oneglanse.com](https://docs.oneglanse.com).
 
 ## License
 

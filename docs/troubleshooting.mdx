@@ -1,7 +1,30 @@
 ---
 title: Troubleshooting
-description: Solutions for common issues when setting up and running OneGlanse.
+description: Solutions for common issues when setting up and running Oppvera Watch, including Docker Desktop and first-time install problems.
 ---
+
+## Docker Desktop is not running
+
+**Symptom:** Errors mentioning Docker, "Cannot connect to the Docker daemon", or database connection failures when you run `pnpm local`.
+
+**Cause:** Docker Desktop is installed but not open, or still starting up.
+
+**Fix:**
+
+1. Open **Docker Desktop** from Applications (Mac) or the Start menu (Windows)
+2. Wait until it shows the engine is **running** (whale icon in the menu bar on Mac)
+3. Run `docker ps` in Terminal or PowerShell—you should see a table header, not an error
+4. Run `pnpm local` again
+
+Keep Docker Desktop open the whole time you use Oppvera Watch.
+
+---
+
+## Docker Desktop is not installed
+
+**Symptom:** `docker: command not found` or Windows cannot find Docker.
+
+**Fix:** Follow [Local Setup — Install Docker Desktop](/local-setup#install-docker-desktop), then restart your terminal and try again.
 
 ---
 
@@ -32,7 +55,7 @@ Then restart with `pnpm local`.
 
 **Symptom:** App or agent logs show `ECONNREFUSED 127.0.0.1:6379`.
 
-**Cause:** The Redis Docker container is not running.
+**Cause:** The Redis Docker container is not running—usually because Docker Desktop stopped.
 
 **Fix:** Check that Docker is running and the containers are up:
 
@@ -40,7 +63,7 @@ Then restart with `pnpm local`.
 docker ps
 ```
 
-If the containers aren't listed, restart with `pnpm local`. If Docker itself isn't running, start it first.
+If the containers aren't listed, open Docker Desktop first, then restart with `pnpm local`. If Docker itself isn't running, start it first.
 
 ---
 
@@ -64,7 +87,7 @@ docker logs clickhouse_db
 
 **Cause:** The Camoufox window was closed before the session was fully written.
 
-**Fix:** Open the provider connection again, complete the full sign-in flow (including any 2FA or confirmation steps), and wait for the checkmark to appear in the OneGlanse UI before closing the browser window.
+**Fix:** Open the provider connection again, complete the full sign-in flow (including any 2FA or confirmation steps), and wait for the checkmark to appear in the Oppvera Watch UI before closing the browser window.
 
 ---
 
@@ -81,7 +104,7 @@ GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
 ```
 
-Note: these control sign-in to the OneGlanse web app itself. They are separate from the Google / Gemini / AI Overview provider connections used for monitoring.
+Note: these control sign-in to the Oppvera Watch web app itself. They are separate from the Google / Gemini / AI Overview provider connections used for monitoring.
 
 ---
 

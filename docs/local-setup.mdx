@@ -1,35 +1,231 @@
 ---
 title: Local Setup
-description: Run the full OneGlanse stack on your own machine for the fastest setup, interactive provider auth, and manual prompt runs.
+description: Step-by-step local install for marketing and GEO learners on macOS or Windows, including Node.js, pnpm, Docker Desktop, and Git.
 ---
 
-## When to choose local
+## Who this guide is for
 
-Local mode is the fastest way to get started.
+This guide is written for **marketing staff, GEO learners, and non-developers** who want to run Oppvera Watch on a Mac or Windows laptop to see how a brand shows up in ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
 
-It is also the most reliable place to capture provider auth because it uses your real machine, your real browser environment, and your normal IP reputation.
+You do not need to be a software engineer. You do need to install a few tools once, copy a few commands, and keep **Docker Desktop running** while you use the app.
 
-## Requirements
+Install is still a work in progress—we plan to simplify it further. If you get stuck, see [Troubleshooting](/troubleshooting).
 
-- Node.js 20+
-- pnpm 10+
-- Docker
+## Before you start (checklist)
 
-If you do not have pnpm:
+Work through these in order. Do not skip Docker—Oppvera Watch will not start without it.
+
+- [ ] Node.js 20+ installed
+- [ ] pnpm 10+ installed
+- [ ] Docker Desktop installed **and running** (whale icon / "Engine running")
+- [ ] Git installed
+- [ ] An OpenAI or Anthropic API key ready
+- [ ] Accounts for the AI tools you want to measure (for sign-in during setup)
+
+**Important:** Use native **macOS** or **Windows**. Do not run this inside WSL (Windows Subsystem for Linux)—provider sign-in windows may not work correctly.
+
+---
+
+## Install Node.js
+
+Node.js runs the Oppvera Watch app on your computer.
+
+### macOS
+
+**Option A — installer (simplest):**
+
+1. Go to [https://nodejs.org](https://nodejs.org)
+2. Download the **LTS** version (20 or newer)
+3. Open the installer and follow the prompts
+
+**Option B — Homebrew:**
+
+```bash
+brew install node@20
+```
+
+Verify:
+
+```bash
+node --version
+```
+
+You should see `v20` or higher.
+
+### Windows
+
+1. Go to [https://nodejs.org](https://nodejs.org)
+2. Download the **LTS** Windows installer (20 or newer)
+3. Run the installer (default options are fine)
+4. Close and reopen PowerShell or Command Prompt
+
+Verify:
+
+```bash
+node --version
+```
+
+You should see `v20` or higher.
+
+---
+
+## Install pnpm
+
+pnpm is a tool that downloads and runs the Oppvera Watch project. Install it after Node.js.
+
+### macOS
+
+**Homebrew (recommended on Mac):**
+
+```bash
+brew install pnpm
+```
+
+**npm (works on any OS with Node.js installed):**
 
 ```bash
 npm install -g pnpm@latest
 ```
 
-## 1. Clone and configure
+**Corepack (included with Node.js 16.13+):**
 
 ```bash
-git clone https://github.com/aryamantodkar/oneglanse
-cd oneglanse
+corepack enable
+corepack prepare pnpm@latest --activate
+```
+
+### Windows
+
+**PowerShell (official installer):**
+
+```powershell
+iwr https://get.pnpm.io/install.ps1 -useb | iex
+```
+
+**npm:**
+
+```bash
+npm install -g pnpm@latest
+```
+
+**Corepack:**
+
+```bash
+corepack enable
+corepack prepare pnpm@latest --activate
+```
+
+Verify:
+
+```bash
+pnpm --version
+```
+
+You should see version 10 or newer.
+
+---
+
+## Install Docker Desktop
+
+### What Docker does here
+
+Oppvera Watch stores prompts, captured answers, and scores in background database services. **Docker Desktop** runs those services for you so you do not have to install Postgres or other databases manually.
+
+**Keep Docker Desktop open** while you use Oppvera Watch. If Docker stops, the app will lose its data connection.
+
+### macOS
+
+1. Go to [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+2. Download **Docker Desktop for Mac** (Apple chip or Intel, matching your Mac)
+3. Open the `.dmg`, drag Docker to Applications, and launch **Docker Desktop**
+4. Accept permissions and wait until the menu bar whale icon shows **Docker Desktop is running**
+5. Open Terminal and verify:
+
+```bash
+docker --version
+docker ps
+```
+
+`docker ps` should print a header row (an empty list is fine). If you see "Cannot connect to the Docker daemon", Docker Desktop is not running yet—open it and wait a minute.
+
+**First launch tip:** Docker may ask for your Mac password to install networking helpers. That is normal.
+
+### Windows
+
+1. Go to [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+2. Download **Docker Desktop for Windows**
+3. Run the installer
+4. If prompted, enable **WSL 2** (Docker uses this internally on Windows—that is fine)
+5. Restart if the installer asks you to
+6. Launch **Docker Desktop** from the Start menu and wait until it says the engine is running
+7. Open PowerShell or Command Prompt and verify:
+
+```bash
+docker --version
+docker ps
+```
+
+**Important:** Run Oppvera Watch from **native Windows** PowerShell or Command Prompt—not from a WSL terminal. Provider sign-in uses a real browser window that is unreliable inside WSL.
+
+**First launch tip:** Docker Desktop may take a few minutes on first start. Leave it open in the background while you work through the rest of this guide.
+
+---
+
+## Install Git
+
+Git downloads the Oppvera Watch project from GitHub.
+
+### macOS
+
+**Option A — Xcode Command Line Tools (simplest):**
+
+```bash
+xcode-select --install
+```
+
+**Option B — Homebrew:**
+
+```bash
+brew install git
+```
+
+Verify:
+
+```bash
+git --version
+```
+
+### Windows
+
+1. Go to [https://git-scm.com/download/win](https://git-scm.com/download/win)
+2. Download and run the installer (default options are fine)
+3. Close and reopen PowerShell
+
+Verify:
+
+```bash
+git --version
+```
+
+---
+
+## 1. Download and configure the project
+
+Open Terminal (Mac) or PowerShell (Windows):
+
+```bash
+git clone https://github.com/codetricity/oppvera-watch.git
+cd oppvera-watch
 cp .env.example .env
 ```
 
-Set your analysis LLM key in `.env`:
+On Windows PowerShell, if `cp` does not work, use:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` in a text editor (TextEdit, Notepad, VS Code, etc.) and add **one** analysis key:
 
 ```bash
 # Pick one:
@@ -40,35 +236,39 @@ ANTHROPIC_API_KEY=sk-ant-...
 ANALYSIS_LLM_PROVIDER=claude
 ```
 
-## 2. Start the local stack
+Save the file. This key is used to **score** captured answers—it is not your ChatGPT login.
+
+---
+
+## 2. Start Oppvera Watch
+
+Make sure **Docker Desktop is running**, then:
 
 ```bash
 pnpm local
 ```
 
-The app runs at [http://localhost:3000](http://localhost:3000).
+The first run can take several minutes. It installs dependencies, starts database containers, and prepares the browser runtime.
 
-On first run, OneGlanse:
+When it finishes, open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- Starts Postgres, ClickHouse, and Redis
-- Runs migrations
-- Bootstraps the browser runtime
+---
 
-`pnpm local` uses your latest local source code for the web app and agent. It does not depend on pulling published web or agent images, and it now asks Docker for fresher local service and base images before starting the local infra stack.
+## 3. First-time app setup
 
-## 3. Connect providers
+1. **Sign up** with your email (stored locally on your machine)
+2. Go to **Providers** and sign in to each AI tool you want to measure (ChatGPT, Gemini, etc.)
+   - A separate browser window will open—complete sign-in, wait for the success indicator, then close that window
+3. **Create a workspace** with the brand name and domain you want to score
+4. **Add prompts** (questions a customer might ask) and **start a run**
 
-Then:
+If scores look empty, check that the workspace brand name matches how AI tools mention the brand in answers.
 
-1. Sign up with email
-2. Connect your AI provider accounts
-3. Add prompts and run
+---
 
-If Google OAuth is configured for the web app, users can also sign in with Google. That is separate from monitoring Google AI Overview, which still uses provider sessions captured through the browser auth flow.
+## Why Oppvera Watch uses UI collection
 
-## Why OneGlanse uses UI collection
-
-OneGlanse does not rely on official model APIs for provider collection.
+Oppvera Watch does not rely on official model APIs for provider collection.
 
 Instead, it opens the real chat interfaces and captures what the provider UI actually renders. That matters because the UI can include:
 
@@ -77,25 +277,18 @@ Instead, it opens the real chat interfaces and captures what the provider UI act
 - Brand framing and comparisons
 - Provider-specific formatting that never appears in raw API output
 
-This is the core product differentiator. GEO is about what users actually see inside the product surface, not just what a developer API returns.
+This is the core GEO lesson: visibility is about what users actually see inside the product surface, not just what a developer API returns.
 
 For more context on why UI answers and API answers differ, see [LLM scraped AI answers vs API results](https://surferseo.com/blog/llm-scraped-ai-answers-vs-api-results/).
 
-## Why OneGlanse uses Camoufox
+## Why Oppvera Watch uses Camoufox
 
 Provider websites are authenticated consumer apps with anti-bot protections.
 
-OneGlanse uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, because plain Chrome or Chromium automation is much more likely to run into:
-
-- Login loops
-- Forced verification challenges
-- Unstable sessions
-- Blocked or degraded collection flows
-
-Camoufox gives the runtime a more suitable browser fingerprint profile for authenticated UI collection, which makes provider sessions materially more reliable in practice.
+Oppvera Watch uses [Camoufox](https://github.com/daijro/camoufox), an anti-fingerprint Firefox-based browser, because plain Chrome or Chromium automation is much more likely to run into login loops, verification challenges, or unstable sessions.
 
 ## Related pages
 
 - [Getting Started](/getting-started)
-- [Self-Hosted Setup](/self-hosted-setup)
+- [Troubleshooting](/troubleshooting)
 - [Environment Variables](/environment-variables)

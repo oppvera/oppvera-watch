@@ -1,37 +1,58 @@
 ---
 title: Getting Started
-description: Choose the right OneGlanse setup path, then follow a dedicated guide for local or self-hosted deployment.
+description: Start here if you are on a marketing or GEO team and want to run Oppvera Watch on your own computer to learn how AI visibility works.
 ---
 
-| | Local | Self-Host |
+Oppvera Watch is meant for **marketing and GEO learners**, not just developers. If you have never installed Node, Docker, or a command-line tool before, that is normal—follow [Local Setup](/local-setup) step by step.
+
+Install steps in this repo are still being simplified. Expect some manual setup for now.
+
+## Recommended path for learners
+
+**Start with [Local Setup](/local-setup).** It runs on your Mac or Windows laptop, uses your normal browser login for ChatGPT and other tools, and is the easiest way to explore GEO scores hands-on.
+
+Self-hosted VPS setup is for always-on tracking and recurring schedules. Most learners can skip it at first.
+
+| | Local (recommended) | Self-Host |
 |---|---|---|
-| Fast setup | ✓ | |
-| Interactive provider auth | ✓ | |
+| Best for learning GEO | ✓ | |
+| Runs on your laptop | ✓ | |
+| Interactive provider sign-in | ✓ | |
 | Manual prompt runs | ✓ | ✓ |
 | Recurring scheduling | | ✓ |
-| Full data ownership | ✓ | ✓ |
 
 ---
+
+## What you need before opening the app
+
+Every local setup needs these installed and running:
+
+1. **Node.js 20+** — runs the Oppvera Watch app on your machine
+2. **pnpm 10+** — installs the project (a package manager; see the local guide)
+3. **Docker Desktop** — runs the background databases the app needs
+4. **Git** — downloads the project from GitHub
+5. **An OpenAI or Anthropic API key** — scores captured AI answers (you add this to a config file)
+
+Full install steps for each item are in [Local Setup](/local-setup):
+
+- [Install Node.js](/local-setup#install-nodejs)
+- [Install pnpm](/local-setup#install-pnpm)
+- [Install Docker Desktop](/local-setup#install-docker-desktop)
+- [Install Git](/local-setup#install-git)
+
+You also need accounts for the AI tools you want to measure (ChatGPT, Gemini, etc.) so you can sign in during setup.
 
 ## Choose your setup
 
 - [Local Setup](/local-setup)
-Run the full stack on your machine with interactive provider auth and on-demand runs.
+  Run Oppvera Watch on your Mac or Windows machine. Best for learning, demos, and experiments.
 
 - [Self-Hosted Setup](/self-hosted-setup)
-Deploy OneGlanse on your own VPS for recurring schedules and always-on tracking.
+  Deploy on a server for scheduled tracking. Requires more technical setup and a VPS.
 
 ## Which path should you pick?
 
-- Choose Local if you want the fastest first run, interactive provider auth on your own machine, and manual prompt runs.
-- Choose Self-Hosted if you want recurring schedules, always-on tracking, and infrastructure you manage yourself.
+- **Marketing / GEO learning:** choose **Local**. Work through [Local Setup](/local-setup) in order.
+- **Always-on production tracking:** choose **Self-Hosted** after you are comfortable with local runs.
 
-## Shared requirements
-
-Every setup path needs:
-
-- An analysis LLM key
-- Provider sessions captured through the real provider UI
-- Docker for the database/runtime services used by the app
-
-For environment variable details, see [Environment Variables](/environment-variables). For command behavior, see [Reference](/api-reference).
+For environment variable details, see [Environment Variables](/environment-variables). For command reference, see [Reference](/api-reference).
