@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="docs/images/oppvera-watch-logo.png" alt="Oppvera Watch — AI Visibility Monitoring" width="480" />
-</p>
+![Oppvera Watch — AI Visibility Monitoring](docs/images/oppvera-watch-logo.png)
 
 # Oppvera Watch — Learn GEO & AI Visibility
 
@@ -31,13 +29,15 @@ Upstream [OneGlanse docs](https://docs.oneglanse.com) explain the full product. 
 
 Install these once on your Mac or Windows laptop:
 
-| Tool | Why you need it |
-| --- | --- |
-| [Node.js 20+](docs/local-setup.mdx#install-nodejs) | Runs the app |
-| [pnpm 10+](docs/local-setup.mdx#install-pnpm) | Installs the project |
+
+| Tool                                                          | Why you need it                                                |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| [Node.js 20+](docs/local-setup.mdx#install-nodejs)            | Runs the app                                                   |
+| [pnpm 10+](docs/local-setup.mdx#install-pnpm)                 | Installs the project                                           |
 | [Docker Desktop](docs/local-setup.mdx#install-docker-desktop) | Runs background databases—**keep it open while using the app** |
-| [Git](docs/local-setup.mdx#install-git) | Downloads the project |
-| OpenAI or Anthropic API key | Scores captured AI answers |
+| [Git](docs/local-setup.mdx#install-git)                       | Downloads the project                                          |
+| OpenAI or Anthropic API key                                   | Scores captured AI answers                                     |
+
 
 **WSL is not supported** for provider sign-in. Use native macOS or native Windows.
 
@@ -93,21 +93,35 @@ Scoring uses the prompt in [`packages/services/src/analysis/analysisPrompt.ts`](
 
 For developers who want the underlying architecture:
 
-| Layer | Technology |
-| --- | --- |
-| Web app | Next.js 15, React 19, tRPC, Drizzle ORM |
-| Browser worker | Camoufox, Playwright, BullMQ |
-| Analytics DB | ClickHouse |
-| Relational DB | PostgreSQL 16 |
-| Queue | Redis |
-| Auth | Better Auth |
-| Response analysis | OpenAI or Anthropic (your key) |
+
+| Layer             | Technology                              |
+| ----------------- | --------------------------------------- |
+| Web app           | Next.js 15, React 19, tRPC, Drizzle ORM |
+| Browser worker    | Camoufox, Playwright, BullMQ            |
+| Analytics DB      | ClickHouse                              |
+| Relational DB     | PostgreSQL 16                           |
+| Queue             | Redis                                   |
+| Auth              | Better Auth                             |
+| Response analysis | OpenAI or Anthropic (your key)          |
+
+## Data security
+
+Oppvera Watch does not send your data to Oppvera, OneGlanse, or PostHog. Login sessions, captured answers, and scores are stored in databases on your computer (via Docker Desktop).
+
+You will still use the internet for:
+
+- Signing in to ChatGPT, Gemini, and other providers during setup
+- Sending captured answer text to **your** OpenAI or Anthropic account for scoring (using the API key you add to `.env`)
+
+Those calls go from your machine to the provider you chose—not through Oppvera Watch servers.
 
 ## Telemetry
 
-Upstream OneGlanse sends anonymous hashed user-activity events to PostHog on signup and each authenticated page load. **This fork removes that.** Oppvera Watch does not phone home to OneGlanse or PostHog.
+**This fork removes telemetry.** Oppvera Watch does not phone home to OneGlanse, PostHog or Better Auth.
 
-Better Auth (the auth library) may still perform its own internal telemetry as part of the dependency. That is separate from the OneGlanse PostHog integration removed here.
+Upstream OneGlanse sends anonymous hashed user-activity events to PostHog on signup and each authenticated page load. 
+
+**Better Auth (login/signup library):** Better Auth telemetry is **disabled by default** and must be explicitly turned on (`BETTER_AUTH_TELEMETRY=1` or `telemetry: { enabled: true }`). This repo does not enable that, and the installed version also requires a telemetry endpoint URL that we do not configure—so **no Better Auth telemetry is sent in a normal Oppvera Watch install.** 
 
 ## Origin and attribution
 
