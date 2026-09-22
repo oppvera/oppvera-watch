@@ -8,6 +8,14 @@ UI there is Jinja2, HTMX, Tailwind, and DaisyUI. Do not port the Next.js dashboa
 
 Watch does not score. Oppvera scores every `visibility_captures` row with one prompt and one result shape, whether `source` is `watch` or `probe`.
 
+## Probe-first rollout
+
+Implement and test this doc immediately after doc [04](04-oppvera-probe-persistence.md). With only `source=probe` rows:
+
+- The campaign visibility page should list captures, show scores, and use Probe-only empty states where Watch is mentioned.
+- The UI-vs-API compare panel stays hidden or shows "needs Oppvera Watch capture" until Phase B.
+- Acceptance in this doc (two sources) is the **full** milestone; **partial** acceptance is: one Probe run, analyses `ready`, dashboard usable in the browser without the desktop app.
+
 ## Source of truth to port
 
 Copy the analyzer prompt from this repo:

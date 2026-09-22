@@ -8,6 +8,10 @@ The capture engine is already Node plus Python Camoufox plus Firefox (`apps/agen
 
 Tauri 2 can be revisited later for a thinner native window. Windows is out of scope until macOS capture and sync work.
 
+## When to build
+
+Start this work **after** hosted Oppvera passes Phase A in [README.md](README.md): Probe persists, analytics scores, and the campaign visibility UI work in the Oppvera repo alone. The desktop app only adds `source=watch` rows and pairing; it is not required to validate Probe or GEO dashboards.
+
 ## Product surface
 
 The desktop app is a capture client. It is not the current Next.js product.

@@ -6,7 +6,9 @@ Implement in:
 
 Probe today (`oppvera/probe.py`) runs up to three questions through OpenRouter, Anthropic web search, and OpenAI web search. Results sit in memory (`store.probe_payloads`, keyed by `report_scope_key()`). Restarting the process drops them. Watch cannot share that store.
 
-This spec adds SQL tables and writes every `ProbePass` into them. Watch uploads (doc [03](03-oppvera-probe-ingest-api.md)) use the same tables.
+This spec adds SQL tables and writes every `ProbePass` into them. Watch uploads (doc [03](03-oppvera-probe-ingest-api.md)) use the same tables later.
+
+**Probe-only validation:** After this spec and doc [05](05-unified-analytics.md), you can run Probe in local or hosted Oppvera, score captures, and exercise the campaign visibility UI **without** building Oppvera Watch or changing the oppvera-watch repo. Treat that as the first integration test of the shared store.
 
 ## Tables
 

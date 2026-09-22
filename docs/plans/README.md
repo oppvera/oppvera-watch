@@ -9,6 +9,27 @@ They live in this Watch repo so a Cursor session can implement either side:
 
 Do not treat these files as shipped product docs for marketers. The public install guide stays in the root [README](../../README.md) until the desktop app replaces Docker.
 
+## Validate on Oppvera before Oppvera Watch
+
+You can ship and test the **hosted loop first** without changing this Watch repo or building Electron.
+
+**Phase A — Oppvera only (Probe + analytics + UI):**
+
+1. Persist Probe into `visibility_captures` ([04](04-oppvera-probe-persistence.md)).
+2. Run the shared scorer and the campaign visibility pages ([05](05-unified-analytics.md)).
+3. Run Probe from Development (or a campaign bank run when built), restart the server, confirm history and scores in the UI.
+4. Optional: email reports ([08](08-email-reports-and-nudges.md)) using Probe-only data; Watch banner shows "never" until a desktop sync exists.
+
+At the end of Phase A you have a working product surface: **API-labeled captures, GEO metrics, and HTMX dashboards** on real campaign data. That is the milestone to demo and iterate on before desktop work.
+
+**Phase B — Oppvera Watch (this repo):**
+
+5. Watch ingest API and device pairing ([03](03-oppvera-probe-ingest-api.md)).
+6. Electron capture client ([02](02-watch-desktop-electron.md)).
+7. UI-vs-API compare and mixed-source filters once both `source=probe` and `source=watch` rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
+
+Do not start Phase B until Phase A meets the acceptance criteria in docs 04 and 05 (Probe persists, scores, and the campaign visibility UI renders). The desktop app only adds rows to tables and screens that already work for Probe.
+
 ## Reading order
 
 1. [01-product-split.md](01-product-split.md) — what Watch, Probe, and the Studio lab each own, and the labeling rules.
@@ -24,11 +45,18 @@ Do not treat these files as shipped product docs for marketers. The public insta
 
 Build in this order. Specs can be written together; code should not skip ahead.
 
-1. Oppvera schema and Probe persistence ([04](04-oppvera-probe-persistence.md)) so analytics has a writer before Watch exists.
-2. Shared scorer and campaign analytics on Probe-only data ([05](05-unified-analytics.md)).
-3. Watch ingest API ([03](03-oppvera-probe-ingest-api.md)) and the Electron client ([02](02-watch-desktop-electron.md)).
-4. Source filters and the UI-vs-API compare view once both sources exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
-5. Campaign email reports with Probe teaser and optional Watch nudge ([08](08-email-reports-and-nudges.md)) after visibility data exists.
+**Phase A (Oppvera repo — test without desktop):**
+
+1. Oppvera schema and Probe persistence ([04](04-oppvera-probe-persistence.md)).
+2. Shared scorer and campaign analytics UI on **Probe-only** data ([05](05-unified-analytics.md)). Filters for Watch can show empty states until Phase B.
+3. Campaign query-bank Probe runs when ready ([06](06-query-bank-and-runs.md)), still on hosted Oppvera.
+4. Campaign email reports with Probe teaser ([08](08-email-reports-and-nudges.md)); Watch stale banner is fine with no UI captures yet.
+
+**Phase B (Watch repo + Oppvera ingest):**
+
+5. Watch ingest API and device pairing ([03](03-oppvera-probe-ingest-api.md)).
+6. Electron client ([02](02-watch-desktop-electron.md)).
+7. UI-vs-API compare and full mixed-source filters once Watch rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
 
 ## Objectives
 

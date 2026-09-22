@@ -77,6 +77,15 @@ Rules:
 - Do not run two scoring prompts.
 - Do not chart Watch and Probe as if they were the same engine.
 
+## Implementation order
+
+Build **hosted Oppvera first**, then **Oppvera Watch**:
+
+1. **Phase A:** Probe persistence, scoring, campaign visibility UI, and optional email reports — all testable in the Oppvera demo app with no changes to this Watch repo.
+2. **Phase B:** Watch ingest API and the Electron client here; then enable compare views and mixed-source filters when `source=watch` rows exist.
+
+See [README.md](README.md) for the full sequence.
+
 ## Labeling rules
 
 Use these labels in UI, API responses, exports, and docs.
@@ -101,6 +110,10 @@ Forbidden:
 Probe's existing strings in `oppvera/probe.py` (`PROVIDER_LABELS`, `PROVIDER_ATTRIBUTION`, and the disclaimer that Probe is not a consumer login) stay. Watch adds the "signed-in session" labels.
 
 ## User journey
+
+**After Phase A (Probe + analytics on Oppvera):** the consultant runs Probe (or a campaign bank run), opens the campaign visibility page, and reads GEO scores on API-labeled captures. No Mac app required.
+
+**After Phase B (Watch added):**
 
 1. The person works in hosted Oppvera: organization, company, campaign, frozen query bank.
 2. Oppvera shows a pairing code for Oppvera Watch.
