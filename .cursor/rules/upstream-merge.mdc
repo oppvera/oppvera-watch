@@ -8,15 +8,17 @@ alwaysApply: true
 This repo is an educational fork of OneGlanse. Remotes:
 
 - **`oppvera`** → `oppvera/oppvera-watch` — our repo. Push here (`git push oppvera`).
-- **`origin`** → `aryamantodkar/oneglanse` — upstream. Fetch/merge only; do not push.
+- **`oneglanse`** → `aryamantodkar/oneglanse` — upstream snapshot (fetch only; push disabled). Do not merge routinely; cherry-pick capture fixes if needed.
 
-## Upstream merge workflow
+## Upstream merge workflow (optional, rare)
 
-1. `git fetch origin`
-2. `git merge origin/main` (or rebase only if the user asks)
+OneGlanse upstream is not a product dependency. Only when the user explicitly asks to pull upstream:
+
+1. `git fetch oneglanse`
+2. `git merge oneglanse/main` (or cherry-pick specific commits)
 3. Resolve conflicts, then push to `oppvera`
 
-Clean merges need no intervention. Only act when Git reports conflicts or the user asks for help.
+Do not fetch or merge `oneglanse` proactively. Clean merges need no intervention beyond conflict policy when the user requested a merge.
 
 ## Conflict resolution policy
 
@@ -48,4 +50,4 @@ If there is no real conflict (different files or non-overlapping edits), merge s
 ## After merging
 
 - Verify fork-specific removals still hold (no PostHog reintroduced)
-- Push to `oppvera`, never `origin`
+- Push to `oppvera`, never `oneglanse`
