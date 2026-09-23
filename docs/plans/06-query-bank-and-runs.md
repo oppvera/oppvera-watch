@@ -1,5 +1,11 @@
 # Query bank and runs
 
+## Status
+
+**In progress** on [codetricity/oppvera](https://github.com/codetricity/oppvera) (`app/lab/demo/`). Depends on **v0.90.0** ([doc 05](05-unified-analytics.md), [PR #269](https://github.com/codetricity/oppvera/pull/269)).
+
+Watch ingest ([03](03-oppvera-probe-ingest-api.md)) is not required for this spec.
+
 Watch and Probe must ask the **same frozen buyer questions** when the goal is a history chart. Oppvera already stores that list as the campaign `queries.md`, loaded into `QueryItem` (`query_id`, `text`, `expected_strength`, `category`, `source_url`) in `oppvera/schemas.py`.
 
 ## Frozen bank

@@ -1,8 +1,16 @@
 # Unified analytics (Watch and Probe)
 
-Implement in the Oppvera demo app:
+## Status
 
-`/Users/craig/Documents/Oppkey/geo/generative-engine-optimization/app/lab/demo/`
+**Implemented (Probe-first partial acceptance)** in the Oppvera demo **v0.90.0**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-23 via [PR #269](https://github.com/codetricity/oppvera/pull/269).
+
+Includes GEO scoring (`visibility_analyses`), campaign visibility pages under `oppvera/routers/visibility.py`, and Probe `analysis_mentioned` when analyses are `ready`. UI-vs-API compare and Watch source filters remain Phase B.
+
+**Not in this PR:** doc [06](06-query-bank-and-runs.md) bank runner, doc [08](08-email-reports-and-nudges.md) email.
+
+Implement in:
+
+[`https://github.com/codetricity/oppvera`](https://github.com/codetricity/oppvera) → `app/lab/demo/`
 
 UI there is Jinja2, HTMX, Tailwind, and DaisyUI. Do not port the Next.js dashboard from this Watch repo. Port the **scoring semantics**.
 
