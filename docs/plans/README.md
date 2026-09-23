@@ -44,7 +44,7 @@ Update this table when each spec lands on [codetricity/oppvera](https://github.c
 
 ## Reading order
 
-1. [01-product-split.md](01-product-split.md) — what Watch, Probe, and the Studio lab each own, and the labeling rules.
+1. [01-product-split.md](01-product-split.md) — what Watch, Probe, and the Studio lab each own, labeling, and **cost control**.
 2. [02-watch-desktop-electron.md](02-watch-desktop-electron.md) — macOS Electron shell, Camoufox, no Docker.
 3. [03-oppvera-probe-ingest-api.md](03-oppvera-probe-ingest-api.md) — device pairing and `POST /api/probe/captures`.
 4. [04-oppvera-probe-persistence.md](04-oppvera-probe-persistence.md) — save Probe API passes into the same tables.
@@ -92,7 +92,9 @@ Build in this order. Specs can be written together; code should not skip ahead.
 
 - Never upload browser cookies or Playwright `storageState`.
 - Never label an API result as ChatGPT.com, Claude.ai, Gemini, or Perplexity.
-- Scoring LLM keys live only on Oppvera, never in the desktop app.
+- **Capture cost:** Watch = user's consumer subscriptions; Probe = Oppvera API keys with planned quotas and model caps.
+- **Analysis cost:** Oppvera's keys only, on hosted Oppvera; prefer a cost-efficient analysis model (e.g. Gemini Flash Lite class), not frontier capture models.
+- Early rollout: visibility features may be **free to users** while Oppkey controls hosted LLM spend.
 - Do not reuse `POST /api/uploads` (that path ingests campaign content files).
 - Keep the MIT copyright notice for Craig Oda and Aryaman Todkar / OneGlanse.
 - Push this repo to `oppvera` only. Do not push to the `oneglanse` remote.

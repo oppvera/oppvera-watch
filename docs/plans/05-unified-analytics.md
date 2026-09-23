@@ -110,11 +110,19 @@ If the model names the target brand inside `competitors`, drop that competitor b
 
 One analysis per capture. Re-analyze replaces the row (or inserts a new row and marks the previous `superseded` — replacing is enough for v1).
 
-## Which LLM key
+## Which LLM key and model (analysis only)
 
-Use Oppvera's existing server env, not a key from Watch. Prefer the OpenRouter client already used by Probe (`openrouter_api_key` in `oppvera/config.py`) with a small JSON-capable model. If OpenRouter is unset, skip scoring, set `status=failed`, and leave the capture visible as unscored. Do not read `OPENAI_API_KEY` from the Watch desktop.
+Analysis is **hosted on Oppvera**, never on the Watch desktop. Use Oppvera's server env (OpenRouter via `openrouter_api_key` in `oppvera/config.py`), not keys from Watch.
 
-Record token use with the existing `UsageEvent` pattern if that is a one-line call. Category: `visibility_analysis`. Do not block ingest on this.
+**Default analysis model:** pick a **cost-efficient** JSON-capable model suitable for structured GEO scoring—not a frontier capture model. **Under consideration:** OpenRouter `google/gemini-3.1-flash-lite` (or the current Oppvera development default if already configured). Store the model id on each `visibility_analyses` row.
+
+**Why cheaper analysis is OK:** the LLM only reads **already captured** `raw_answer` text and applies the rubric in `analysisPrompt`. It does not need to match the user's ChatGPT tier or the Probe API model that produced the answer. Quality comes from the prompt and caps, not from re-querying GPT-4 class models on every row.
+
+**Probe capture vs analysis:** Probe may use Serper-grounded OpenRouter or native web-search APIs with **quotas and allowlists** (see [01-product-split.md](01-product-split.md)). Analysis is a separate line item in `UsageEvent` (`visibility_analysis`). If OpenRouter is unset, skip scoring, set `status=failed`, and leave the capture visible as unscored.
+
+During early rollout Oppvera may **not charge users** for visibility features; Oppkey still controls analysis spend via model choice and limits.
+
+Record token use with the existing `UsageEvent` pattern. Do not block ingest on scoring latency.
 
 ## When scoring runs
 

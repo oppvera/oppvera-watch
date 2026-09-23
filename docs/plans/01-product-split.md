@@ -18,6 +18,22 @@ Browser automation in the cloud is fragile, operationally heavy, and can conflic
 
 Probe stays hosted because it calls provider APIs (OpenRouter, Anthropic web search, OpenAI web search) with **Oppvera's server keys**. That path does not drive consumer chat UIs and does not need the user's ChatGPT password.
 
+## Cost control and early pricing
+
+During initial rollout, **Oppvera is not charging users** for this visibility loop. Cost still matters for Oppkey (hosted API spend) and for agencies (how they run captures).
+
+| Layer | Who pays | Model / tier choice |
+| --- | --- | --- |
+| **Watch capture** (desktop) | The user, via **their own consumer subscriptions** (ChatGPT Plus/Pro, Claude Pro, etc.) | Whatever models and tiers those **product UIs** expose to their signed-in account—including frontier options Oppvera does not fund. Watch does not call OpenAI/Anthropic **API keys** for capture. |
+| **Probe capture** (hosted) | Oppkey on **Oppvera server keys** | Subject to **quotas, rate limits, and model allowlists** on Oppvera (e.g. development defaults, not unlimited frontier API). Expensive models may be disabled or capped before general partner use. |
+| **GEO analysis** (hosted) | Oppkey on **Oppvera server keys** | Runs on **captured text only**, not on re-asking ChatGPT. Use a **cost-efficient** analysis model by default (e.g. OpenRouter `google/gemini-3.1-flash-lite` under consideration)—not the same model used for capture and not required to match the user's ChatGPT tier. |
+
+**Why desktop Watch is a cost-control lever:** agencies that want **frontier answers from ChatGPT.com or Claude.ai** can use **their own accounts** on their own machines without Oppvera paying for cloud browser farms or unlimited API capture. Oppvera still scores the synced text with Oppvera's analysis budget.
+
+**Product copy must stay honest:** Watch is not "free ChatGPT API." It is "you log into the consumer app you already pay for; we capture what that UI shows."
+
+See also [05-unified-analytics.md](05-unified-analytics.md) (analysis model) and [02-watch-desktop-electron.md](02-watch-desktop-electron.md) (no analysis keys on desktop).
+
 ## What each side owns
 
 ### Watch (this repository)
@@ -31,9 +47,12 @@ Owns:
 Does not own:
 
 - GEO scores, dashboards, or sentiment charts
-- OpenAI or Anthropic **analysis** API keys
+- OpenAI or Anthropic **analysis** API keys (Oppvera scores after sync)
+- Oppvera-funded **API capture** quotas (that is Probe on the server)
 - Docker, Postgres, Redis, ClickHouse, BullMQ, or a local Next.js app
 - Marketing claims that an answer is "what every user sees"
+
+**Cost:** capture spend is the user's **consumer product subscriptions**, not Oppvera's API bill. They choose tier and model availability by which account they sign into (e.g. ChatGPT Plus vs free).
 
 ### Probe (Oppvera `app/lab/demo`)
 
@@ -47,6 +66,8 @@ Owns:
 Today Probe is Development-gated, stores the last payload in memory (`store.probe_payloads`), and headlines "mentioned in N of M answers." After this work, each pass is a `visibility_captures` row with `source=probe`. "Mentioned in N of M" becomes a rollup of `presence.mentioned` on those rows, not a second scoring system.
 
 Triggering a Probe API run can stay on the Development page. **Reading** stored Probe analytics can appear on a campaign page for partners, with honest labels.
+
+**Cost:** Probe runs on **Oppvera's keys**. Plan for **usage limits** (per workspace, campaign, or month) and for **restricting the most expensive API models** in partner-facing flows while early access is free to users. Development defaults may stay cheap; production partner Probe may not offer every frontier slug in `probe.py` model lists without an explicit upgrade path later.
 
 ### Studio lab
 

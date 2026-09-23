@@ -39,6 +39,8 @@ Start this work **after** hosted Oppvera passes Phase A in [README.md](README.md
 
 The desktop app is a capture client. It is not the current Next.js product.
 
+**Cost control:** users sign into **consumer** ChatGPT, Claude, Gemini, Perplexity, and Google with accounts **they pay for**. The UI they get (including frontier models their plan allows) is between them and the provider. Watch only automates that UI and uploads answer text. It does not consume Oppvera's OpenRouter or OpenAI budget for capture. GEO scoring after sync uses Oppvera's hosted analysis model, not keys on the laptop.
+
 ### Screens
 
 1. **Pair** — Oppvera base URL (default `https://oppvera.com`, overridable for local `http://127.0.0.1:8000`) and a pairing code. On success, store the device token in the macOS keychain (or, for v1, an app-scoped file outside the repo with mode `0600`). Show organization, company, and campaign name returned by the API.
