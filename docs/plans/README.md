@@ -17,8 +17,8 @@ You can ship and test the **hosted loop first** without changing this Watch repo
 
 1. **Done** — Persist Probe into `visibility_captures` ([04](04-oppvera-probe-persistence.md), Oppvera v0.89.0, [PR #268](https://github.com/codetricity/oppvera/pull/268)).
 2. **Done** — Shared scorer and campaign visibility UI ([05](05-unified-analytics.md), v0.90.0, [PR #269](https://github.com/codetricity/oppvera/pull/269)).
-3. **In progress** — Campaign query-bank Probe runs ([06](06-query-bank-and-runs.md)). Until then, validate with Development Probe and the visibility page (restart server, confirm scores).
-4. Optional: email reports ([08](08-email-reports-and-nudges.md)) using Probe-only data; Watch banner shows "never" until a desktop sync exists.
+3. **Done** — Campaign query-bank Probe runs ([06](06-query-bank-and-runs.md), v0.91.0, [PR #270](https://github.com/codetricity/oppvera/pull/270)).
+4. **Next (optional)** — Email reports ([08](08-email-reports-and-nudges.md)) with Probe teaser and Watch stale banner. Or start **Phase B** ([03](03-oppvera-probe-ingest-api.md) + [02](02-watch-desktop-electron.md)).
 
 At the end of Phase A you have a working product surface: **API-labeled captures, GEO metrics, and HTMX dashboards** on real campaign data. That is the milestone to demo and iterate on before desktop work.
 
@@ -29,7 +29,7 @@ At the end of Phase A you have a working product surface: **API-labeled captures
 7. UI-vs-API compare and mixed-source filters once both `source=probe` and `source=watch` rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
 8. **Windows** Electron build (planned desktop v2, after macOS v1) — same stack; see [02](02-watch-desktop-electron.md).
 
-Do not start Phase B until Phase A meets the acceptance criteria in docs 04 and 05 (Probe persists, scores, and the campaign visibility UI renders). **04 and 05 are merged on Oppvera `main`.** Phase B can start after **06** (and optional **08**) if you want partner-grade bank runs and email nudges first.
+Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06 on Oppvera `main`. **04, 05, and 06 are merged.** Optional **08** (email) can ship before or in parallel with Phase B. Phase B starts with Watch ingest ([03](03-oppvera-probe-ingest-api.md)) and the macOS app ([02](02-watch-desktop-electron.md)).
 
 ## Implementation status
 
@@ -37,11 +37,19 @@ Do not start Phase B until Phase A meets the acceptance criteria in docs 04 and 
 | --- | --- | --- |
 | [04](04-oppvera-probe-persistence.md) | **Done** — v0.89.0 | [PR #268](https://github.com/codetricity/oppvera/pull/268) |
 | [05](05-unified-analytics.md) | **Done** — v0.90.0 | [PR #269](https://github.com/codetricity/oppvera/pull/269) |
-| [06](06-query-bank-and-runs.md) | **In progress** | Campaign query-bank Probe runs |
-| [03](03-oppvera-probe-ingest-api.md), [08](08-email-reports-and-nudges.md) | Not started | Phase A (08 optional before Phase B) |
-| [02](02-watch-desktop-electron.md) | N/A (Watch repo) | Phase B |
+| [06](06-query-bank-and-runs.md) | **Done** — v0.91.0 | [PR #270](https://github.com/codetricity/oppvera/pull/270) |
+| [08](08-email-reports-and-nudges.md) | Not started | Phase A optional; **next recommended** before or beside Phase B |
+| [03](03-oppvera-probe-ingest-api.md) | Not started | Phase B — Watch ingest |
+| [02](02-watch-desktop-electron.md) | N/A (Watch repo) | Phase B — macOS desktop v1 |
 
 Update this table when each spec lands on [codetricity/oppvera](https://github.com/codetricity/oppvera) `main`.
+
+## What's next
+
+Phase A core (04–06) is **complete** on Oppvera **v0.91.0**. Pick one:
+
+1. **[08](08-email-reports-and-nudges.md)** (Oppvera) — monthly Probe summary emails and optional Watch stale banner. Good for consultant habit before desktop exists.
+2. **[03](03-oppvera-probe-ingest-api.md)** then **[02](02-watch-desktop-electron.md)** (Oppvera + this repo) — pairing, ingest API, macOS Watch. Enables UI-vs-API compare on the visibility page (Phase B step 7).
 
 ## Reading order
 
@@ -62,8 +70,8 @@ Build in this order. Specs can be written together; code should not skip ahead.
 
 1. ~~Oppvera schema and Probe persistence~~ **Done** ([04](04-oppvera-probe-persistence.md), [PR #268](https://github.com/codetricity/oppvera/pull/268)).
 2. ~~Shared scorer and campaign analytics UI on Probe-only data~~ **Done** ([05](05-unified-analytics.md), [PR #269](https://github.com/codetricity/oppvera/pull/269)).
-3. **In progress** — Campaign query-bank Probe runs ([06](06-query-bank-and-runs.md)).
-4. Campaign email reports with Probe teaser ([08](08-email-reports-and-nudges.md)); Watch stale banner is fine with no UI captures yet.
+3. ~~Campaign query-bank Probe runs~~ **Done** ([06](06-query-bank-and-runs.md), [PR #270](https://github.com/codetricity/oppvera/pull/270)).
+4. **Next** — Campaign email reports ([08](08-email-reports-and-nudges.md)) *or* begin Phase B ([03](03-oppvera-probe-ingest-api.md) then [02](02-watch-desktop-electron.md)).
 
 **Phase B (Watch repo + Oppvera ingest):**
 

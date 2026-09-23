@@ -2,9 +2,9 @@
 
 ## Status
 
-**In progress** on [codetricity/oppvera](https://github.com/codetricity/oppvera) (`app/lab/demo/`). Depends on **v0.90.0** ([doc 05](05-unified-analytics.md), [PR #269](https://github.com/codetricity/oppvera/pull/269)).
+**Implemented** in the Oppvera demo **v0.91.0**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-23 via [PR #270](https://github.com/codetricity/oppvera/pull/270).
 
-Watch ingest ([03](03-oppvera-probe-ingest-api.md)) is not required for this spec.
+Campaign **query bank** Probe runs set `query_item_id` on each pass. Development Probe may still use ad-hoc questions with null ids. Watch bank download remains [03-oppvera-probe-ingest-api.md](03-oppvera-probe-ingest-api.md) (Phase B).
 
 Watch and Probe must ask the **same frozen buyer questions** when the goal is a history chart. Oppvera already stores that list as the campaign `queries.md`, loaded into `QueryItem` (`query_id`, `text`, `expected_strength`, `category`, `source_url`) in `oppvera/schemas.py`.
 
