@@ -142,7 +142,7 @@ Run in a background thread the same way Probe jobs already use threads. Do not a
 
 ## Dashboard (HTMX, campaign scoped)
 
-Add a campaign page, for example `/workspace/campaigns/{id}/visibility`, linked from the campaign nav. Partner-visible if they can read the campaign. Do not hide **stored** rows behind the Development menu. Starting a new Probe API run can stay on `/admin/dev/probe`.
+Add a campaign page, for example `/workspace/campaigns/{id}/visibility`, linked from the campaign nav. Partner-visible if they can read the campaign. Do not hide **stored** rows behind admin-only menus. Starting a new Probe API run is on `/workspace/campaigns/{id}/probe` (permission **`probe.run`**).
 
 ### Default view
 
@@ -205,7 +205,7 @@ For each `query_item_id`, plot or table `mentioned` and `geo_score` over `captur
 
 ## Probe page rollup
 
-On `/admin/dev/probe`, "mentioned in N of M" counts `visibility_analyses.mentioned` for passes in that run. Until analysis is `ready`, show the interim `brand_named` line from doc 04.
+On **campaign Probe** (`/workspace/campaigns/{id}/probe`), "mentioned in N of M" counts `visibility_analyses.mentioned` for passes in that run. Until analysis is `ready`, show the interim `brand_named` line from doc 04.
 
 ## Tests
 

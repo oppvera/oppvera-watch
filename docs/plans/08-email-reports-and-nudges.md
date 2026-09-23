@@ -99,7 +99,7 @@ This block drives opens. Build from the **latest Probe run** or rolling window (
 If there is **no Probe data** in the window:
 
 ```text
-No Probe captures yet for this period. Run Probe from Oppvera (Development) or schedule a bank run when available.
+No Probe captures yet for this period. Run Probe from the campaign Probe page in Studio, or run the campaign query bank when available.
 ```
 
 Still send the email if reports are enabled so Watch-only users get the banner; Probe section can be short.

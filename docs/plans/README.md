@@ -39,7 +39,7 @@ Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06
 | [05](05-unified-analytics.md) | **Done** — v0.90.0 | [PR #269](https://github.com/codetricity/oppvera/pull/269) |
 | [06](06-query-bank-and-runs.md) | **Done** — v0.91.0 | [PR #270](https://github.com/codetricity/oppvera/pull/270) |
 | [08](08-email-reports-and-nudges.md) | Not started | Phase A optional; **next recommended** before or beside Phase B |
-| [03](03-oppvera-probe-ingest-api.md) | Not started | Phase B — Watch ingest |
+| [03](03-oppvera-probe-ingest-api.md) | **Partial** | `GET …/query-bank` (session); pairing, device Bearer, `POST /captures` — Phase B |
 | [02](02-watch-desktop-electron.md) | N/A (Watch repo) | Phase B — macOS desktop v1 |
 
 Update this table when each spec lands on [codetricity/oppvera](https://github.com/codetricity/oppvera) `main`.

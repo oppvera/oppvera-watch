@@ -230,7 +230,9 @@ Drop `favicon`. It is optional display chrome and often a data URL.
 
 ## Router placement
 
-Add `oppvera/routers/probe_api.py` and include it from `oppvera/app.py` next to the other `/api` routers. Keep the Development HTML routes in `routers/ui.py` (`/admin/dev/probe`). The HTML page should later read the tables, but that change is doc 04, not this file's first PR if you need a seam: API and HTML can land together if that is smaller.
+`oppvera/routers/probe_api.py` is included from `oppvera/app.py`. **Partial:** `GET /api/probe/campaigns/{id}/query-bank` exists with **session** auth only; device Bearer auth, pairing, and `POST /captures` are still this spec.
+
+Human Probe UI lives in `oppvera/routers/probe_ui.py` at `/workspace/campaigns/{id}/probe`. Legacy `/admin/dev/probe` in `routers/ui.py` redirects to that path. Watch never calls those HTML routes.
 
 ## Tests
 

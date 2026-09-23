@@ -63,11 +63,11 @@ Owns:
 - Persistence of every Probe pass and every Watch upload
 - The shared scorer and the analytics UI
 
-Today Probe is Development-gated, stores the last payload in memory (`store.probe_payloads`), and headlines "mentioned in N of M answers." After this work, each pass is a `visibility_captures` row with `source=probe`. "Mentioned in N of M" becomes a rollup of `presence.mentioned` on those rows, not a second scoring system.
+Probe runs live on the **Studio campaign Probe** page (`/workspace/campaigns/{id}/probe`, `probe.run` permission). Each pass is a `visibility_captures` row with `source=probe`. "Mentioned in N of M" is a rollup of `presence.mentioned` on those rows (or interim `brand_named` until analysis is ready), not a second scoring system. Legacy `/admin/dev/probe` URLs redirect to the campaign Probe path.
 
-Triggering a Probe API run can stay on the Development page. **Reading** stored Probe analytics can appear on a campaign page for partners, with honest labels.
+**Reading** stored analytics is on `/workspace/campaigns/{id}/visibility` for partners who can read the campaign, with honest labels. **Starting** a run is on campaign Probe, not a hidden Development menu.
 
-**Cost:** Probe runs on **Oppvera's keys**. Plan for **usage limits** (per workspace, campaign, or month) and for **restricting the most expensive API models** in partner-facing flows while early access is free to users. Development defaults may stay cheap; production partner Probe may not offer every frontier slug in `probe.py` model lists without an explicit upgrade path later.
+**Cost:** Probe runs on **Oppvera's keys**. Plan for **usage limits** (per workspace, campaign, or month) and for **restricting the most expensive API models** in partner-facing flows while early access is free to users. Standard model tiers stay the default; frontier slugs in `probe.py` require org **`probe-frontier`** (and platform roles where applicable), not an implicit unlimited API path.
 
 ### Studio lab
 
@@ -141,7 +141,7 @@ Probe's existing strings in `oppvera/probe.py` (`PROVIDER_LABELS`, `PROVIDER_ATT
 3. On the Mac, Watch exchanges the code for a device token, downloads the query bank, and asks the user to sign into the consumer products they care about.
 4. Watch runs those prompts in the browser and uploads answer text and citations only.
 5. Oppvera scores the rows with its own LLM key and shows history next to the campaign.
-6. Optionally, someone on the Development Probe page runs the same questions through APIs. Those rows land in the same charts, labeled as API.
+6. Optionally, someone on **campaign Probe** runs the same questions through APIs (including "Run the campaign query bank"). Those rows land in the same charts, labeled as API.
 7. On a schedule the user chooses, hosted Oppvera emails a **campaign report** with a **Probe summary** (mention rate, scores, last run) so the message is worth opening. If the campaign enables **Oppvera Watch reminders**, the **top** of that email says they have not run Watch recently; manual Watch on the Mac remains their action. See [08-email-reports-and-nudges.md](08-email-reports-and-nudges.md). Later emails may add site-change analysis and lab highlights; v1 starts with Probe plus the Watch banner.
 
 The user does not install Docker, does not paste an OpenAI analysis key into Watch, and does not manage ClickHouse.

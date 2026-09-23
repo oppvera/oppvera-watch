@@ -4,7 +4,7 @@
 
 **Implemented** in the Oppvera demo **v0.91.0**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-23 via [PR #270](https://github.com/codetricity/oppvera/pull/270).
 
-Campaign **query bank** Probe runs set `query_item_id` on each pass. Development Probe may still use ad-hoc questions with null ids. Watch bank download remains [03-oppvera-probe-ingest-api.md](03-oppvera-probe-ingest-api.md) (Phase B).
+Campaign **query bank** Probe runs set `query_item_id` on each pass. Ad-hoc questions on campaign Probe may still use null ids. Watch bank download remains [03-oppvera-probe-ingest-api.md](03-oppvera-probe-ingest-api.md) (Phase B; query-bank GET exists with session auth; device token is still open).
 
 Watch and Probe must ask the **same frozen buyer questions** when the goal is a history chart. Oppvera already stores that list as the campaign `queries.md`, loaded into `QueryItem` (`query_id`, `text`, `expected_strength`, `category`, `source_url`) in `oppvera/schemas.py`.
 
@@ -23,13 +23,13 @@ Watch downloads this list from `GET /api/probe/campaigns/{id}/query-bank` (doc [
 
 ## Probe and the bank
 
-The Development Probe page may still offer a short default of up to three generated questions (`default_questions` in `probe.py`) for engineers. Those rows persist with `query_item_id=null`.
+Campaign Probe may still offer a short default of up to three generated questions (`default_questions` in `probe.py`). Those rows persist with `query_item_id=null`.
 
 Partner-facing history and the compare view only include rows whose `query_item_id` is in the campaign bank (including archived ids).
 
 Add a control on the Probe page: "Run the campaign query bank" which sends each bank question through the selected API providers and sets `query_item_id` on each pass. That is the path that lines up with Watch. Cap a single run at the current bank length, and keep the existing timeout behavior in `probe.py`.
 
-Do not raise the Development default from three questions just to imitate a full bank. The bank runner is the explicit action.
+Do not raise the ad-hoc default from three questions just to imitate a full bank. The bank runner is the explicit action.
 
 ## What a run is
 

@@ -9,7 +9,7 @@ Code lives under [`app/lab/demo/`](https://github.com/codetricity/oppvera/tree/m
 - `oppvera/visibility/models.py` — `visibility_runs`, `visibility_captures`, `visibility_analyses`
 - `oppvera/visibility/persistence.py` — Probe write path, SQL read after restart
 - `oppvera/probe.py` — persist each `ProbePass`
-- `oppvera/routers/ui.py` — Development Probe loads history from SQL
+- `oppvera/routers/probe_ui.py` — Studio campaign Probe loads history from SQL (`/workspace/campaigns/{id}/probe`; legacy `/admin/dev/probe` redirects)
 - `tests/test_visibility_probe_persistence.py`
 
 At merge, `schedule_visibility_analysis` was a no-op hook. Scoring and the campaign visibility UI are [05-unified-analytics.md](05-unified-analytics.md).
@@ -102,7 +102,7 @@ In `run_probe` and `run_probe_panel` (`oppvera/probe.py`):
 | `timestamp` | `captured_at` |
 | `error` | `error` |
 
-4. Set `query_item_id` when the question text was loaded from the campaign bank. Free-typed Development questions may have a null id; analytics still stores them but partner charts key off ids (doc [06](06-query-bank-and-runs.md)).
+4. Set `query_item_id` when the question text was loaded from the campaign bank. Ad-hoc questions on campaign Probe (e.g. `default_questions`) may have a null id; analytics still stores them but partner charts key off ids (doc [06](06-query-bank-and-runs.md)).
 5. After insert, schedule analysis the same way Watch ingest does.
 
 Do not delete `ProbePass`. It can remain the in-memory dataclass. Persistence is a side effect of a completed pass.
@@ -110,7 +110,7 @@ Do not delete `ProbePass`. It can remain the in-memory dataclass. Persistence is
 ## Read path
 
 - `save_probe_payload` / `latest_probe_payload` may stay for one release as a cache, but the Probe HTML page must render from SQL when rows exist so a restart does not blank history.
-- `GET /admin/dev/probe` shows the latest run for the active campaign from `visibility_runs`, not only the process-local dict.
+- `GET /workspace/campaigns/{id}/probe` shows the latest run for that campaign from `visibility_runs`, not only the process-local dict.
 - Campaign analytics (doc 05) queries the same tables. Do not fork a second "probe_results" table.
 
 ## Mentioned-in-N-of-M
@@ -134,7 +134,7 @@ Resolve workspace, company, and campaign the same way other campaign-scoped writ
 - Do not write captures into `documents` / `chunks` or call `ingest_corpus`.
 - Do not put Probe rows into Trace Evidence. The existing probe plan says Probe stays out of Trace; this store is separate.
 - Do not require the desktop app for Probe to persist.
-- Do not drop Development gating on **starting** an API run unless product explicitly opens it. Storing rows is what changes.
+- **Starting** an API run requires **`probe.run`** and campaign access (Studio Probe). Storing rows is what changed persistence; Watch ingest (doc 03) is a separate Bearer-token path.
 
 ## Tests
 
@@ -144,4 +144,4 @@ Resolve workspace, company, and campaign the same way other campaign-scoped writ
 
 ## Acceptance
 
-Run Probe once in the Development UI, restart `uvicorn`, and the same answers are still listed for that campaign with provider labels that say API, not ChatGPT.com.
+Run Probe once from **campaign Probe** in Studio, restart `uvicorn`, and the same answers are still listed for that campaign with provider labels that say API, not ChatGPT.com.
