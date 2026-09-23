@@ -8,7 +8,7 @@ Oppvera measures two different things today, and this split keeps them separate 
 | --- | --- | --- |
 | Studio / Brand Security (Simulation Lab) | Whether **owned content** is findable in a controlled retrieval lab | Hosted Oppvera (FastAPI) |
 | Oppvera Probe | What **LLM and web-search APIs** answer for a buyer question | Hosted Oppvera |
-| Oppvera Watch | What **consumer product UIs** render for a signed-in user | macOS desktop |
+| Oppvera Watch | What **consumer product UIs** render for a signed-in user | Desktop: **macOS first**, **Windows planned** |
 
 Watch and Probe both produce answer text and citations. Those rows go into one store and one scoring pipeline. The lab stays a diagnosis of the client's content. A campaign page may show a dated capture **beside** a lab diagnosis. The lab does not predict ChatGPT.
 
@@ -131,7 +131,8 @@ This repo is an educational fork. Git remote `oneglanse` points at `aryamantodka
 
 ## Out of scope for v1
 
-- Windows and Linux desktop builds
+- **Windows desktop** (planned after macOS v1; same Electron architecture)
+- **Linux desktop** (no planned date)
 - Cloud or VPS browser workers
 - Residential proxies
 - Scheduled unattended Watch runs that the user does not start

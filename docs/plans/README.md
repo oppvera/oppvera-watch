@@ -1,6 +1,6 @@
 # Oppvera Watch + Probe analytics specs
 
-These documents are the build brief for splitting **Oppvera Watch** into a small macOS desktop capture client and putting **GEO analytics** in the hosted Oppvera app. Watch and **Oppvera Probe** share one capture store and one scoring pipeline.
+These documents are the build brief for splitting **Oppvera Watch** into a desktop capture client (**macOS first**, **Windows planned**) and putting **GEO analytics** in the hosted Oppvera app. Watch and **Oppvera Probe** share one capture store and one scoring pipeline.
 
 They live in this Watch repo so a Cursor session can implement either side:
 
@@ -25,8 +25,9 @@ At the end of Phase A you have a working product surface: **API-labeled captures
 **Phase B — Oppvera Watch (this repo):**
 
 5. Watch ingest API and device pairing ([03](03-oppvera-probe-ingest-api.md)).
-6. Electron capture client ([02](02-watch-desktop-electron.md)).
+6. **macOS** Electron capture client ([02](02-watch-desktop-electron.md)) — desktop v1.
 7. UI-vs-API compare and mixed-source filters once both `source=probe` and `source=watch` rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
+8. **Windows** Electron build (planned desktop v2, after macOS v1) — same stack; see [02](02-watch-desktop-electron.md).
 
 Do not start Phase B until Phase A meets the acceptance criteria in docs 04 and 05 (Probe persists, scores, and the campaign visibility UI renders). The desktop app only adds rows to tables and screens that already work for Probe.
 
@@ -66,13 +67,14 @@ Build in this order. Specs can be written together; code should not skip ahead.
 **Phase B (Watch repo + Oppvera ingest):**
 
 5. Watch ingest API and device pairing ([03](03-oppvera-probe-ingest-api.md)).
-6. Electron client ([02](02-watch-desktop-electron.md)).
+6. **macOS** Electron client ([02](02-watch-desktop-electron.md)) — desktop v1.
 7. UI-vs-API compare and full mixed-source filters once Watch rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
+8. **Windows** Electron client (desktop v2, after macOS v1) — [02](02-watch-desktop-electron.md).
 
 ## Objectives
 
 1. Isolate Watch capture so it runs without Redis or Postgres.
-2. Ship a macOS Electron shell.
+2. Ship a **macOS** Electron shell (desktop v1); **Windows** build planned as v2 with the same stack.
 3. Bundle or first-launch Camoufox (Python + Firefox).
 4. Device pairing tokens for Watch.
 5. Shared `visibility_captures` store in Oppvera.
@@ -82,7 +84,7 @@ Build in this order. Specs can be written together; code should not skip ahead.
 9. Studio lab diagnosis shown beside a dated Watch or Probe capture.
 10. Offline queue on the Mac until Oppvera is reachable.
 11. Strip Docker and analysis-key setup from the Watch README once the desktop path exists.
-12. Windows is a non-goal for v1.
+12. **Desktop v1:** macOS only. **Desktop v2 (planned):** Windows, same Electron stack after macOS capture and sync are proven. Linux desktop is not on the roadmap unless product asks.
 13. No routine merges from OneGlanse. The `oneglanse` git remote is fetch-only for optional capture-engine patches.
 14. Hosted email reports summarize Probe state and nudge stale Oppvera Watch runs when enabled ([08](08-email-reports-and-nudges.md)).
 

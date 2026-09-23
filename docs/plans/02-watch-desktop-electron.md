@@ -6,9 +6,32 @@ Use **Electron** for v1. Do not start with Tauri.
 
 The capture engine is already Node plus Python Camoufox plus Firefox (`apps/agent/src/lib/browser/camoufox.ts`). Installer size is dominated by that browser, not by the shell. Electron keeps the agent in TypeScript, runs it as a child process, and packages a `.dmg` with electron-builder. Tauri would still need the same Node or Python sidecar and adds Rust for a team that is not maintaining Rust.
 
-Tauri 2 can be revisited later for a thinner native window. Windows is out of scope until macOS capture and sync work.
+Tauri 2 can be revisited later for a thinner native window on either OS.
 
-## When to build
+## Platform roadmap
+
+| Phase | Platform | Scope |
+| --- | --- | --- |
+| **Desktop v1** | **macOS** (Apple silicon first; Intel optional) | Ship `.dmg`, prove capture + Oppvera sync |
+| **Desktop v2** | **Windows** | Same Electron app and capture code; add Windows installer (e.g. NSIS via electron-builder) and Camoufox/Python packaging for Windows |
+| **Not planned** | Linux desktop | No target date; would need separate Camoufox support validation |
+
+macOS is the **first** desktop release, not the only one. Do not block v1 design choices that would prevent a later Windows build.
+
+## Electron and future Windows
+
+**Electron does not lock you out of Windows.** It is the common path for one codebase on macOS and Windows (VS Code, Slack, etc.). The same main process, renderer, and child capture runner can ship on both; electron-builder supports `.dmg` and `.exe`/MSI.
+
+What is **platform-specific** (for every shell, including Tauri):
+
+- **Camoufox + Python + Firefox** install paths and first-run setup (today macOS-focused in `camoufox.ts`)
+- **Session storage** location (Application Support vs `%APPDATA%`)
+- **Code signing / notarization** (Apple) vs Authenticode (Windows)
+- Provider login flows may behave differently on Windows (still consumer UIs, not API)
+
+Choosing Electron for macOS v1 **helps** Windows v2: you keep one TypeScript UI and one Node capture process. The extra work for Windows is mostly **packaging and testing Camoufox on Windows**, not rewriting the app in another desktop framework.
+
+Avoid macOS-only APIs in the capture path without an abstraction (keychain vs credential file is fine for v1 with a Windows equivalent later).
 
 Start this work **after** hosted Oppvera passes Phase A in [README.md](README.md): Probe persists, analytics scores, and the campaign visibility UI work in the Oppvera repo alone. The desktop app only adds `source=watch` rows and pairing; it is not required to validate Probe or GEO dashboards.
 
