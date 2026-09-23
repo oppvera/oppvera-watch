@@ -1,8 +1,22 @@
 # Persist Oppvera Probe into the shared capture store
 
+## Status
+
+**Implemented** in the Oppvera demo **v0.89.0**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-22 via [PR #268](https://github.com/codetricity/oppvera/pull/268).
+
+Code lives under [`app/lab/demo/`](https://github.com/codetricity/oppvera/tree/main/app/lab/demo):
+
+- `oppvera/visibility/models.py` — `visibility_runs`, `visibility_captures`, `visibility_analyses`
+- `oppvera/visibility/persistence.py` — Probe write path, SQL read after restart
+- `oppvera/probe.py` — persist each `ProbePass`
+- `oppvera/routers/ui.py` — Development Probe loads history from SQL
+- `tests/test_visibility_probe_persistence.py`
+
+At merge, `schedule_visibility_analysis` was a no-op hook. Scoring and the campaign visibility UI are [05-unified-analytics.md](05-unified-analytics.md).
+
 Implement in:
 
-`/Users/craig/Documents/Oppkey/geo/generative-engine-optimization/app/lab/demo/`
+[`https://github.com/codetricity/oppvera`](https://github.com/codetricity/oppvera) → `app/lab/demo/` (local clone path may differ)
 
 Probe today (`oppvera/probe.py`) runs up to three questions through OpenRouter, Anthropic web search, and OpenAI web search. Results sit in memory (`store.probe_payloads`, keyed by `report_scope_key()`). Restarting the process drops them. Watch cannot share that store.
 

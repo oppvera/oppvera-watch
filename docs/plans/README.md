@@ -5,7 +5,7 @@ These documents are the build brief for splitting **Oppvera Watch** into a small
 They live in this Watch repo so a Cursor session can implement either side:
 
 - Watch desktop: this repository (`oppvera/oppvera-watch`)
-- Probe ingest, persistence, and analytics: `/Users/craig/Documents/Oppkey/geo/generative-engine-optimization` (`app/lab/demo/`)
+- Probe ingest, persistence, and analytics: [codetricity/oppvera](https://github.com/codetricity/oppvera) → `app/lab/demo/`
 
 Do not treat these files as shipped product docs for marketers. The public install guide stays in the root [README](../../README.md) until the desktop app replaces Docker.
 
@@ -15,7 +15,7 @@ You can ship and test the **hosted loop first** without changing this Watch repo
 
 **Phase A — Oppvera only (Probe + analytics + UI):**
 
-1. Persist Probe into `visibility_captures` ([04](04-oppvera-probe-persistence.md)).
+1. **Done** — Persist Probe into `visibility_captures` ([04](04-oppvera-probe-persistence.md), Oppvera v0.89.0, [PR #268](https://github.com/codetricity/oppvera/pull/268)).
 2. Run the shared scorer and the campaign visibility pages ([05](05-unified-analytics.md)).
 3. Run Probe from Development (or a campaign bank run when built), restart the server, confirm history and scores in the UI.
 4. Optional: email reports ([08](08-email-reports-and-nudges.md)) using Probe-only data; Watch banner shows "never" until a desktop sync exists.
@@ -29,6 +29,17 @@ At the end of Phase A you have a working product surface: **API-labeled captures
 7. UI-vs-API compare and mixed-source filters once both `source=probe` and `source=watch` rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
 
 Do not start Phase B until Phase A meets the acceptance criteria in docs 04 and 05 (Probe persists, scores, and the campaign visibility UI renders). The desktop app only adds rows to tables and screens that already work for Probe.
+
+## Implementation status
+
+| Doc | Oppvera (`app/lab/demo`) | Notes |
+| --- | --- | --- |
+| [04](04-oppvera-probe-persistence.md) | **Done** — v0.89.0 | [PR #268](https://github.com/codetricity/oppvera/pull/268) on `main` |
+| [05](05-unified-analytics.md) | Not merged | Scorer + campaign visibility UI |
+| [03](03-oppvera-probe-ingest-api.md), [06](06-query-bank-and-runs.md), [08](08-email-reports-and-nudges.md) | Not started | Phase A |
+| [02](02-watch-desktop-electron.md) | N/A (Watch repo) | Phase B |
+
+Update this table when each spec lands on [codetricity/oppvera](https://github.com/codetricity/oppvera) `main`.
 
 ## Reading order
 
@@ -47,7 +58,7 @@ Build in this order. Specs can be written together; code should not skip ahead.
 
 **Phase A (Oppvera repo — test without desktop):**
 
-1. Oppvera schema and Probe persistence ([04](04-oppvera-probe-persistence.md)).
+1. ~~Oppvera schema and Probe persistence~~ **Done** ([04](04-oppvera-probe-persistence.md), [PR #268](https://github.com/codetricity/oppvera/pull/268)).
 2. Shared scorer and campaign analytics UI on **Probe-only** data ([05](05-unified-analytics.md)). Filters for Watch can show empty states until Phase B.
 3. Campaign query-bank Probe runs when ready ([06](06-query-bank-and-runs.md)), still on hosted Oppvera.
 4. Campaign email reports with Probe teaser ([08](08-email-reports-and-nudges.md)); Watch stale banner is fine with no UI captures yet.
