@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'"
+    />
+    <title>Oppvera Watch</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <p class="eyebrow">Oppvera Watch</p>
+        <h1>Capture signed-in answers</h1>
+      </div>
+      <p class="hint" id="python-status"></p>
+    </header>
+    <nav class="tabs">
+      <button data-tab="pair" class="active">Pair</button>
+      <button data-tab="bank">Query bank</button>
+      <button data-tab="providers">Providers</button>
+      <button data-tab="run">Run</button>
+      <button data-tab="sync">Sync</button>
+    </nav>
+    <main>
+      <section id="pair" class="panel active">
+        <p>
+          Paste a pairing code from the campaign Visibility page in Oppvera.
+          Scores stay on Oppvera. This app only records consumer UI answers.
+        </p>
+        <label>Oppvera base URL
+          <input id="apiBase" value="https://oppvera.com" />
+        </label>
+        <label>Pairing code
+          <input id="code" placeholder="K7QM-2P9L" />
+        </label>
+        <label>This Mac
+          <input id="label" placeholder="Craig's Mac" />
+        </label>
+        <button id="pairBtn" class="primary">Pair</button>
+        <button id="unpairBtn" class="ghost">Unpair</button>
+        <p id="pairStatus" class="status"></p>
+      </section>
+      <section id="bank" class="panel">
+        <p>Questions come from the campaign query bank. Edit them in Oppvera, not here.</p>
+        <button id="refreshBank" class="ghost">Refresh bank</button>
+        <ul id="queryList"></ul>
+      </section>
+      <section id="providers" class="panel">
+        <p>
+          Sign in with the consumer accounts you already pay for. Google covers
+          Gemini and AI Overview. Camoufox opens a visible Firefox window.
+        </p>
+        <p id="pythonHelp" class="status"></p>
+        <button id="setupPython" class="ghost">Set up Camoufox Python</button>
+        <div id="providerList"></div>
+      </section>
+      <section id="run" class="panel">
+        <p>Runs one provider at a time. Results upload as Watch captures, not API Probe rows.</p>
+        <div id="runProviders"></div>
+        <button id="startRun" class="primary">Run query bank</button>
+        <ul id="runProgress"></ul>
+      </section>
+      <section id="sync" class="panel">
+        <p>Offline captures stay on this Mac until Oppvera is reachable. Retrying does not duplicate rows.</p>
+        <p id="syncStatus" class="status"></p>
+        <button id="syncNow" class="primary">Sync now</button>
+      </section>
+    </main>
+    <p id="error" class="error"></p>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -9,6 +9,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
+		},
+		"./auth": {
+			"types": "./dist/agent/auth.d.ts",
+			"default": "./dist/agent/auth.js"
 		}
 	},
 	"scripts": {

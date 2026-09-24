@@ -49,7 +49,7 @@ const AgentEnvSchema = z.object({
 	THORDATA_PROXY_API_URL: z.string().trim().url().optional(),
 	REDIS_HOST: z.string().trim().default("redis"),
 	REDIS_PORT: asNumber(6379).default(6379),
-	REDIS_PASSWORD: z.string().min(1),
+	REDIS_PASSWORD: z.string().trim().default("unused"),
 });
 
 export const env = AgentEnvSchema.parse(process.env);

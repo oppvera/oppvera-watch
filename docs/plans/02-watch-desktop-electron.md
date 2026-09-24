@@ -1,5 +1,9 @@
 # Oppvera Watch desktop (macOS, Electron)
 
+## Status
+
+**In progress** in this repo: `apps/desktop` (Electron shell, pairing, Camoufox connect, query-bank run, capture sync). Hosted ingest is Oppvera v0.95.0.
+
 ## Recommendation
 
 Use **Electron** for v1. Do not start with Tauri.
@@ -154,12 +158,10 @@ Target: `electron-builder` `mac` `dmg`, arch `arm64` first (Apple silicon). Inte
 ## Local development of the shell
 
 ```bash
-cd apps/desktop
-pnpm install
-pnpm dev
+pnpm --filter @oppvera/watch-desktop dev
 ```
 
-Point the base URL at a local Oppvera (`http://127.0.0.1:8000`) from [03](03-oppvera-probe-ingest-api.md). Until that API exists, a fixture JSON file of the query bank and a mock POST that writes to `captures/` is enough to test the runner.
+Point the base URL at hosted Oppvera or local `http://127.0.0.1:8000`. Pairing and `POST /api/probe/captures` are live on Oppvera **v0.95.0**.
 
 ## Acceptance
 

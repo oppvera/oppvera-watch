@@ -48,6 +48,9 @@ coverage/
 
 .oneglanse-storage/
 
+# Desktop Electron output
+apps/desktop/release/
+
 # Improvement reports
 improvements/
 

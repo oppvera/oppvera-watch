@@ -1,0 +1,49 @@
+{
+	"name": "@oppvera/watch-desktop",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Oppvera Watch macOS capture client",
+	"main": "dist/main.js",
+	"scripts": {
+		"build:deps": "pnpm --filter @oneglanse/types --filter @oneglanse/errors --filter @oneglanse/utils --filter @oneglanse/services --filter @oneglanse/agent build",
+		"build": "tsc -p tsconfig.json && node scripts/copy-renderer.mjs",
+		"dev": "pnpm build:deps && pnpm build && electron .",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test": "tsx --test src/ingest.test.ts",
+		"dist:mac": "pnpm build && electron-builder --mac --arm64"
+	},
+	"dependencies": {
+		"@oneglanse/agent": "workspace:*",
+		"@oneglanse/services": "workspace:*",
+		"@oneglanse/types": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.3",
+		"electron": "^37.3.1",
+		"electron-builder": "^26.0.12",
+		"tsx": "^4.20.5",
+		"typescript": "^5.9.3"
+	},
+	"build": {
+		"appId": "com.oppvera.watch",
+		"productName": "Oppvera Watch",
+		"directories": {
+			"output": "release"
+		},
+		"files": [
+			"dist/**/*",
+			"package.json"
+		],
+		"mac": {
+			"category": "public.app-category.productivity",
+			"identity": null,
+			"target": [
+				{
+					"target": "dmg",
+					"arch": ["arm64"]
+				}
+			]
+		}
+	}
+}
