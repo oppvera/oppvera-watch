@@ -1,153 +1,101 @@
 ![Oppvera Watch — AI Visibility Monitoring](docs/images/oppvera-watch-logo.png)
 
-# Oppvera Watch — Learn GEO & AI Visibility
+# Oppvera Watch
 
-**Oppvera Watch** is an open-source educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). It is built for **marketing staff and GEO learners** who want hands-on practice—not only for developers.
+**Oppvera Watch** is a **macOS capture client** for [Oppvera](https://oppvera.com). It opens real consumer AI product UIs (ChatGPT, Claude, Gemini, Perplexity, Google AI Overview), records what those pages render, and uploads **answer text and citations** to a paired campaign.
 
-Run it on your Mac or Windows laptop to learn **GEO (Generative Engine Optimization)** and **AI visibility**: how brands show up inside ChatGPT, Gemini, Perplexity, Claude, and Google AI Overview.
+GEO scores, dashboards, and query-bank editing live on **hosted Oppvera**. This app does not score, chart, or store analytics locally.
 
-This repo is meant for learners, instructors, and marketing teams experimenting with real AI product surfaces.
+The capture engine started as an educational fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). The product no longer is OneGlanse: there is no local Next.js dashboard, no Docker stack, and no analysis API key on the laptop.
 
-## What you'll learn
+## What Watch is (and is not)
 
-- **GEO measurement on real UIs.** The app opens provider chat interfaces in a browser (like a signed-in user), not model APIs. You see citations, source cards, and ranking the way users do.
-- **How visibility scores are built.** Captured answers are analyzed with your own OpenAI or Anthropic key. Scores combine visibility, rank, sentiment, and recommendation for a workspace brand.
-- **Self-hosted data flow.** Background databases run on your machine via Docker Desktop. Responses and analytics stay local.
+| | Watch (this repo) | Probe (hosted Oppvera) |
+| --- | --- | --- |
+| Observes | Consumer **product UIs** in a browser on your Mac | **LLM / web-search APIs** with Oppvera's keys |
+| Runs on | Your Mac (Electron + Camoufox/Firefox) | Oppvera servers |
+| You pay for capture | Your ChatGPT / Claude / etc. **consumer** plan | Oppvera's API budget |
+| Scoring | After sync, on Oppvera | On Oppvera |
+| Cookies / logins | Stay on this Mac. Never uploaded. | None (API, not your ChatGPT password) |
 
-Upstream [OneGlanse docs](https://docs.oneglanse.com) explain the full product. This fork adds educational framing, marketing-friendly install guides, and removes upstream PostHog telemetry.
+Watch is not "free ChatGPT API." You sign into the consumer apps you already use. Watch automates those UIs and syncs the rendered answers.
+
+A third surface, **Studio / Brand Security**, diagnoses owned content in Oppvera's retrieval lab. It does not predict ChatGPT.
 
 ## Status
 
-- **Synced with upstream:** This branch includes the latest [OneGlanse](https://github.com/aryamantodkar/oneglanse) changes through the current merge base, plus Oppvera Watch tweaks (branding, telemetry removal, install notes).
-- **Install is still manual.** You need Node.js, pnpm, Docker Desktop, and Git today. We plan to simplify this for marketing users over time—expect rough edges for now.
+- **Desktop v1 (in progress):** macOS Electron app in `apps/desktop`. Pairing, provider Connect, query-bank runs (signed-out, signed-in, or both), Stop, and sync to Oppvera `source=watch`.
+- **Hosted ingest:** Oppvera pairing tokens and `POST /api/probe/captures` (Oppvera v0.95.0+).
+- **Windows:** planned as desktop v2. Linux desktop is not on the roadmap.
+- **Not the install path:** `pnpm local`, Docker Desktop, Postgres/Redis/ClickHouse, Better Auth, and `OPENAI_API_KEY` on this machine. Those remain in the monorepo as leftover OneGlanse packages. Do not follow them to run Watch.
 
-## Quick start
+This repo does **not** routinely merge OneGlanse. The `oneglanse` git remote is fetch-only for optional capture-engine patches.
 
-**New to local setup?** Start with the full walkthrough: **[Local setup guide](docs/local-setup.mdx)** (written for marketing and GEO learners).
+## How it works
 
-### Before you run anything
+1. In Oppvera, open the campaign **Visibility** page and generate a pairing code.
+2. In Watch, paste the Oppvera base URL (`https://oppvera.com` or local `http://127.0.0.1:8000`) and the code. Pairing survives app restarts until you unpair.
+3. Install **Python 3.10+** from [python.org](https://www.python.org/downloads/) if needed, then use **Set up Camoufox Python** once so Firefox can launch.
+4. On **Providers**, Connect (or skip Connect for signed-out-only runs). Disconnect removes the saved login on this Mac. It does not reset Oppvera.
+5. **Query bank** is read-only here. Add or edit questions in Oppvera.
+6. On **Run**, pick providers and session mode (signed-out, signed-in, or both). Stop kills the capture process, including Firefox.
+7. **Sync** uploads pending captures. Oppvera scores them. Watch never asks for an analysis key.
 
-Install these once on your Mac or Windows laptop:
+Packaged `.dmg` users do not need Node.js. Developers running from git do (see below).
 
+## Requirements
 
-| Tool                                                          | Why you need it                                                |
-| ------------------------------------------------------------- | -------------------------------------------------------------- |
-| [Node.js 20+](docs/local-setup.mdx#install-nodejs)            | Runs the app                                                   |
-| [pnpm 10+](docs/local-setup.mdx#install-pnpm)                 | Installs the project                                           |
-| [Docker Desktop](docs/local-setup.mdx#install-docker-desktop) | Runs background databases—**keep it open while using the app** |
-| [Git](docs/local-setup.mdx#install-git)                       | Downloads the project                                          |
-| OpenAI or Anthropic API key                                   | Scores captured AI answers                                     |
+| Who | Need |
+| --- | --- |
+| Anyone capturing | macOS, Python 3.10+, network, an Oppvera campaign + pairing code |
+| Signed-in captures | Your consumer logins in the Camoufox window |
+| Developers from this repo | Node.js 20+, pnpm 10+, Git |
 
+Docker is not required for Watch.
 
-**WSL is not supported** for provider sign-in. Use native macOS or native Windows.
+Automated access to provider UIs may conflict with those products' terms. You start the run and see the browser. Compliance is your responsibility.
 
-### Run the app
-
-After the tools above are installed and Docker Desktop is running:
+## Develop from this repo
 
 ```bash
 git clone https://github.com/oppvera/oppvera-watch.git
 cd oppvera-watch
-cp .env.example .env
+pnpm install
+pnpm dev:desktop
 ```
 
-Add one analysis LLM key to `.env` (open the file in any text editor):
+Pair against `https://oppvera.com` or a local Oppvera (`http://127.0.0.1:8000`).
+
+pnpm 10 skips dependency build scripts by default. This repo allowlists Electron. If the app crashes with a missing `Electron Framework.framework`, run `pnpm dev:desktop` again so it can re-download the binary.
+
+More detail: [apps/desktop/README.md](apps/desktop/README.md).
+
+### Package a dmg
 
 ```bash
-OPENAI_API_KEY=sk-...
+pnpm --filter @oppvera/watch-desktop dist:mac
 ```
 
-or:
+v1 packaging is ad-hoc signed arm64. Capture still expects this git checkout (Camoufox + agent). A fully standalone installer is later work.
 
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
-ANALYSIS_LLM_PROVIDER=claude
-```
+## Data that stays on the Mac
 
-Then:
+Under `~/Library/Application Support/Oppvera Watch/`:
 
-```bash
-pnpm local
-```
+- Playwright session files (cookies / `storageState`)
+- Device pairing token
+- Unsynced capture files
 
-Open [http://localhost:3000](http://localhost:3000). First run can take several minutes.
+Watch uploads question text, answer markdown, citations, provider labels, and ids. It **never** uploads cookies, `storageState`, passwords, or localStorage dumps.
 
-1. Sign up with email (local to your machine).
-2. Connect providers at `/providers`. Finish sign-in in the browser window that opens, then close it.
-3. Create a workspace with the brand you want to score.
-4. Add prompts and start a run from Workspace Runs.
-
-Do not commit `.env`; it contains API keys.
-
-## How it works
-
-It does **not** call ChatGPT / Gemini / Claude / Perplexity model APIs to collect answers.
-
-It opens the real product UIs in a browser and captures what renders: the answer, citations, source cards, and brand order. After capture, it uses **your** OpenAI or Anthropic key to score those answers for GEO visibility, sentiment, rank, and recommendation.
-
-GEO scores are about the **workspace brand** (name + domain), not whether the model answered the prompt. If the brand is absent, scores stay empty even when ChatGPT returned a full response.
-
-Scoring uses the prompt in [`packages/services/src/analysis/analysisPrompt.ts`](packages/services/src/analysis/analysisPrompt.ts). Upstream details: [OneGlanse README](https://github.com/aryamantodkar/oneglanse).
-
-## Technical stack (optional)
-
-For developers who want the underlying architecture:
-
-
-| Layer             | Technology                              |
-| ----------------- | --------------------------------------- |
-| Web app           | Next.js 15, React 19, tRPC, Drizzle ORM |
-| Browser worker    | Camoufox, Playwright, BullMQ            |
-| Analytics DB      | ClickHouse                              |
-| Relational DB     | PostgreSQL 16                           |
-| Queue             | Redis                                   |
-| Auth              | Better Auth                             |
-| Response analysis | OpenAI or Anthropic (your key)          |
-
-## Data security
-
-Oppvera Watch does not send your data to Oppvera, OneGlanse, or PostHog. Login sessions, captured answers, and scores are stored in databases on your computer (via Docker Desktop).
-
-You will still use the internet for:
-
-- Signing in to ChatGPT, Gemini, and other providers during setup
-- Sending captured answer text to **your** OpenAI or Anthropic account for scoring (using the API key you add to `.env`)
-
-Those calls go from your machine to the provider you chose—not through Oppvera Watch servers.
-
-## Telemetry
-
-**This fork removes telemetry.** Oppvera Watch does not phone home to OneGlanse, PostHog or Better Auth.
-
-Upstream OneGlanse sends anonymous hashed user-activity events to PostHog on signup and each authenticated page load. 
-
-**Better Auth (login/signup library):** Better Auth telemetry is **disabled by default** and must be explicitly turned on (`BETTER_AUTH_TELEMETRY=1` or `telemetry: { enabled: true }`). This repo does not enable that, and the installed version also requires a telemetry endpoint URL that we do not configure—so **no Better Auth telemetry is sent in a normal Oppvera Watch install.** 
-
-## Origin and attribution
-
-Oppvera Watch is a modification of **[OneGlanse](https://github.com/aryamantodkar/oneglanse)** by [Aryaman Todkar](https://github.com/aryamantodkar).
-
-- Original project: [github.com/aryamantodkar/oneglanse](https://github.com/aryamantodkar/oneglanse)
-- Original site: [oneglanse.com](https://oneglanse.com)
-- Original docs: [docs.oneglanse.com](https://docs.oneglanse.com)
-
-Most architecture, capture logic, and scoring design come from OneGlanse. Oppvera Watch changes focus on educational use, local install, and privacy (no PostHog).
-
-**Trademark note:** "OneGlanse" is the upstream project name. Oppvera Watch is an independent educational fork—not an official OneGlanse release. Please say so in courses and videos.
+The desktop app does not send product analytics to PostHog or OneGlanse. Scoring happens on Oppvera after you sync. Hosted Oppvera may use its own analytics independently of this Mac app.
 
 ## Documentation
 
-Oppvera Watch setup starts in this README. Deeper reference material lives in `docs/`:
+- [apps/desktop/README.md](apps/desktop/README.md) — desktop develop and package notes
+- [docs/plans/README.md](docs/plans/README.md) — Watch / Probe / Studio split and implementation specs (not a consumer install guide)
 
-- [Introduction](docs/introduction.mdx) — what GEO measurement means in this tool
-- [Getting started](docs/getting-started.mdx) — start here for marketing / GEO learners
-- [Local setup](docs/local-setup.mdx) — **full install guide** (Node.js, pnpm, Docker Desktop, Git on Mac and Windows)
-- [Self-hosted setup](docs/self-hosted-setup.mdx) — advanced VPS path; not recommended for classroom use
-- [Environment variables](docs/environment-variables.mdx)
-- [Troubleshooting](docs/troubleshooting.mdx)
-- [API reference](docs/api-reference.mdx)
-
-These pages are Mintlify source inherited from upstream OneGlanse and rebranded for Oppvera Watch. Install and onboarding here may change over time. The browsable upstream version is at [docs.oneglanse.com](https://docs.oneglanse.com).
+Mintlify pages under `docs/*.mdx` (local Docker setup, self-host, environment variables) describe the **old** OneGlanse-style stack. They are not how you run Oppvera Watch today.
 
 ## License
 
@@ -155,26 +103,17 @@ This project is **MIT licensed**. See [LICENSE](LICENSE).
 
 ### Using this in educational videos
 
-The MIT license allows you to:
+The MIT license allows you to run, screen-record, fork, and use the software in free or paid courses. You must keep the MIT copyright notice and credit:
 
-- Run, screen-record, and demonstrate the software
-- Fork, modify, and share copies
-- Use it in free or paid courses
+- Original capture project: **Aryaman Todkar / OneGlanse**
+- This fork and desktop product: **Craig Oda / Oppvera Watch**
 
-You must:
-
-- Keep the MIT copyright and permission notice (in `LICENSE` and substantial copies)
-- Credit the original author: **Aryaman Todkar / OneGlanse**
-- Credit this fork's modifications: **Craig Oda / Oppvera Watch**
-
-Suggested on-screen or description credit:
+Suggested credit:
 
 > Based on [OneGlanse](https://github.com/aryamantodkar/oneglanse) (MIT) and [Oppvera Watch](https://github.com/oppvera/oppvera-watch) (MIT).
 
+**Trademark note:** "OneGlanse" is the upstream project name. Oppvera Watch is an independent fork and is not an official OneGlanse release.
+
 ### Dependencies
 
-Application code is MIT. Third-party packages (Camoufox, Playwright, Next.js, ClickHouse client, etc.) ship under their own licenses in `node_modules` and upstream notices. OneGlanse's README lists major dependency acknowledgements.
-
-## Acknowledgements
-
-OneGlanse builds on Camoufox, Playwright, BullMQ, ClickHouse, Drizzle, Better Auth, and Turndown. See the [original project README](https://github.com/aryamantodkar/oneglanse) for those licenses.
+Application code is MIT. Camoufox, Playwright, Electron, and other packages ship under their own licenses. OneGlanse's README lists major acknowledgements for the shared capture stack.
