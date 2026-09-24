@@ -43,6 +43,11 @@ function render(state) {
   if (!pythonBusy) {
     text("pythonHelp", state.python && state.python.message);
   }
+  const pythonReady = Boolean(state.python && state.python.ok);
+  const setupPython = document.getElementById("setupPython");
+  const retryPython = document.getElementById("retryPython");
+  if (setupPython) setupPython.hidden = pythonReady || pythonBusy;
+  if (retryPython) retryPython.hidden = !pythonReady || pythonBusy;
   text("pairError", state.lastError || "");
   setError(state.lastError || "");
   const pairedCard = document.getElementById("pairedCard");
@@ -92,29 +97,37 @@ function render(state) {
         provider.error ? ` · ${provider.error}` : ""
       }</span>`;
       const actions = document.createElement("div");
-      const connect = document.createElement("button");
-      connect.className = "ghost";
-      connect.type = "button";
-      connect.textContent = "Connect";
-      connect.onclick = async () => {
-        setError("");
-        setBusy(connect, true, "Connect", "Opening sign-in…");
-        try {
-          await api.connectProvider(provider.id);
-        } catch (error) {
-          setError(error.message || String(error));
-        } finally {
-          setBusy(connect, false, "Connect", "Opening sign-in…");
-        }
-      };
-      const reset = document.createElement("button");
-      reset.className = "ghost";
-      reset.type = "button";
-      reset.textContent = "Reset";
-      reset.onclick = async () => {
-        await api.resetProvider(provider.id);
-      };
-      actions.append(connect, reset);
+      const action = document.createElement("button");
+      action.className = "ghost";
+      action.type = "button";
+      if (provider.connected) {
+        action.textContent = "Disconnect";
+        action.onclick = async () => {
+          setError("");
+          setBusy(action, true, "Disconnect", "Disconnecting…");
+          try {
+            await api.resetProvider(provider.id);
+          } catch (error) {
+            setError(error.message || String(error));
+          } finally {
+            setBusy(action, false, "Disconnect", "Disconnecting…");
+          }
+        };
+      } else {
+        action.textContent = "Connect";
+        action.onclick = async () => {
+          setError("");
+          setBusy(action, true, "Connect", "Opening sign-in…");
+          try {
+            await api.connectProvider(provider.id);
+          } catch (error) {
+            setError(error.message || String(error));
+          } finally {
+            setBusy(action, false, "Connect", "Opening sign-in…");
+          }
+        };
+      }
+      actions.append(action);
       row.appendChild(actions);
       providerList.appendChild(row);
     }
@@ -171,6 +184,8 @@ function render(state) {
   );
   const startRun = document.getElementById("startRun");
   if (startRun) startRun.disabled = state.running || !state.paired;
+  const stopRun = document.getElementById("stopRun");
+  if (stopRun) stopRun.disabled = !state.running;
 }
 
 window.renderWatch = render;
@@ -243,26 +258,41 @@ try {
     refreshBank.onclick = () =>
       api && api.refreshBank().catch((error) => setError(error.message));
   }
+  async function runPythonSetup(button, idleLabel) {
+    if (!api || typeof api.setupPython !== "function") return;
+    pythonBusy = true;
+    setError("");
+    text("pythonHelp", "Setting up Camoufox Python… this can take a few minutes.");
+    const setupPython = document.getElementById("setupPython");
+    const retryPython = document.getElementById("retryPython");
+    if (setupPython) setupPython.hidden = true;
+    if (retryPython) retryPython.hidden = true;
+    if (button && button.id === "setupPython") {
+      button.hidden = false;
+      setBusy(button, true, idleLabel, "Setting up…");
+    }
+    try {
+      const state = await api.setupPython();
+      pythonBusy = false;
+      render(state);
+    } catch (error) {
+      setError(error.message || String(error));
+      text("pythonHelp", error.message || String(error));
+    } finally {
+      pythonBusy = false;
+      if (button && button.id === "setupPython") {
+        setBusy(button, false, idleLabel, "Setting up…");
+      }
+    }
+  }
+
   const setupPython = document.getElementById("setupPython");
   if (setupPython) {
-    setupPython.onclick = async () => {
-      if (!api || typeof api.setupPython !== "function") return;
-      pythonBusy = true;
-      setError("");
-      text("pythonHelp", "Setting up Camoufox Python… this can take a few minutes.");
-      setBusy(setupPython, true, "Set up Camoufox Python", "Setting up…");
-      try {
-        const state = await api.setupPython();
-        pythonBusy = false;
-        render(state);
-      } catch (error) {
-        setError(error.message || String(error));
-        text("pythonHelp", error.message || String(error));
-      } finally {
-        pythonBusy = false;
-        setBusy(setupPython, false, "Set up Camoufox Python", "Setting up…");
-      }
-    };
+    setupPython.onclick = () => runPythonSetup(setupPython, "Set up Camoufox Python");
+  }
+  const retryPython = document.getElementById("retryPython");
+  if (retryPython) {
+    retryPython.onclick = () => runPythonSetup(retryPython, "Set up Camoufox Python");
   }
   const syncNow = document.getElementById("syncNow");
   if (syncNow) {
@@ -294,6 +324,20 @@ try {
         setError(error.message || String(error));
       } finally {
         setBusy(startRun, false, "Run query bank", "Running…");
+      }
+    };
+  }
+  const stopRun = document.getElementById("stopRun");
+  if (stopRun) {
+    stopRun.onclick = async () => {
+      if (!api || typeof api.stopRun !== "function") return;
+      setBusy(stopRun, true, "Stop", "Stopping…");
+      try {
+        await api.stopRun();
+      } catch (error) {
+        setError(error.message || String(error));
+      } finally {
+        setBusy(stopRun, false, "Stop", "Stopping…");
       }
     };
   }

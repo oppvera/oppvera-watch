@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("watch", {
 		providers: string[];
 		sessionMode: "signed-in" | "signed-out" | "both";
 	}) => ipcRenderer.invoke("watch:startRun", payload),
+	stopRun: () => ipcRenderer.invoke("watch:stopRun"),
 	syncNow: () => ipcRenderer.invoke("watch:syncNow"),
 	setupPython: () => ipcRenderer.invoke("watch:setupPython"),
 	onState: (handler: (state: unknown) => void) => {

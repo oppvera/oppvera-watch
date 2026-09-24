@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("watch", {
 	resetProvider: (provider) =>
 		ipcRenderer.invoke("watch:resetProvider", provider),
 	startRun: (payload) => ipcRenderer.invoke("watch:startRun", payload),
+	stopRun: () => ipcRenderer.invoke("watch:stopRun"),
 	syncNow: () => ipcRenderer.invoke("watch:syncNow"),
 	setupPython: () => ipcRenderer.invoke("watch:setupPython"),
 	onState: (handler) => {

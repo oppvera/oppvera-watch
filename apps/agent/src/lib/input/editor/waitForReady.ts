@@ -3,6 +3,10 @@ import { resolveAppMode, type Provider } from "@oneglanse/types";
 import { logger, PROVIDER_EDITOR_SELECTORS } from "@oneglanse/utils";
 import type { Locator, Page } from "playwright";
 import { env } from "../../../env.js";
+import {
+	chatgptRequiresLogin,
+	dismissChatgptAuthModal,
+} from "../../../core/providers/chatgpt/lib/dismissAuthModal.js";
 import { detectBotPage } from "../response/detectBotPage.js";
 import {
 	type EditorCandidate,
@@ -93,6 +97,9 @@ export async function waitForEditorReady(
 	provider: Provider,
 ): Promise<Locator> {
 	await waitForInitialDomSettle(page);
+	if (provider === "chatgpt") {
+		await dismissChatgptAuthModal(page, { waitForAppearanceMs: 0 });
+	}
 
 	const start = Date.now();
 	const primarySelector = PROVIDER_EDITOR_SELECTORS[provider]?.[0];
@@ -118,6 +125,9 @@ export async function waitForEditorReady(
 
 		if (!input) {
 			polls += 1;
+			if (provider === "chatgpt" && polls % 5 === 0) {
+				await dismissChatgptAuthModal(page, { waitForAppearanceMs: 0 });
+			}
 			// Skip bot/login detection in local mode — the user may be on an OAuth
 			// page (accounts.google.com etc.) intentionally. Firing detectBotPage
 			// there misclassifies it as a session error and triggers a browser restart.
@@ -136,6 +146,11 @@ export async function waitForEditorReady(
 	// user may legitimately be on an OAuth page.
 	if (!isLocalMode) {
 		await detectBotPage(page, provider);
+	}
+	if (provider === "chatgpt" && (await chatgptRequiresLogin(page))) {
+		throw new NotFoundError(
+			"ChatGPT is requiring sign-in. Signed-out capture is not available right now.",
+		);
 	}
 	throw new NotFoundError(`editor for ${provider}`);
 }

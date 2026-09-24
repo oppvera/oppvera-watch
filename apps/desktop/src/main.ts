@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 import { dirname, join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,6 +67,8 @@ let win: BrowserWindow | null = null;
 let queries: QueryBankItem[] = [];
 let runItems: RunItem[] = [];
 let running = false;
+let runCancelled = false;
+let activeChild: ChildProcess | null = null;
 let lastSyncAt: string | null = null;
 let lastError: string | null = null;
 let sessionMode: SessionMode = "both";
@@ -214,7 +216,25 @@ function spawnNode(script: string, args: string[]) {
 		cwd: join(here, ".."),
 		env: childEnv(bin),
 		stdio: ["ignore", "pipe", "pipe"],
+		detached: process.platform !== "win32",
 	});
+}
+
+function killProcessTree(child: ChildProcess | null): void {
+	if (!child?.pid || child.killed) return;
+	const pid = child.pid;
+	console.log("[watch] stopping child", pid);
+	if (process.platform === "win32") {
+		spawnSync("taskkill", ["/pid", String(pid), "/T", "/F"], {
+			stdio: "ignore",
+		});
+		return;
+	}
+	try {
+		process.kill(-pid, "SIGTERM");
+	} catch {
+		child.kill("SIGTERM");
+	}
 }
 
 function waitForChild(
@@ -465,6 +485,7 @@ ipcMain.handle(
 			? ["signed-out", "signed-in"]
 			: [sessionMode];
 	running = true;
+	runCancelled = false;
 	const runId = randomUUID();
 	runItems = selected.flatMap((provider) =>
 		sessions.flatMap((session) => {
@@ -496,6 +517,7 @@ ipcMain.handle(
 	];
 	try {
 		for (const job of jobs) {
+			if (runCancelled) break;
 			const jobPath = join(dirs.root, `job-${job.provider}-${job.session}.json`);
 			writeFileSync(
 				jobPath,
@@ -513,6 +535,7 @@ ipcMain.handle(
 			);
 			await new Promise<void>((resolve, reject) => {
 				const child = spawnNode(join(here, "capture.js"), [jobPath]);
+				activeChild = child;
 				let leftover = "";
 				child.stdout?.on("data", (chunk) => {
 					for (const line of String(chunk).split("\n")) {
@@ -551,29 +574,51 @@ ipcMain.handle(
 					console.error("[watch capture]", String(chunk).trimEnd());
 				});
 				child.on("error", (error) => {
+					if (activeChild === child) activeChild = null;
 					reject(new Error(`Could not start capture: ${error.message}`));
 				});
 				child.on("exit", (code) => {
-					if (code === 0) resolve();
-					else {
-						reject(
-							new Error(
-								(stderr.trim() || leftover.trim()) ||
-									`Capture exited ${code}`,
-							),
-						);
+					if (activeChild === child) activeChild = null;
+					if (runCancelled || code === 0) {
+						resolve();
+						return;
 					}
+					reject(
+						new Error(
+							(stderr.trim() || leftover.trim()) ||
+								`Capture exited ${code}`,
+						),
+					);
 				});
 			});
 		}
-		try {
-			await syncPending();
-		} catch (error) {
-			lastError = error instanceof Error ? error.message : String(error);
+		if (runCancelled) {
+			for (const item of runItems) {
+				if (item.status === "pending" || item.status === "running") {
+					item.status = "failed";
+					item.error = "Stopped";
+				}
+			}
+			lastError = "Run stopped.";
+		} else {
+			try {
+				await syncPending();
+			} catch (error) {
+				lastError = error instanceof Error ? error.message : String(error);
+			}
 		}
 	} finally {
+		activeChild = null;
 		running = false;
+		runCancelled = false;
 		await pushState();
 	}
 	return snapshot();
+});
+
+ipcMain.handle("watch:stopRun", async () => {
+	if (!running) return snapshot();
+	runCancelled = true;
+	killProcessTree(activeChild);
+	return pushState();
 });

@@ -1,5 +1,5 @@
 import { ExternalServiceError } from "@oneglanse/errors";
-import type { Provider } from "@oneglanse/types";
+import { resolveAppMode, type Provider } from "@oneglanse/types";
 import { logger, withTimeout } from "@oneglanse/utils";
 import type { Page } from "playwright";
 import {
@@ -27,8 +27,9 @@ import {
 
 const NETWORKIDLE_TIMEOUT_MS = 3000;
 const SUBMISSION_PHASE_TIMEOUT_MS = 30_000;
-const HOOK_TIMEOUT_MS = 10_000;
-const TYPE_PHASE_TIMEOUT_MS = 25_000;
+const isLocalMode = resolveAppMode(process.env.ONEGLANSE_APP_MODE) === "local";
+const HOOK_TIMEOUT_MS = isLocalMode ? 25_000 : 10_000;
+const TYPE_PHASE_TIMEOUT_MS = isLocalMode ? 90_000 : 25_000;
 const POST_SUBMIT_STABILIZE_TIMEOUT_MS = 12_000;
 const CAMOUFOX_HUMANIZE = true;
 
@@ -225,9 +226,11 @@ export async function askPrompt(
 	await withTimeout(
 		`[${provider}] post-submit stabilization`,
 		async () => {
-			await page
-				.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
-				.catch(() => {});
+			if (!isLocalMode) {
+				await page
+					.waitForLoadState("networkidle", { timeout: NETWORKIDLE_TIMEOUT_MS })
+					.catch(() => {});
+			}
 			await config.afterSubmitHook?.(page);
 		},
 		POST_SUBMIT_STABILIZE_TIMEOUT_MS,
