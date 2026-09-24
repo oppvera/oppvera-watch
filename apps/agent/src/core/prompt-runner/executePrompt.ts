@@ -72,3 +72,11 @@ export async function executePrompt(
 
 	return { response, sources };
 }
+
+/** Navigate back to a clean composer when the provider needs a fresh chat per bank item. */
+export async function prepareNextPrompt(
+	page: Page,
+	provider: Provider,
+): Promise<void> {
+	await PROVIDER_CONFIGS[provider].betweenPromptsHook?.(page);
+}

@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import type { Provider } from "@oneglanse/types";
 import { createAgent } from "@oneglanse/agent/create-agent";
-import { executePrompt } from "@oneglanse/agent/execute-prompt";
+import {
+	executePrompt,
+	prepareNextPrompt,
+} from "@oneglanse/agent/execute-prompt";
 import {
 	captureFromPromptResult,
 	type CaptureSession,
@@ -35,7 +38,9 @@ async function runJob(job: CaptureJob): Promise<void> {
 	ensureSupportDirs();
 	const agent = await createAgent(job.provider);
 	try {
-		for (const query of job.queries) {
+		for (let i = 0; i < job.queries.length; i++) {
+			const query = job.queries[i];
+			if (!query) continue;
 			emit("progress", {
 				query_item_id: query.query_item_id,
 				provider: job.provider,
@@ -74,6 +79,9 @@ async function runJob(job: CaptureJob): Promise<void> {
 					status: "failed",
 					error: error instanceof Error ? error.message : String(error),
 				});
+			}
+			if (i < job.queries.length - 1) {
+				await prepareNextPrompt(agent.page, job.provider);
 			}
 		}
 	} finally {
