@@ -1,5 +1,6 @@
 (() => {
 const api = window.watch;
+let pythonBusy = false;
 
 function text(id, value) {
   const el = document.getElementById(id);
@@ -10,10 +11,22 @@ function setError(message) {
   text("error", message);
 }
 
+function setBusy(button, busy, idleLabel, busyLabel) {
+  if (!button) return;
+  button.disabled = busy;
+  button.classList.toggle("busy", busy);
+  button.setAttribute("aria-busy", busy ? "true" : "false");
+  button.textContent = busy ? busyLabel : idleLabel;
+}
+
+window.setWatchBusy = setBusy;
+
 function render(state) {
   if (!state) return;
   text("python-status", state.python && state.python.message);
-  text("pythonHelp", state.python && state.python.message);
+  if (!pythonBusy) {
+    text("pythonHelp", state.python && state.python.message);
+  }
   text("pairError", state.lastError || "");
   setError(state.lastError || "");
   const pairStatus = document.getElementById("pairStatus");
@@ -127,6 +140,42 @@ try {
     });
   });
 
+  const pairForm = document.getElementById("pairForm");
+  const pairBtn = document.getElementById("pairBtn");
+  if (pairForm && pairForm.dataset.watchBound !== "1") {
+    pairForm.dataset.watchBound = "1";
+    pairForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setError("");
+      text("pairError", "");
+      text("pairStatus", "Pairing…");
+      setBusy(pairBtn, true, "Pair this Mac", "Pairing…");
+      if (!api || typeof api.pair !== "function") {
+        const msg =
+          "Watch preload failed to load. Quit the app fully, then run pnpm --filter @oppvera/watch-desktop dev.";
+        setError(msg);
+        text("pairError", msg);
+        text("pairStatus", msg);
+        setBusy(pairBtn, false, "Pair this Mac", "Pairing…");
+        return;
+      }
+      try {
+        render(await api.pair({
+          apiBase: document.getElementById("apiBase").value,
+          code: document.getElementById("code").value,
+          label: document.getElementById("label").value,
+        }));
+      } catch (error) {
+        const message = error.message || String(error);
+        setError(message);
+        text("pairError", message);
+        text("pairStatus", message);
+      } finally {
+        setBusy(pairBtn, false, "Pair this Mac", "Pairing…");
+      }
+    });
+  }
+
   const unpairBtn = document.getElementById("unpairBtn");
   if (unpairBtn) {
     unpairBtn.onclick = () => api && api.unpair();
@@ -138,8 +187,24 @@ try {
   }
   const setupPython = document.getElementById("setupPython");
   if (setupPython) {
-    setupPython.onclick = () =>
-      api && api.setupPython().catch((error) => setError(error.message));
+    setupPython.onclick = async () => {
+      if (!api || typeof api.setupPython !== "function") return;
+      pythonBusy = true;
+      setError("");
+      text("pythonHelp", "Setting up Camoufox Python… this can take a few minutes.");
+      setBusy(setupPython, true, "Set up Camoufox Python", "Setting up…");
+      try {
+        const state = await api.setupPython();
+        pythonBusy = false;
+        render(state);
+      } catch (error) {
+        setError(error.message || String(error));
+        text("pythonHelp", error.message || String(error));
+      } finally {
+        pythonBusy = false;
+        setBusy(setupPython, false, "Set up Camoufox Python", "Setting up…");
+      }
+    };
   }
   const syncNow = document.getElementById("syncNow");
   if (syncNow) {

@@ -75,6 +75,38 @@ h1 {
   border-color: var(--teal);
 }
 
+.tabs button.busy,
+.primary.busy,
+.ghost.busy {
+  display: inline-flex;
+  align-items: center;
+  cursor: wait;
+  opacity: 0.85;
+}
+
+.tabs button.busy::before,
+.primary.busy::before,
+.ghost.busy::before {
+  content: "";
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+button:disabled {
+  cursor: wait;
+}
+
 .panel {
   display: none;
   margin-top: 20px;

@@ -83,14 +83,29 @@
           if (event) event.preventDefault();
           var status = document.getElementById("pairStatus");
           var error = document.getElementById("pairError");
+          var btn = document.getElementById("pairBtn");
           if (status) status.textContent = "Pairing…";
           if (error) error.textContent = "";
+          if (typeof window.setWatchBusy === "function") {
+            window.setWatchBusy(btn, true, "Pair this Mac", "Pairing…");
+          } else if (btn) {
+            btn.disabled = true;
+            btn.classList.add("busy");
+            btn.textContent = "Pairing…";
+          }
           var api = window.watch;
           if (!api || typeof api.pair !== "function") {
             var msg =
               "Watch preload failed to load. Quit the app fully, then run pnpm --filter @oppvera/watch-desktop dev.";
             if (status) status.textContent = msg;
             if (error) error.textContent = msg;
+            if (typeof window.setWatchBusy === "function") {
+              window.setWatchBusy(btn, false, "Pair this Mac", "Pairing…");
+            } else if (btn) {
+              btn.disabled = false;
+              btn.classList.remove("busy");
+              btn.textContent = "Pair this Mac";
+            }
             return;
           }
           try {
@@ -111,6 +126,14 @@
             var message = err && err.message ? err.message : String(err);
             if (status) status.textContent = message;
             if (error) error.textContent = message;
+          } finally {
+            if (typeof window.setWatchBusy === "function") {
+              window.setWatchBusy(btn, false, "Pair this Mac", "Pairing…");
+            } else if (btn) {
+              btn.disabled = false;
+              btn.classList.remove("busy");
+              btn.textContent = "Pair this Mac";
+            }
           }
         }
         form.addEventListener("submit", pairFromForm);
