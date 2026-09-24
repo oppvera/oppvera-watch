@@ -32,12 +32,12 @@ function isComplete() {
 }
 
 function writePathFile() {
-	writeFileSync(pathFile, platformPath);
+	writeFileSync(pathFile, platformPath, "utf8");
 }
 
 async function main() {
 	if (isComplete()) {
-		if (!existsSync(pathFile)) writePathFile();
+		writePathFile();
 		return;
 	}
 
