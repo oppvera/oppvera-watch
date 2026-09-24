@@ -26,3 +26,12 @@ pnpm --filter @oppvera/watch-desktop dist:mac
 ```
 
 v1 packaging is ad-hoc signed arm64. Capture still expects this git checkout (Camoufox + agent). A fully standalone installer is later work.
+
+## Versioning
+
+The app version is **semver in `apps/desktop/package.json`** (`version` field). The UI footer and macOS About panel read that value at launch. Bump the version when you ship a new desktop release, then build the dmg:
+
+```bash
+# edit "version" in apps/desktop/package.json, then:
+pnpm --filter @oppvera/watch-desktop dist:mac
+```
