@@ -58,6 +58,8 @@ type AppState = {
 	running: boolean;
 	pendingSync: number;
 	lastSyncAt: string | null;
+	lastSyncUploaded: number | null;
+	lastSyncFailed: number | null;
 	lastError: string | null;
 	python: { ok: boolean; message: string };
 	sessionMode: SessionMode;
@@ -70,6 +72,8 @@ let running = false;
 let runCancelled = false;
 let activeChild: ChildProcess | null = null;
 let lastSyncAt: string | null = null;
+let lastSyncUploaded: number | null = null;
+let lastSyncFailed: number | null = null;
 let lastError: string | null = null;
 let sessionMode: SessionMode = "both";
 let python = {
@@ -141,6 +145,8 @@ async function snapshot(): Promise<AppState> {
 		running,
 		pendingSync: pendingCaptures().length,
 		lastSyncAt,
+		lastSyncUploaded,
+		lastSyncFailed,
 		lastError,
 		python: { ok: python.ok, message: python.message },
 		sessionMode,
@@ -287,6 +293,8 @@ async function syncPending(): Promise<void> {
 		list.push(capture);
 		byRun.set(capture.run_id, list);
 	}
+	let uploaded = 0;
+	let failed = 0;
 	for (const [runId, captures] of byRun) {
 		const chunk = captures.slice(0, 50);
 		const results = await uploadCaptures(device, runId, chunk);
@@ -298,14 +306,18 @@ async function syncPending(): Promise<void> {
 			if (result.status === "created" || result.status === "exists") {
 				match.sync_status = "synced";
 				match.capture_id = result.capture_id;
+				uploaded += 1;
 			} else {
 				match.sync_status = "failed";
 				match.sync_error = result.status;
+				failed += 1;
 			}
 			writeCapture(match);
 		}
 	}
 	lastSyncAt = new Date().toISOString();
+	lastSyncUploaded = pending.length === 0 ? 0 : uploaded;
+	lastSyncFailed = pending.length === 0 ? 0 : failed;
 	lastError = null;
 }
 
