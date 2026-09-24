@@ -52,6 +52,24 @@ h1 {
   color: var(--muted);
 }
 
+#campaignHint {
+  margin: 6px 0 0;
+}
+
+.paired-title {
+  margin: 0 0 8px;
+  font-weight: 650;
+}
+
+#pairedCard {
+  margin-bottom: 16px;
+}
+
+#pairSetup[hidden],
+#pairedCard[hidden] {
+  display: none;
+}
+
 .tabs {
   display: flex;
   gap: 8px;
@@ -145,6 +163,32 @@ input {
   display: grid;
   gap: 10px;
   margin: 16px 0;
+}
+
+#sessionMode {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 16px 0 8px;
+  padding: 12px 16px;
+}
+
+#sessionMode legend {
+  padding: 0 6px;
+  font-weight: 600;
+}
+
+#sessionMode label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 16px 4px 0;
+  font-weight: 500;
+}
+
+#sessionMode input {
+  display: inline;
+  width: auto;
+  margin: 0;
 }
 
 .row {

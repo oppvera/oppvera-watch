@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Provider, Source } from "@oneglanse/types";
 
+export type CaptureSession = "signed-in" | "signed-out";
+export type SessionMode = CaptureSession | "both";
+
 export const WATCH_PROVIDER_LABELS: Record<Provider, string> = {
 	chatgpt: "ChatGPT.com (signed-in session)",
 	claude: "Claude.ai (signed-in session)",
@@ -8,6 +11,23 @@ export const WATCH_PROVIDER_LABELS: Record<Provider, string> = {
 	perplexity: "Perplexity (signed-in session)",
 	"ai-overview": "Google AI Overview (signed-in Google session)",
 };
+
+export const WATCH_SIGNED_OUT_LABELS: Record<Provider, string> = {
+	chatgpt: "ChatGPT.com (signed-out)",
+	claude: "Claude.ai (signed-out)",
+	gemini: "Gemini (signed-out)",
+	perplexity: "Perplexity (signed-out)",
+	"ai-overview": "Google AI Overview (signed-out)",
+};
+
+export function watchProviderLabel(
+	provider: Provider,
+	session: CaptureSession = "signed-in",
+): string {
+	return session === "signed-out"
+		? WATCH_SIGNED_OUT_LABELS[provider]
+		: WATCH_PROVIDER_LABELS[provider];
+}
 
 const FORBIDDEN_KEYS = new Set([
 	"cookies",
@@ -76,14 +96,16 @@ export function captureFromPromptResult(input: {
 	question: string;
 	response: string;
 	sources: Source[];
+	session?: CaptureSession;
 	captured_at?: string;
 }): StoredCapture {
+	const session = input.session ?? "signed-in";
 	const payload: StoredCapture = {
 		client_capture_id: randomUUID(),
 		run_id: input.run_id,
 		source: "watch",
 		provider_id: input.provider,
-		provider_label: WATCH_PROVIDER_LABELS[input.provider],
+		provider_label: watchProviderLabel(input.provider, session),
 		grounded: null,
 		query_item_id: input.query_item_id,
 		question: input.question,

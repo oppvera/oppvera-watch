@@ -10,7 +10,10 @@ contextBridge.exposeInMainWorld("watch", {
 		ipcRenderer.invoke("watch:connectProvider", provider),
 	resetProvider: (provider: string) =>
 		ipcRenderer.invoke("watch:resetProvider", provider),
-	startRun: (providers: string[]) => ipcRenderer.invoke("watch:startRun", providers),
+	startRun: (payload: {
+		providers: string[];
+		sessionMode: "signed-in" | "signed-out" | "both";
+	}) => ipcRenderer.invoke("watch:startRun", payload),
 	syncNow: () => ipcRenderer.invoke("watch:syncNow"),
 	setupPython: () => ipcRenderer.invoke("watch:setupPython"),
 	onState: (handler: (state: unknown) => void) => {

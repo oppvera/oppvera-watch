@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
 	app,
@@ -31,12 +31,13 @@ import {
 	saveDevice,
 	writeCapture,
 } from "./storage.js";
-import type { StoredCapture } from "./ingest.js";
+import type { CaptureSession, SessionMode, StoredCapture } from "./ingest.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
 type RunItem = {
 	provider: Provider;
+	session: CaptureSession;
 	query_item_id: string;
 	question: string;
 	status: "pending" | "running" | "captured" | "failed";
@@ -59,6 +60,7 @@ type AppState = {
 	lastSyncAt: string | null;
 	lastError: string | null;
 	python: { ok: boolean; message: string };
+	sessionMode: SessionMode;
 };
 
 let win: BrowserWindow | null = null;
@@ -67,6 +69,7 @@ let runItems: RunItem[] = [];
 let running = false;
 let lastSyncAt: string | null = null;
 let lastError: string | null = null;
+let sessionMode: SessionMode = "both";
 let python = {
 	ok: false,
 	message: "Checking Python…",
@@ -138,6 +141,7 @@ async function snapshot(): Promise<AppState> {
 		lastSyncAt,
 		lastError,
 		python: { ok: python.ok, message: python.message },
+		sessionMode,
 	};
 }
 
@@ -147,18 +151,102 @@ async function pushState(): Promise<AppState> {
 	return state;
 }
 
-function nodeBin(): string {
-	return process.env.npm_node_execpath || "node";
+function isElectronBinary(bin: string): boolean {
+	return /electron/i.test(bin) || /Oppvera Watch/i.test(bin);
+}
+
+function looksLikeNode(bin: string): boolean {
+	const name = basename(bin).replace(/\.exe$/i, "").toLowerCase();
+	return name === "node";
+}
+
+function childNodeBin(): string {
+	const candidates = [
+		process.env.npm_node_execpath,
+		"/opt/homebrew/bin/node",
+		"/usr/local/bin/node",
+		"/usr/bin/node",
+	].filter((value): value is string => Boolean(value));
+	for (const candidate of candidates) {
+		if (
+			existsSync(candidate) &&
+			looksLikeNode(candidate) &&
+			!isElectronBinary(candidate)
+		) {
+			return candidate;
+		}
+	}
+	return process.execPath;
+}
+
+function childEnv(bin: string): NodeJS.ProcessEnv {
+	const env = { ...process.env };
+	// Electron injects these into GUI children. Real Node and Firefox abort
+	// immediately (exit 243) if DYLD_INSERT_LIBRARIES still points at Electron.
+	delete env.DYLD_INSERT_LIBRARIES;
+	delete env.DYLD_LIBRARY_PATH;
+	delete env.LD_PRELOAD;
+	delete env.LD_LIBRARY_PATH;
+	delete env.CHROME_CRASHPAD_PIPE_NAME;
+	delete env.ELECTRON_NO_ASAR;
+	delete env.ELECTRON_NO_ATTACH_CONSOLE;
+	if (isElectronBinary(bin)) {
+		env.ELECTRON_RUN_AS_NODE = "1";
+	} else {
+		delete env.ELECTRON_RUN_AS_NODE;
+	}
+	env.WATCH_SUPPORT_ROOT = supportEnv().root;
+	const pathParts = [
+		env.PATH,
+		"/opt/homebrew/bin",
+		"/usr/local/bin",
+		"/usr/bin",
+		"/bin",
+	].filter(Boolean);
+	env.PATH = [...new Set(pathParts.join(":").split(":"))].join(":");
+	return env;
 }
 
 function spawnNode(script: string, args: string[]) {
-	return spawn(nodeBin(), [script, ...args], {
+	const bin = childNodeBin();
+	console.log("[watch] spawn", bin, script, args.join(" "));
+	return spawn(bin, [script, ...args], {
 		cwd: join(here, ".."),
-		env: {
-			...process.env,
-			WATCH_SUPPORT_ROOT: supportEnv().root,
-		},
+		env: childEnv(bin),
 		stdio: ["ignore", "pipe", "pipe"],
+	});
+}
+
+function waitForChild(
+	child: ReturnType<typeof spawn>,
+	label: string,
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		let stdout = "";
+		let stderr = "";
+		child.stdout?.on("data", (chunk) => {
+			const text = String(chunk);
+			stdout += text;
+			console.log(`[watch ${label}]`, text.trimEnd());
+		});
+		child.stderr?.on("data", (chunk) => {
+			const text = String(chunk);
+			stderr += text;
+			console.error(`[watch ${label}]`, text.trimEnd());
+		});
+		child.on("error", (error) => {
+			reject(new Error(`Could not start ${label}: ${error.message}`));
+		});
+		child.on("exit", (code, signal) => {
+			if (code === 0) {
+				resolve();
+				return;
+			}
+			const detail =
+				(stderr.trim() || stdout.trim()) ||
+				`${label} exited ${code ?? "null"}${signal ? ` (${signal})` : ""}`;
+			reject(new Error(detail));
+		});
 	});
 }
 
@@ -296,21 +384,20 @@ ipcMain.handle("watch:connectProvider", async (_event, provider: AuthProvider) =
 		throw new Error(python.message);
 	}
 	const dirs = supportEnv();
-	await new Promise<void>((resolve, reject) => {
-		const child = spawnNode(join(here, "auth-child.js"), [
-			provider,
-			dirs.authRoot,
-			python.ok ? process.env.CAMOUFOX_PYTHON_BIN || "" : "",
-		]);
-		let stderr = "";
-		child.stderr?.on("data", (chunk) => {
-			stderr += String(chunk);
-		});
-		child.on("exit", (code) => {
-			if (code === 0) resolve();
-			else reject(new Error(stderr.trim() || `Auth exited ${code}`));
-		});
-	});
+	try {
+		await waitForChild(
+			spawnNode(join(here, "auth-child.js"), [
+				provider,
+				dirs.authRoot,
+				python.ok ? process.env.CAMOUFOX_PYTHON_BIN || "" : "",
+			]),
+			`auth:${provider}`,
+		);
+		lastError = null;
+	} catch (error) {
+		lastError = error instanceof Error ? error.message : String(error);
+		throw error;
+	}
 	return pushState();
 });
 
@@ -336,38 +423,86 @@ ipcMain.handle("watch:syncNow", async () => {
 	return pushState();
 });
 
-ipcMain.handle("watch:startRun", async (_event, providers: Provider[]) => {
+ipcMain.handle(
+	"watch:startRun",
+	async (
+		_event,
+		payload: { providers: Provider[]; sessionMode?: SessionMode } | Provider[],
+	) => {
 	const device = readDevice();
 	if (!device) throw new Error("Pair first.");
 	if (queries.length === 0) {
 		throw new Error("The campaign query bank is empty. Add questions in Oppvera.");
 	}
+	const providers = Array.isArray(payload) ? payload : payload.providers;
+	const requestedMode = Array.isArray(payload)
+		? "signed-in"
+		: payload.sessionMode;
+	sessionMode =
+		requestedMode === "signed-in" ||
+		requestedMode === "signed-out" ||
+		requestedMode === "both"
+			? requestedMode
+			: "both";
 	const selected = providers.filter((id) => PROVIDER_LIST.includes(id));
 	if (selected.length === 0) {
-		throw new Error("Select at least one connected provider.");
+		throw new Error("Select at least one provider.");
 	}
 	await refreshPython();
 	if (!python.ok) throw new Error(python.message);
+	const connected = (id: Provider) =>
+		existsSync(getAuthSessionFile(AUTH_FOR[id]));
+	if (sessionMode === "signed-in") {
+		const missing = selected.filter((id) => !connected(id));
+		if (missing.length > 0) {
+			throw new Error(
+				`Connect ${missing.join(", ")} before a signed-in run, or choose signed-out.`,
+			);
+		}
+	}
+	const sessions: CaptureSession[] =
+		sessionMode === "both"
+			? ["signed-out", "signed-in"]
+			: [sessionMode];
 	running = true;
 	const runId = randomUUID();
 	runItems = selected.flatMap((provider) =>
-		queries.map((query) => ({
-			provider,
-			query_item_id: query.query_item_id,
-			question: query.text,
-			status: "pending" as const,
-		})),
+		sessions.flatMap((session) => {
+			if (session === "signed-in" && !connected(provider)) return [];
+			return queries.map((query) => ({
+				provider,
+				session,
+				query_item_id: query.query_item_id,
+				question: query.text,
+				status: "pending" as const,
+			}));
+		}),
 	);
+	if (runItems.length === 0) {
+		running = false;
+		throw new Error(
+			"Nothing to run. Connect a provider for signed-in, or pick signed-out.",
+		);
+	}
 	await pushState();
 	const dirs = supportEnv();
+	const jobs = [
+		...new Map(
+			runItems.map((item) => [
+				`${item.provider}:${item.session}`,
+				{ provider: item.provider, session: item.session },
+			]),
+		).values(),
+	];
 	try {
-		for (const provider of selected) {
-			const jobPath = join(dirs.root, `job-${provider}.json`);
+		for (const job of jobs) {
+			const jobPath = join(dirs.root, `job-${job.provider}-${job.session}.json`);
 			writeFileSync(
 				jobPath,
 				JSON.stringify({
 					run_id: runId,
-					provider,
+					provider: job.provider,
+					session: job.session,
 					queries: queries.map((query) => ({
 						query_item_id: query.query_item_id,
 						text: query.text,
@@ -378,6 +513,7 @@ ipcMain.handle("watch:startRun", async (_event, providers: Provider[]) => {
 			);
 			await new Promise<void>((resolve, reject) => {
 				const child = spawnNode(join(here, "capture.js"), [jobPath]);
+				let leftover = "";
 				child.stdout?.on("data", (chunk) => {
 					for (const line of String(chunk).split("\n")) {
 						if (!line.trim()) continue;
@@ -386,6 +522,7 @@ ipcMain.handle("watch:startRun", async (_event, providers: Provider[]) => {
 								event: string;
 								query_item_id?: string;
 								provider?: Provider;
+								session?: CaptureSession;
 								status?: RunItem["status"];
 								error?: string;
 							};
@@ -393,7 +530,8 @@ ipcMain.handle("watch:startRun", async (_event, providers: Provider[]) => {
 								const item = runItems.find(
 									(row) =>
 										row.query_item_id === event.query_item_id &&
-										row.provider === event.provider,
+										row.provider === event.provider &&
+										row.session === (event.session || job.session),
 								);
 								if (item && event.status) {
 									item.status = event.status;
@@ -402,17 +540,29 @@ ipcMain.handle("watch:startRun", async (_event, providers: Provider[]) => {
 							}
 							void pushState();
 						} catch {
-							// ignore non-JSON logs
+							leftover += `${line}\n`;
+							console.log("[watch capture]", line);
 						}
 					}
 				});
 				let stderr = "";
 				child.stderr?.on("data", (chunk) => {
 					stderr += String(chunk);
+					console.error("[watch capture]", String(chunk).trimEnd());
+				});
+				child.on("error", (error) => {
+					reject(new Error(`Could not start capture: ${error.message}`));
 				});
 				child.on("exit", (code) => {
 					if (code === 0) resolve();
-					else reject(new Error(stderr.trim() || `Capture exited ${code}`));
+					else {
+						reject(
+							new Error(
+								(stderr.trim() || leftover.trim()) ||
+									`Capture exited ${code}`,
+							),
+						);
+					}
 				});
 			});
 		}

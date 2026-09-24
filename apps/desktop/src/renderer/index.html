@@ -13,36 +13,46 @@
     <header class="top">
       <div>
         <p class="eyebrow">Oppvera Watch</p>
-        <h1>Capture signed-in answers</h1>
+        <h1 id="appTitle">Capture consumer UI answers</h1>
+        <p class="hint" id="campaignHint"></p>
       </div>
       <p class="hint" id="python-status"></p>
     </header>
     <nav class="tabs">
-      <button data-tab="pair" class="active">Pair</button>
       <button data-tab="bank">Query bank</button>
       <button data-tab="providers">Providers</button>
       <button data-tab="run">Run</button>
       <button data-tab="sync">Sync</button>
+      <button data-tab="pair" class="active">Settings</button>
     </nav>
     <main>
       <section id="pair" class="panel active">
-        <p>
-          Paste a pairing code from the campaign Visibility page in Oppvera.
-          Scores stay on Oppvera. This app only records consumer UI answers.
-        </p>
-        <form id="pairForm">
-          <label>Oppvera base URL
-            <input id="apiBase" value="https://oppvera.com" />
-          </label>
-          <label>Pairing code
-            <input id="code" placeholder="K7QM-2P9L" autocomplete="off" />
-          </label>
-          <label>This Mac
-            <input id="label" placeholder="Craig's Mac" />
-          </label>
-          <button id="pairBtn" class="primary" type="submit">Pair this Mac</button>
-          <button id="unpairBtn" class="ghost" type="button">Unpair</button>
-        </form>
+        <div id="pairedCard" hidden>
+          <p id="pairedSummary" class="paired-title"></p>
+          <p class="status">
+            This Mac stays paired across restarts. You do not need a new code
+            unless you unpair or switch campaigns.
+          </p>
+          <button id="unpairBtn" class="ghost" type="button">Unpair this Mac</button>
+        </div>
+        <div id="pairSetup">
+          <p id="pairIntro">
+            Paste a pairing code from the campaign Visibility page in Oppvera.
+            Scores stay on Oppvera. This app only records consumer UI answers.
+          </p>
+          <form id="pairForm">
+            <label>Oppvera base URL
+              <input id="apiBase" value="https://oppvera.com" />
+            </label>
+            <label>Pairing code
+              <input id="code" placeholder="K7QM-2P9L" autocomplete="off" />
+            </label>
+            <label>This Mac
+              <input id="label" placeholder="Craig's Mac" />
+            </label>
+            <button id="pairBtn" class="primary" type="submit">Pair this Mac</button>
+          </form>
+        </div>
         <p id="pairStatus" class="status">Ready to pair.</p>
         <p id="pairError" class="error"></p>
       </section>
@@ -62,6 +72,16 @@
       </section>
       <section id="run" class="panel">
         <p>Runs one provider at a time. Results upload as Watch captures, not API Probe rows.</p>
+        <fieldset id="sessionMode">
+          <legend>Session</legend>
+          <label><input type="radio" name="sessionMode" value="signed-out" /> Signed-out only</label>
+          <label><input type="radio" name="sessionMode" value="signed-in" /> Signed-in only</label>
+          <label><input type="radio" name="sessionMode" value="both" checked /> Both</label>
+        </fieldset>
+        <p class="status">
+          Signed-out opens a fresh Firefox window and does not need Connect.
+          Signed-in uses the login you saved on this Mac.
+        </p>
         <div id="runProviders"></div>
         <button id="startRun" class="primary">Run query bank</button>
         <ul id="runProgress"></ul>
@@ -121,6 +141,10 @@
                 state && state.paired
                   ? "Paired."
                   : (state && state.lastError) || "Pairing finished.";
+            }
+            if (state && state.paired) {
+              var code = document.getElementById("code");
+              if (code) code.value = "";
             }
           } catch (err) {
             var message = err && err.message ? err.message : String(err);

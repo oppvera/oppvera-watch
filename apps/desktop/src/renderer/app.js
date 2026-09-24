@@ -1,6 +1,17 @@
 (() => {
 const api = window.watch;
 let pythonBusy = false;
+let userPickedTab = false;
+let didInitialTab = false;
+
+function showTab(tabId) {
+  document.querySelectorAll(".tabs button").forEach((item) => {
+    item.classList.toggle("active", item.dataset.tab === tabId);
+  });
+  document.querySelectorAll(".panel").forEach((panel) => {
+    panel.classList.toggle("active", panel.id === tabId);
+  });
+}
 
 function text(id, value) {
   const el = document.getElementById(id);
@@ -21,6 +32,11 @@ function setBusy(button, busy, idleLabel, busyLabel) {
 
 window.setWatchBusy = setBusy;
 
+function readSessionMode() {
+  const checked = document.querySelector("#sessionMode input:checked");
+  return checked && checked.value ? checked.value : "both";
+}
+
 function render(state) {
   if (!state) return;
   text("python-status", state.python && state.python.message);
@@ -29,13 +45,28 @@ function render(state) {
   }
   text("pairError", state.lastError || "");
   setError(state.lastError || "");
+  const pairedCard = document.getElementById("pairedCard");
+  const pairSetup = document.getElementById("pairSetup");
   const pairStatus = document.getElementById("pairStatus");
-  if (pairStatus) {
-    if (state.paired && state.device) {
-      pairStatus.textContent = `Paired with ${state.device.company_name} / ${state.device.campaign_name} (${state.device.api_base})`;
-    } else {
-      pairStatus.textContent = "Not paired.";
-    }
+  if (state.paired && state.device) {
+    const summary = `${state.device.company_name} / ${state.device.campaign_name}`;
+    text("campaignHint", summary);
+    text("pairedSummary", `Paired with ${summary}`);
+    if (pairStatus) pairStatus.textContent = state.device.api_base;
+    if (pairedCard) pairedCard.hidden = false;
+    if (pairSetup) pairSetup.hidden = true;
+    const apiBase = document.getElementById("apiBase");
+    if (apiBase && state.device.api_base) apiBase.value = state.device.api_base;
+  } else {
+    text("campaignHint", "Pair this Mac to a campaign to start.");
+    text("pairedSummary", "");
+    if (pairStatus) pairStatus.textContent = "Not paired.";
+    if (pairedCard) pairedCard.hidden = true;
+    if (pairSetup) pairSetup.hidden = false;
+  }
+  if (!didInitialTab && !userPickedTab) {
+    didInitialTab = true;
+    showTab(state.paired ? "bank" : "pair");
   }
   const queryList = document.getElementById("queryList");
   if (queryList) {
@@ -67,10 +98,13 @@ function render(state) {
       connect.textContent = "Connect";
       connect.onclick = async () => {
         setError("");
+        setBusy(connect, true, "Connect", "Opening sign-in…");
         try {
           await api.connectProvider(provider.id);
         } catch (error) {
           setError(error.message || String(error));
+        } finally {
+          setBusy(connect, false, "Connect", "Opening sign-in…");
         }
       };
       const reset = document.createElement("button");
@@ -87,20 +121,34 @@ function render(state) {
   }
   const runProviders = document.getElementById("runProviders");
   if (runProviders) {
+    const previous = new Set(
+      [...runProviders.querySelectorAll("input:checked")].map((input) => input.value),
+    );
+    const hadBoxes = Boolean(runProviders.querySelector("input"));
+    const mode = readSessionMode();
+    document.querySelectorAll("#sessionMode input").forEach((input) => {
+      input.disabled = state.running;
+    });
     runProviders.innerHTML = "";
     for (const provider of state.runtimeProviders || []) {
+      const needsLogin = mode === "signed-in" && !provider.connected;
       const label = document.createElement("label");
       const box = document.createElement("input");
       box.type = "checkbox";
       box.value = provider.id;
-      box.checked = provider.connected;
-      box.disabled = !provider.connected || state.running;
-      label.append(
-        box,
-        document.createTextNode(
-          ` ${provider.id}${provider.connected ? "" : " (connect first)"}`,
-        ),
-      );
+      box.disabled = state.running || needsLogin;
+      if (hadBoxes) {
+        box.checked = previous.has(provider.id) && !needsLogin;
+      } else {
+        box.checked = mode === "signed-in" ? provider.connected : true;
+      }
+      const suffix =
+        provider.connected
+          ? " · connected"
+          : mode === "signed-in"
+            ? " (connect first)"
+            : " · signed-out";
+      label.append(box, document.createTextNode(` ${provider.id}${suffix}`));
       runProviders.appendChild(label);
     }
   }
@@ -109,7 +157,7 @@ function render(state) {
     progress.innerHTML = "";
     for (const item of state.runItems || []) {
       const li = document.createElement("li");
-      li.textContent = `${item.provider} · ${item.question} · ${item.status}${
+      li.textContent = `${item.provider} · ${item.session || "signed-in"} · ${item.question} · ${item.status}${
         item.error ? ` · ${item.error}` : ""
       }`;
       progress.appendChild(li);
@@ -128,15 +176,11 @@ function render(state) {
 window.renderWatch = render;
 
 try {
-  const panels = document.querySelectorAll(".panel");
   const tabs = document.querySelectorAll(".tabs button");
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      tabs.forEach((item) => item.classList.remove("active"));
-      panels.forEach((panel) => panel.classList.remove("active"));
-      tab.classList.add("active");
-      const panel = document.getElementById(tab.dataset.tab);
-      if (panel) panel.classList.add("active");
+      userPickedTab = true;
+      showTab(tab.dataset.tab);
     });
   });
 
@@ -160,11 +204,20 @@ try {
         return;
       }
       try {
-        render(await api.pair({
+        const state = await api.pair({
           apiBase: document.getElementById("apiBase").value,
           code: document.getElementById("code").value,
           label: document.getElementById("label").value,
-        }));
+        });
+        const code = document.getElementById("code");
+        if (code) code.value = "";
+        render(state);
+        if (state && state.paired) {
+          userPickedTab = false;
+          didInitialTab = false;
+          showTab("bank");
+          didInitialTab = true;
+        }
       } catch (error) {
         const message = error.message || String(error);
         setError(message);
@@ -178,7 +231,12 @@ try {
 
   const unpairBtn = document.getElementById("unpairBtn");
   if (unpairBtn) {
-    unpairBtn.onclick = () => api && api.unpair();
+    unpairBtn.onclick = async () => {
+      if (!api) return;
+      await api.unpair();
+      userPickedTab = true;
+      showTab("pair");
+    };
   }
   const refreshBank = document.getElementById("refreshBank");
   if (refreshBank) {
@@ -211,6 +269,14 @@ try {
     syncNow.onclick = () =>
       api && api.syncNow().catch((error) => setError(error.message));
   }
+  const sessionMode = document.getElementById("sessionMode");
+  if (sessionMode) {
+    sessionMode.addEventListener("change", () => {
+      if (api && typeof api.getState === "function") {
+        api.getState().then(render);
+      }
+    });
+  }
   const startRun = document.getElementById("startRun");
   if (startRun) {
     startRun.onclick = async () => {
@@ -218,10 +284,16 @@ try {
         ...document.querySelectorAll("#runProviders input:checked"),
       ].map((input) => input.value);
       setError("");
+      setBusy(startRun, true, "Run query bank", "Running…");
       try {
-        await api.startRun(selected);
+        await api.startRun({
+          providers: selected,
+          sessionMode: readSessionMode(),
+        });
       } catch (error) {
         setError(error.message || String(error));
+      } finally {
+        setBusy(startRun, false, "Run query bank", "Running…");
       }
     };
   }

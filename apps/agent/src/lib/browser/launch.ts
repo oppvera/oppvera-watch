@@ -326,7 +326,8 @@ export async function launchContext(provider: Provider): Promise<{
 		rawBrowser = await firefox.launch(launchOptions);
 		rawContext = await rawBrowser.newContext({
 			...(runtimeHeadlessMode === "headless" ? {} : { viewport: null }),
-			...(runtimeSeedPlan.authStatePath
+			...(process.env.WATCH_USE_AUTH_SESSION !== "0" &&
+			runtimeSeedPlan.authStatePath
 				? { storageState: runtimeSeedPlan.authStatePath }
 				: {}),
 		});
