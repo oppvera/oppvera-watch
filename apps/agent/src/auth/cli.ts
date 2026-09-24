@@ -32,6 +32,8 @@ import { detectDisplay, isWsl } from "../lib/browser/display.js";
 const AUTH_SNAPSHOT_DEBOUNCE_MS = 250;
 const AUTH_SNAPSHOT_HEARTBEAT_MS = 2_000;
 const AUTH_WINDOW_CLOSE_GRACE_MS = 1_000;
+const AUTH_SIGNED_IN_STABLE_MS = 2_000;
+const AUTH_SIGNED_IN_POLL_MS = 400;
 const SYSTEM_THEME_DETECT_TIMEOUT_MS = 4_000;
 const AUTH_WINDOW_WIDTH = 1280;
 const AUTH_WINDOW_HEIGHT = 900;
@@ -653,7 +655,104 @@ async function waitForAllAuthPagesToClose(
 	await waitForStableZeroPages();
 }
 
-async function waitForManualBrowserClose(
+function isAuthPath(pathname: string): boolean {
+	const path = pathname.toLowerCase();
+	return (
+		path.includes("/login") ||
+		path.includes("/signin") ||
+		path.includes("/sign-in") ||
+		path.includes("/auth/") ||
+		path.endsWith("/auth")
+	);
+}
+
+function isSignedInUrl(provider: AuthProvider, url: string): boolean {
+	const config = AUTH_PROVIDER_CONFIG[provider];
+	try {
+		const parsed = new URL(url);
+		if (!matchesDomainSuffix(parsed.hostname, config.domainSuffixes)) {
+			return false;
+		}
+		if (isAuthPath(parsed.pathname)) {
+			return false;
+		}
+		if (provider === "claude") {
+			return true;
+		}
+		return config.postLoginUrls.some((postLoginUrl) => {
+			const expected = new URL(postLoginUrl);
+			if (parsed.origin !== expected.origin) {
+				return false;
+			}
+			const expectedPath = expected.pathname.replace(/\/$/, "") || "/";
+			const actualPath = parsed.pathname.replace(/\/$/, "") || "/";
+			return (
+				actualPath === expectedPath ||
+				actualPath.startsWith(`${expectedPath}/`) ||
+				(expectedPath === "/" && !isAuthPath(actualPath))
+			);
+		});
+	} catch {
+		return false;
+	}
+}
+
+async function contextLooksSignedIn(
+	context: BrowserContext,
+	provider: AuthProvider,
+): Promise<string | null> {
+	for (const page of context.pages()) {
+		if (page.isClosed()) continue;
+		const url = page.url();
+		if (isSignedInUrl(provider, url)) {
+			return url;
+		}
+	}
+	return null;
+}
+
+async function waitForSignedInUrl(
+	context: BrowserContext,
+	provider: AuthProvider,
+	signal: AbortSignal,
+): Promise<string> {
+	const started = Date.now();
+	let firstSeenAt: number | null = null;
+	let lastUrl: string | null = null;
+
+	while (!signal.aborted) {
+		if (context.pages().filter((page) => !page.isClosed()).length === 0) {
+			await new Promise((resolve) => setTimeout(resolve, AUTH_SIGNED_IN_POLL_MS));
+			continue;
+		}
+		const url = await contextLooksSignedIn(context, provider);
+		if (url) {
+			if (lastUrl !== url) {
+				firstSeenAt = Date.now();
+				lastUrl = url;
+				logger.log(`[auth:${provider}] signed-in page: ${url}`);
+			}
+			if (
+				firstSeenAt !== null &&
+				Date.now() - firstSeenAt >= AUTH_SIGNED_IN_STABLE_MS
+			) {
+				return url;
+			}
+		} else {
+			firstSeenAt = null;
+			lastUrl = null;
+		}
+		await new Promise((resolve) => setTimeout(resolve, AUTH_SIGNED_IN_POLL_MS));
+		if (Date.now() - started > 30 * 60 * 1000) {
+			throw new Error(
+				`${AUTH_PROVIDER_DISPLAY[provider].displayName} sign-in timed out.`,
+			);
+		}
+	}
+	return "";
+}
+
+async function waitForAuthSessionComplete(
 	context: BrowserContext,
 	provider: AuthProvider,
 ): Promise<void> {
@@ -661,9 +760,29 @@ async function waitForManualBrowserClose(
 	tracker.start();
 
 	let finalState: PersistedStorageState | null = null;
+	const abort = new AbortController();
 	try {
-		await waitForAllAuthPagesToClose(context);
+		const signedIn = waitForSignedInUrl(context, provider, abort.signal).then(
+			(url) =>
+				url
+					? { kind: "signed-in" as const, url }
+					: { kind: "closed" as const, url: null },
+		);
+		const closed = waitForAllAuthPagesToClose(context).then(() => ({
+			kind: "closed" as const,
+			url: null,
+		}));
+		const result = await Promise.race([signedIn, closed]);
+		abort.abort();
+		if (result.kind === "signed-in") {
+			logger.log(
+				`[auth:${provider}] signed-in detected, saving session (${result.url})`,
+			);
+		} else {
+			logger.log(`[auth:${provider}] auth window closed, saving session`);
+		}
 	} finally {
+		abort.abort();
 		finalState = await tracker.finish();
 	}
 
@@ -767,7 +886,7 @@ export async function runAuthLogin(provider: AuthProvider): Promise<void> {
 			waitUntil: "domcontentloaded",
 			timeout: 30_000,
 		});
-		await waitForManualBrowserClose(context, provider);
+		await waitForAuthSessionComplete(context, provider);
 	} catch (error) {
 		await writeProviderAuthStatus(provider, {
 			connecting: false,

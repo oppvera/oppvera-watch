@@ -32,6 +32,60 @@ function setBusy(button, busy, idleLabel, busyLabel) {
 
 window.setWatchBusy = setBusy;
 
+const AUTH_DISPLAY = {
+  chatgpt: "ChatGPT",
+  claude: "Claude",
+  gemini: "Gemini",
+  google: "Google",
+  perplexity: "Perplexity",
+};
+
+const RUN_DISPLAY = {
+  chatgpt: "ChatGPT",
+  claude: "Claude",
+  gemini: "Gemini",
+  "ai-overview": "Google AI Overview",
+  perplexity: "Perplexity",
+};
+
+const PRIMARY_AUTH = ["chatgpt", "claude"];
+const EXPERIMENTAL_AUTH = ["gemini", "google", "perplexity"];
+const PRIMARY_RUN = ["chatgpt", "claude"];
+const EXPERIMENTAL_RUN = ["gemini", "ai-overview", "perplexity"];
+
+function displayName(map, id) {
+  return map[id] || id;
+}
+
+function splitProviders(list, primaryIds, experimentalIds) {
+  const byId = new Map(list.map((item) => [item.id, item]));
+  return {
+    primary: primaryIds.map((id) => byId.get(id)).filter(Boolean),
+    experimental: experimentalIds.map((id) => byId.get(id)).filter(Boolean),
+  };
+}
+
+function addGroup(parent, title, hint, experimental) {
+  const group = document.createElement("fieldset");
+  group.className = experimental
+    ? "provider-group provider-group--experimental"
+    : "provider-group";
+  const legend = document.createElement("legend");
+  legend.textContent = title;
+  group.append(legend);
+  if (hint) {
+    const note = document.createElement("p");
+    note.className = "status";
+    note.textContent = hint;
+    group.append(note);
+  }
+  const body = document.createElement("div");
+  body.className = "provider-group-body";
+  group.append(body);
+  parent.append(group);
+  return body;
+}
+
 function formatLastSync(iso) {
   if (!iso) return "";
   const then = new Date(iso);
@@ -179,10 +233,16 @@ function render(state) {
   const providerList = document.getElementById("providerList");
   if (providerList) {
     providerList.innerHTML = "";
-    for (const provider of state.providers || []) {
+    const groups = splitProviders(
+      state.providers || [],
+      PRIMARY_AUTH,
+      EXPERIMENTAL_AUTH,
+    );
+    const renderAuthRow = (provider, target) => {
       const row = document.createElement("div");
       row.className = "row";
-      row.innerHTML = `<span>${provider.id}${provider.connected ? " · connected" : ""}${
+      const label = AUTH_DISPLAY[provider.id] || provider.id;
+      row.innerHTML = `<span>${label}${provider.connected ? " · connected" : ""}${
         provider.error ? ` · ${provider.error}` : ""
       }</span>`;
       const actions = document.createElement("div");
@@ -206,19 +266,35 @@ function render(state) {
         action.textContent = "Connect";
         action.onclick = async () => {
           setError("");
-          setBusy(action, true, "Connect", "Opening sign-in…");
+          setBusy(action, true, "Connect", "Waiting for sign-in…");
           try {
             await api.connectProvider(provider.id);
           } catch (error) {
             setError(error.message || String(error));
           } finally {
-            setBusy(action, false, "Connect", "Opening sign-in…");
+            setBusy(action, false, "Connect", "Waiting for sign-in…");
           }
         };
       }
       actions.append(action);
       row.appendChild(actions);
-      providerList.appendChild(row);
+      target.appendChild(row);
+    };
+    const primaryBox = addGroup(
+      providerList,
+      "ChatGPT and Claude",
+      "These are the providers Watch is focused on right now.",
+      false,
+    );
+    for (const provider of groups.primary) renderAuthRow(provider, primaryBox);
+    const experimentalBox = addGroup(
+      providerList,
+      "Experimental",
+      "Gemini, Google, and Perplexity are available but not the current focus.",
+      true,
+    );
+    for (const provider of groups.experimental) {
+      renderAuthRow(provider, experimentalBox);
     }
   }
   const runProviders = document.getElementById("runProviders");
@@ -228,7 +304,12 @@ function render(state) {
     );
     const hadBoxes = Boolean(runProviders.querySelector("input"));
     runProviders.innerHTML = "";
-    for (const provider of state.runtimeProviders || []) {
+    const groups = splitProviders(
+      state.runtimeProviders || [],
+      PRIMARY_RUN,
+      EXPERIMENTAL_RUN,
+    );
+    const renderRunRow = (provider, target, experimental) => {
       const needsLogin = !provider.connected;
       const label = document.createElement("label");
       const box = document.createElement("input");
@@ -238,13 +319,36 @@ function render(state) {
       if (hadBoxes) {
         box.checked = previous.has(provider.id) && !needsLogin;
       } else {
-        box.checked = provider.connected;
+        box.checked = !experimental && provider.connected;
       }
       const suffix = provider.connected
         ? " · connected"
         : " (connect first)";
-      label.append(box, document.createTextNode(` ${provider.id}${suffix}`));
-      runProviders.appendChild(label);
+      label.append(
+        box,
+        document.createTextNode(
+          ` ${displayName(RUN_DISPLAY, provider.id)}${suffix}`,
+        ),
+      );
+      target.appendChild(label);
+    };
+    const primaryBox = addGroup(
+      runProviders,
+      "ChatGPT and Claude",
+      "Run these first.",
+      false,
+    );
+    for (const provider of groups.primary) {
+      renderRunRow(provider, primaryBox, false);
+    }
+    const experimentalBox = addGroup(
+      runProviders,
+      "Experimental",
+      "Optional. Capture is less proven here.",
+      true,
+    );
+    for (const provider of groups.experimental) {
+      renderRunRow(provider, experimentalBox, true);
     }
   }
   const progress = document.getElementById("runProgress");
@@ -252,7 +356,7 @@ function render(state) {
     progress.innerHTML = "";
     for (const item of state.runItems || []) {
       const li = document.createElement("li");
-      li.textContent = `${item.provider} · ${item.question} · ${item.status}${
+      li.textContent = `${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${item.status}${
         item.error ? ` · ${item.error}` : ""
       }`;
       progress.appendChild(li);

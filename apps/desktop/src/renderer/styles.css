@@ -203,8 +203,35 @@ input {
 #providerList,
 #runProviders {
   display: grid;
-  gap: 10px;
+  gap: 16px;
   margin: 16px 0;
+}
+
+.provider-group {
+  margin: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.provider-group legend {
+  padding: 0 6px;
+  font-weight: 650;
+}
+
+.provider-group .status {
+  margin: 0 0 10px;
+}
+
+.provider-group-body {
+  display: grid;
+  gap: 10px;
+}
+
+.provider-group--experimental {
+  border-style: dashed;
+  opacity: 0.92;
 }
 
 #runProviders label {
