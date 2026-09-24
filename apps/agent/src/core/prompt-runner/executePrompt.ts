@@ -1,5 +1,5 @@
 import { ExternalServiceError, ValidationError } from "@oneglanse/errors";
-import type { Provider, Source } from "@oneglanse/types";
+import { resolveAppMode, type Provider, type Source } from "@oneglanse/types";
 import type { Page } from "playwright";
 import { logger, validateResponse, withTimeout } from "@oneglanse/utils";
 import { askPrompt } from "../steps/askPrompt.js";
@@ -30,10 +30,14 @@ export async function executePrompt(
 			45_000,
 		);
 	} else {
+		const askTimeoutMs =
+			resolveAppMode(process.env.ONEGLANSE_APP_MODE) === "local"
+				? 3 * 60 * 1000
+				: 60_000;
 		await withTimeout(
 			`[${provider}] askPrompt`,
 			async () => await askPrompt(page, prompt, provider),
-			60_000,
+			askTimeoutMs,
 		);
 	}
 

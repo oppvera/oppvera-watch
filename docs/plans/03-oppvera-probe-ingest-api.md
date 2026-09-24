@@ -1,5 +1,13 @@
 # Oppvera Probe ingest API (Watch pairing and captures)
 
+## Status
+
+**Implemented** in the Oppvera demo **v0.95.0**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-23 via [PR #277](https://github.com/codetricity/oppvera/pull/277).
+
+Pairing, device Bearer tokens, query-bank device auth, and `POST /api/probe/captures` live in `oppvera/routers/probe_api.py` and `oppvera/visibility/devices.py`. Watch is the HTTP client.
+
+This spec is **Oppvera-only**. The desktop client is [02-watch-desktop-electron.md](02-watch-desktop-electron.md).
+
 Implement this in the Oppvera demo app:
 
 `/Users/craig/Documents/Oppkey/geo/generative-engine-optimization/app/lab/demo/`
@@ -230,7 +238,7 @@ Drop `favicon`. It is optional display chrome and often a data URL.
 
 ## Router placement
 
-`oppvera/routers/probe_api.py` is included from `oppvera/app.py`. **Partial:** `GET /api/probe/campaigns/{id}/query-bank` exists with **session** auth only; device Bearer auth, pairing, and `POST /captures` are still this spec.
+`oppvera/routers/probe_api.py` is included from `oppvera/app.py`. Watch ingest is **done** on Oppvera v0.95.0: pairing, device Bearer, query-bank, `POST /captures`, revoke.
 
 Human Probe UI lives in `oppvera/routers/probe_ui.py` at `/workspace/campaigns/{id}/probe`. Legacy `/admin/dev/probe` in `routers/ui.py` redirects to that path. Watch never calls those HTML routes.
 

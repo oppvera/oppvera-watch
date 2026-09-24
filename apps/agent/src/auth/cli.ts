@@ -1,4 +1,6 @@
 import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { resolve as resolvePath } from "node:path";
 import { promisify } from "node:util";
 import {
 	ensureAuthDirectories,
@@ -9,7 +11,7 @@ import {
 	saveReusableIdentitySessions,
 	uploadAuthSession,
 	writeProviderAuthStatus,
-} from "@oneglanse/services";
+} from "@oneglanse/services/auth";
 import { AUTH_PROVIDER_LIST, type AuthProvider } from "@oneglanse/types";
 import {
 	AUTH_PROVIDER_CONFIG,
@@ -676,7 +678,7 @@ async function waitForManualBrowserClose(
 	await context.close().catch(() => {});
 }
 
-async function runAuthLogin(provider: AuthProvider): Promise<void> {
+export async function runAuthLogin(provider: AuthProvider): Promise<void> {
 	const authConfig = AUTH_PROVIDER_CONFIG[provider];
 	const browserProvider = authConfig.providers[0];
 	if (!browserProvider) {
@@ -782,26 +784,34 @@ async function runAuthLogin(provider: AuthProvider): Promise<void> {
 	await browser.close().catch(() => {});
 }
 
-const provider = parseProviderArg(process.argv.slice(2));
-runAuthLogin(provider)
-	.then(() => process.exit(0))
-	.catch(async (error) => {
-		const runtimeProvider = AUTH_PROVIDER_CONFIG[provider].providers[0];
-		const providerName = runtimeProvider
-			? getProviderDisplayName(runtimeProvider)
-			: provider;
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error(`[auth] ${providerName} login failed:`, error);
-		// Failures before the browser context exists bypass the inner status update.
-		const existingStatus = await readPersistedAuthStatus(provider).catch(
-			() => null,
-		);
-		await writeProviderAuthStatus(provider, {
-			connecting: false,
-			lastUpdatedAt: new Date().toISOString(),
-			syncedAt: existingStatus?.syncedAt ?? null,
-			error: errorMessage,
-			launcherPid: null,
-		}).catch(() => {});
-		process.exit(1);
-	});
+function isDirectCli(): boolean {
+	const entry = process.argv[1];
+	if (!entry) return false;
+	return fileURLToPath(import.meta.url) === resolvePath(entry);
+}
+
+if (isDirectCli()) {
+	const provider = parseProviderArg(process.argv.slice(2));
+	runAuthLogin(provider)
+		.then(() => process.exit(0))
+		.catch(async (error) => {
+			const runtimeProvider = AUTH_PROVIDER_CONFIG[provider].providers[0];
+			const providerName = runtimeProvider
+				? getProviderDisplayName(runtimeProvider)
+				: provider;
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.error(`[auth] ${providerName} login failed:`, error);
+			// Failures before the browser context exists bypass the inner status update.
+			const existingStatus = await readPersistedAuthStatus(provider).catch(
+				() => null,
+			);
+			await writeProviderAuthStatus(provider, {
+				connecting: false,
+				lastUpdatedAt: new Date().toISOString(),
+				syncedAt: existingStatus?.syncedAt ?? null,
+				error: errorMessage,
+				launcherPid: null,
+			}).catch(() => {});
+			process.exit(1);
+		});
+}

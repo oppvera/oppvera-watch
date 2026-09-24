@@ -4,6 +4,21 @@
 	"private": true,
 	"type": "module",
 	"description": "Local agent that runs Camoufox-backed Playwright sessions to execute LLM prompts",
+	"exports": {
+		".": "./dist/index.js",
+		"./create-agent": {
+			"types": "./dist/core/createAgent.d.ts",
+			"default": "./dist/core/createAgent.js"
+		},
+		"./execute-prompt": {
+			"types": "./dist/core/prompt-runner/executePrompt.d.ts",
+			"default": "./dist/core/prompt-runner/executePrompt.js"
+		},
+		"./auth-cli": {
+			"types": "./dist/auth/cli.d.ts",
+			"default": "./dist/auth/cli.js"
+		}
+	},
 	"scripts": {
 		"dev": "node --loader ts-node/esm src/index.ts",
 		"start:worker": "node dist/index.js",

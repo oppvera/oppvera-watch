@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noEmit": false,
+		"isolatedModules": true,
+		"rootDir": "src",
+		"outDir": "dist",
+		"skipLibCheck": true
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["src/ingest.test.ts", "src/renderer/**", "node_modules", "dist"]
+}

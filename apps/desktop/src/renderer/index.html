@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self' 'unsafe-inline'"
+    />
+    <title>Oppvera Watch</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <p class="eyebrow">Oppvera Watch</p>
+        <h1 id="appTitle">Capture consumer UI answers</h1>
+        <p class="hint" id="campaignHint"></p>
+      </div>
+      <p class="hint" id="python-status"></p>
+    </header>
+    <nav class="tabs">
+      <button data-tab="bank">Query bank</button>
+      <button data-tab="providers">Providers</button>
+      <button data-tab="run">Run</button>
+      <button data-tab="sync">Sync</button>
+      <button data-tab="pair" class="active">Settings</button>
+    </nav>
+    <main>
+      <section id="pair" class="panel active">
+        <div id="pairedCard" hidden>
+          <p id="pairedSummary" class="paired-title"></p>
+          <p class="status">
+            This Mac stays paired across restarts. You do not need a new code
+            unless you unpair or switch campaigns.
+          </p>
+          <button id="unpairBtn" class="ghost" type="button">Unpair this Mac</button>
+        </div>
+        <div id="pairSetup">
+          <p id="pairIntro">
+            Paste a pairing code from the campaign Visibility page in Oppvera.
+            Scores stay on Oppvera. This app only records consumer UI answers.
+          </p>
+          <form id="pairForm">
+            <label>Oppvera base URL
+              <input id="apiBase" value="https://oppvera.com" />
+            </label>
+            <label>Pairing code
+              <input id="code" placeholder="K7QM-2P9L" autocomplete="off" />
+            </label>
+            <label>This Mac
+              <input id="label" placeholder="Craig's Mac" />
+            </label>
+            <button id="pairBtn" class="primary" type="submit">Pair this Mac</button>
+          </form>
+        </div>
+        <p id="pairStatus" class="status">Ready to pair.</p>
+        <p id="pairError" class="error"></p>
+      </section>
+      <section id="bank" class="panel">
+        <p>Questions come from the campaign query bank. Edit them in Oppvera, not here.</p>
+        <button id="refreshBank" class="ghost">Refresh bank</button>
+        <ul id="queryList"></ul>
+      </section>
+      <section id="providers" class="panel">
+        <p>
+          Sign in with the consumer accounts you already pay for. Google covers
+          Gemini and AI Overview. Camoufox opens a visible Firefox window.
+          Disconnect removes the saved login from this Mac.
+        </p>
+        <div class="python-row">
+          <p id="pythonHelp" class="status"></p>
+          <button
+            id="retryPython"
+            class="icon-btn"
+            type="button"
+            hidden
+            title="Set up Camoufox Python again"
+            aria-label="Set up Camoufox Python again"
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M6.4 1.3 6 3.1a4.6 4.6 0 0 0-1.2.7L3.1 3.2 1.7 4.6l.6 1.7A4.6 4.6 0 0 0 2 7.5c0 .4 0 .8.1 1.2l-.6 1.7 1.4 1.4 1.7-.6c.4.5.8.8 1.2.7l.4 1.8h2l.4-1.8c.4-.1.8-.4 1.2-.7l1.7.6 1.4-1.4-.6-1.7c.1-.4.1-.8.1-1.2s0-.8-.1-1.2l.6-1.7-1.4-1.4-1.7.6a4.6 4.6 0 0 0-1.2-.7L9.6 1.3h-3.2ZM8 10.2A2.2 2.2 0 1 1 8 5.8a2.2 2.2 0 0 1 0 4.4Z"
+              />
+            </svg>
+          </button>
+        </div>
+        <button id="setupPython" class="ghost" type="button">Set up Camoufox Python</button>
+        <div id="providerList"></div>
+      </section>
+      <section id="run" class="panel">
+        <p>Runs one provider at a time. Results upload as Watch captures, not API Probe rows.</p>
+        <fieldset id="sessionMode">
+          <legend>Session</legend>
+          <label><input type="radio" name="sessionMode" value="signed-out" /> Signed-out only</label>
+          <label><input type="radio" name="sessionMode" value="signed-in" /> Signed-in only</label>
+          <label><input type="radio" name="sessionMode" value="both" checked /> Both</label>
+        </fieldset>
+        <p class="status">
+          Signed-out opens a fresh Firefox window and does not need Connect.
+          Signed-in uses the login you saved on this Mac.
+        </p>
+        <div id="runProviders"></div>
+        <button id="startRun" class="primary">Run query bank</button>
+        <button id="stopRun" class="ghost" type="button">Stop</button>
+        <ul id="runProgress"></ul>
+      </section>
+      <section id="sync" class="panel">
+        <p>Offline captures stay on this Mac until Oppvera is reachable. Retrying does not duplicate rows.</p>
+        <p id="syncStatus" class="status"></p>
+        <button id="syncNow" class="primary">Sync now</button>
+      </section>
+    </main>
+    <p id="error" class="error"></p>
+    <script src="app.js"></script>
+    <script>
+      (function () {
+        var form = document.getElementById("pairForm");
+        if (!form || form.dataset.watchBound === "1") return;
+        form.dataset.watchBound = "1";
+        async function pairFromForm(event) {
+          if (event) event.preventDefault();
+          var status = document.getElementById("pairStatus");
+          var error = document.getElementById("pairError");
+          var btn = document.getElementById("pairBtn");
+          if (status) status.textContent = "Pairing…";
+          if (error) error.textContent = "";
+          if (typeof window.setWatchBusy === "function") {
+            window.setWatchBusy(btn, true, "Pair this Mac", "Pairing…");
+          } else if (btn) {
+            btn.disabled = true;
+            btn.classList.add("busy");
+            btn.textContent = "Pairing…";
+          }
+          var api = window.watch;
+          if (!api || typeof api.pair !== "function") {
+            var msg =
+              "Watch preload failed to load. Quit the app fully, then run pnpm --filter @oppvera/watch-desktop dev.";
+            if (status) status.textContent = msg;
+            if (error) error.textContent = msg;
+            if (typeof window.setWatchBusy === "function") {
+              window.setWatchBusy(btn, false, "Pair this Mac", "Pairing…");
+            } else if (btn) {
+              btn.disabled = false;
+              btn.classList.remove("busy");
+              btn.textContent = "Pair this Mac";
+            }
+            return;
+          }
+          try {
+            var state = await api.pair({
+              apiBase: document.getElementById("apiBase").value,
+              code: document.getElementById("code").value,
+              label: document.getElementById("label").value,
+            });
+            if (typeof window.renderWatch === "function") {
+              window.renderWatch(state);
+            } else if (status) {
+              status.textContent =
+                state && state.paired
+                  ? "Paired."
+                  : (state && state.lastError) || "Pairing finished.";
+            }
+            if (state && state.paired) {
+              var code = document.getElementById("code");
+              if (code) code.value = "";
+            }
+          } catch (err) {
+            var message = err && err.message ? err.message : String(err);
+            if (status) status.textContent = message;
+            if (error) error.textContent = message;
+          } finally {
+            if (typeof window.setWatchBusy === "function") {
+              window.setWatchBusy(btn, false, "Pair this Mac", "Pairing…");
+            } else if (btn) {
+              btn.disabled = false;
+              btn.classList.remove("busy");
+              btn.textContent = "Pair this Mac";
+            }
+          }
+        }
+        form.addEventListener("submit", pairFromForm);
+      })();
+    </script>
+  </body>
+</html>

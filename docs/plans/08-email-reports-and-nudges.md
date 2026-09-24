@@ -1,5 +1,11 @@
 # Email reports and Oppvera Watch nudges
 
+## Status
+
+**Implemented** in the Oppvera demo **v0.94.3**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-23 via [PR #276](https://github.com/codetricity/oppvera/pull/276) (email reports landed across [PR #273](https://github.com/codetricity/oppvera/pull/273)–[PR #276](https://github.com/codetricity/oppvera/pull/276)).
+
+Code lives under [`app/lab/demo/`](https://github.com/codetricity/oppvera/tree/main/app/lab/demo): `oppvera/visibility/email_reports.py`, campaign email columns, Visibility settings UI, scheduler in `app.py`, `oppman send-campaign-reports`, `tests/test_visibility_email_reports.py`.
+
 Implement in the hosted Oppvera demo app:
 
 `/Users/craig/Documents/Oppkey/geo/generative-engine-optimization/app/lab/demo/`

@@ -14,7 +14,7 @@ export const chatgptConfig: ProviderConfig = {
 	waitForResponse: (page) => waitForAssistantToFinish(page, "chatgpt"),
 	extractResponse: (page) => extractAssistantMarkdown(page, "chatgpt"),
 	beforePromptHook: (page) =>
-		dismissChatgptAuthModal(page, { waitForAppearanceMs: 500 }),
+		dismissChatgptAuthModal(page, { waitForAppearanceMs: 12_000 }),
 	afterTypingHook: (page) =>
 		dismissChatgptAuthModal(page, { waitForAppearanceMs: 1500 }),
 	beforeSubmitHook: (page) =>

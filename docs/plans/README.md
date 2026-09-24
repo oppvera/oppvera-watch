@@ -18,18 +18,18 @@ You can ship and test the **hosted loop first** without changing this Watch repo
 1. **Done** — Persist Probe into `visibility_captures` ([04](04-oppvera-probe-persistence.md), Oppvera v0.89.0, [PR #268](https://github.com/codetricity/oppvera/pull/268)).
 2. **Done** — Shared scorer and campaign visibility UI ([05](05-unified-analytics.md), v0.90.0, [PR #269](https://github.com/codetricity/oppvera/pull/269)).
 3. **Done** — Campaign query-bank Probe runs ([06](06-query-bank-and-runs.md), v0.91.0, [PR #270](https://github.com/codetricity/oppvera/pull/270)).
-4. **Next (optional)** — Email reports ([08](08-email-reports-and-nudges.md)) with Probe teaser and Watch stale banner. Or start **Phase B** ([03](03-oppvera-probe-ingest-api.md) + [02](02-watch-desktop-electron.md)).
+4. **Done** — Email reports ([08](08-email-reports-and-nudges.md), v0.94.3, [PR #276](https://github.com/codetricity/oppvera/pull/276)).
 
 At the end of Phase A you have a working product surface: **API-labeled captures, GEO metrics, and HTMX dashboards** on real campaign data. That is the milestone to demo and iterate on before desktop work.
 
 **Phase B — Oppvera Watch (this repo):**
 
-5. Watch ingest API and device pairing ([03](03-oppvera-probe-ingest-api.md)).
-6. **macOS** Electron capture client ([02](02-watch-desktop-electron.md)) — desktop v1.
+5. ~~Watch ingest API and device pairing~~ **Done** on Oppvera ([03](03-oppvera-probe-ingest-api.md), v0.95.0, [PR #277](https://github.com/codetricity/oppvera/pull/277)).
+6. **macOS** Electron capture client ([02](02-watch-desktop-electron.md)) — desktop v1 in this repo (`apps/desktop`).
 7. UI-vs-API compare and mixed-source filters once both `source=probe` and `source=watch` rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
 8. **Windows** Electron build (planned desktop v2, after macOS v1) — same stack; see [02](02-watch-desktop-electron.md).
 
-Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06 on Oppvera `main`. **04, 05, and 06 are merged.** Optional **08** (email) can ship before or in parallel with Phase B. Phase B starts with Watch ingest ([03](03-oppvera-probe-ingest-api.md)) and the macOS app ([02](02-watch-desktop-electron.md)).
+Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06 on Oppvera `main`. **04, 05, 06, 08, and 03 are merged.** Next in this repo: the macOS app ([02](02-watch-desktop-electron.md)).
 
 ## Implementation status
 
@@ -38,18 +38,18 @@ Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06
 | [04](04-oppvera-probe-persistence.md) | **Done** — v0.89.0 | [PR #268](https://github.com/codetricity/oppvera/pull/268) |
 | [05](05-unified-analytics.md) | **Done** — v0.90.0 | [PR #269](https://github.com/codetricity/oppvera/pull/269) |
 | [06](06-query-bank-and-runs.md) | **Done** — v0.91.0 | [PR #270](https://github.com/codetricity/oppvera/pull/270) |
-| [08](08-email-reports-and-nudges.md) | Not started | Phase A optional; **next recommended** before or beside Phase B |
-| [03](03-oppvera-probe-ingest-api.md) | **Partial** | `GET …/query-bank` (session); pairing, device Bearer, `POST /captures` — Phase B |
-| [02](02-watch-desktop-electron.md) | N/A (Watch repo) | Phase B — macOS desktop v1 |
+| [08](08-email-reports-and-nudges.md) | **Done** — v0.94.3 | [PR #276](https://github.com/codetricity/oppvera/pull/276) (PRs #273–#276) |
+| [03](03-oppvera-probe-ingest-api.md) | **Done** — v0.95.0 | [PR #277](https://github.com/codetricity/oppvera/pull/277) |
+| [02](02-watch-desktop-electron.md) | Watch repo | **In progress** — `apps/desktop` Electron v1 |
 
 Update this table when each spec lands on [codetricity/oppvera](https://github.com/codetricity/oppvera) `main`.
 
 ## What's next
 
-Phase A core (04–06) is **complete** on Oppvera **v0.91.0**. Pick one:
+Hosted Oppvera Phase A plus Watch ingest (**03**, v0.95.0) is complete.
 
-1. **[08](08-email-reports-and-nudges.md)** (Oppvera) — monthly Probe summary emails and optional Watch stale banner. Good for consultant habit before desktop exists.
-2. **[03](03-oppvera-probe-ingest-api.md)** then **[02](02-watch-desktop-electron.md)** (Oppvera + this repo) — pairing, ingest API, macOS Watch. Enables UI-vs-API compare on the visibility page (Phase B step 7).
+1. **[02](02-watch-desktop-electron.md)** (this repo) — `pnpm dev:desktop`. Pair, Camoufox login, run bank, sync `source=watch`.
+2. Then exercise UI-vs-API compare on the Oppvera visibility page once Watch rows exist.
 
 ## Reading order
 
@@ -71,12 +71,12 @@ Build in this order. Specs can be written together; code should not skip ahead.
 1. ~~Oppvera schema and Probe persistence~~ **Done** ([04](04-oppvera-probe-persistence.md), [PR #268](https://github.com/codetricity/oppvera/pull/268)).
 2. ~~Shared scorer and campaign analytics UI on Probe-only data~~ **Done** ([05](05-unified-analytics.md), [PR #269](https://github.com/codetricity/oppvera/pull/269)).
 3. ~~Campaign query-bank Probe runs~~ **Done** ([06](06-query-bank-and-runs.md), [PR #270](https://github.com/codetricity/oppvera/pull/270)).
-4. **Next** — Campaign email reports ([08](08-email-reports-and-nudges.md)) *or* begin Phase B ([03](03-oppvera-probe-ingest-api.md) then [02](02-watch-desktop-electron.md)).
+4. ~~Campaign email reports~~ **Done** ([08](08-email-reports-and-nudges.md), [PR #276](https://github.com/codetricity/oppvera/pull/276)).
 
 **Phase B (Watch repo + Oppvera ingest):**
 
-5. Watch ingest API and device pairing ([03](03-oppvera-probe-ingest-api.md)).
-6. **macOS** Electron client ([02](02-watch-desktop-electron.md)) — desktop v1.
+5. ~~Watch ingest API and device pairing~~ **Done** ([03](03-oppvera-probe-ingest-api.md), [PR #277](https://github.com/codetricity/oppvera/pull/277)).
+6. **macOS** Electron client ([02](02-watch-desktop-electron.md)) — desktop v1 (`apps/desktop`).
 7. UI-vs-API compare and full mixed-source filters once Watch rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
 8. **Windows** Electron client (desktop v2, after macOS v1) — [02](02-watch-desktop-electron.md).
 
