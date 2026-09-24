@@ -244,3 +244,43 @@ ul {
   min-height: 1.4em;
   padding-bottom: 24px;
 }
+
+.sync-card {
+  margin: 16px 0;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.sync-card--success {
+  border-color: #99d5cf;
+  background: #ecfdf5;
+}
+
+.sync-card--pending {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.sync-card--warn {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.sync-headline {
+  margin: 0;
+  font-weight: 650;
+  font-size: 16px;
+}
+
+.sync-detail {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+#syncUnpaired[hidden],
+#syncCard[hidden] {
+  display: none;
+}

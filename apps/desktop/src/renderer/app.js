@@ -37,6 +37,95 @@ function readSessionMode() {
   return checked && checked.value ? checked.value : "both";
 }
 
+function formatLastSync(iso) {
+  if (!iso) return "";
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return iso;
+  const diffMs = Date.now() - then.getTime();
+  if (diffMs < 45_000) return "Just now";
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 60) {
+    return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+  }
+  return then.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function captureWord(count) {
+  return count === 1 ? "capture" : "captures";
+}
+
+function renderSync(state) {
+  const unpaired = document.getElementById("syncUnpaired");
+  const card = document.getElementById("syncCard");
+  const headline = document.getElementById("syncHeadline");
+  const detail = document.getElementById("syncDetail");
+  const syncNow = document.getElementById("syncNow");
+  if (!state.paired) {
+    if (unpaired) unpaired.hidden = false;
+    if (card) card.hidden = true;
+    if (syncNow) syncNow.disabled = true;
+    return;
+  }
+  if (unpaired) unpaired.hidden = true;
+  if (card) card.hidden = false;
+  if (syncNow) syncNow.disabled = state.running;
+  if (!headline || !detail || !card) return;
+
+  card.className = "sync-card";
+  const pending = state.pendingSync || 0;
+  const uploaded = state.lastSyncUploaded;
+  const failed = state.lastSyncFailed;
+  const when = formatLastSync(state.lastSyncAt);
+
+  if (pending > 0) {
+    card.classList.add("sync-card--pending");
+    headline.textContent = `${pending} ${captureWord(pending)} waiting on this Mac`;
+    detail.textContent =
+      "Sync sends answer text to Oppvera for scoring. You can sync now or after a run finishes.";
+    return;
+  }
+
+  if (failed != null && failed > 0) {
+    card.classList.add("sync-card--warn");
+    headline.textContent = "Sync finished with errors";
+    const parts = [];
+    if (uploaded != null && uploaded > 0) {
+      parts.push(`${uploaded} ${captureWord(uploaded)} uploaded`);
+    }
+    parts.push(`${failed} failed`);
+    if (when) parts.push(`Checked ${when}`);
+    detail.textContent = parts.join(" · ");
+    return;
+  }
+
+  if (state.lastSyncAt) {
+    card.classList.add("sync-card--success");
+    headline.textContent = "All captures synced to Oppvera";
+    const parts = [];
+    if (uploaded != null && uploaded > 0) {
+      parts.push(
+        `Sent ${uploaded} ${captureWord(uploaded)} on the last sync`,
+      );
+    } else if (uploaded === 0) {
+      parts.push("Nothing was waiting; Oppvera already has your latest data");
+    }
+    if (when) parts.push(`Last sync ${when}`);
+    detail.textContent = parts.join(" · ");
+    return;
+  }
+
+  headline.textContent = "Nothing waiting to sync";
+  detail.textContent =
+    "Run the query bank to capture answers, then sync or let a run upload automatically.";
+}
+
 function render(state) {
   if (!state) return;
   text("python-status", state.python && state.python.message);
@@ -176,12 +265,7 @@ function render(state) {
       progress.appendChild(li);
     }
   }
-  text(
-    "syncStatus",
-    state.paired
-      ? `${state.pendingSync} waiting to sync.${state.lastSyncAt ? ` Last success: ${state.lastSyncAt}` : ""}`
-      : "Pair before syncing.",
-  );
+  renderSync(state);
   const startRun = document.getElementById("startRun");
   if (startRun) startRun.disabled = state.running || !state.paired;
   const stopRun = document.getElementById("stopRun");
@@ -296,8 +380,18 @@ try {
   }
   const syncNow = document.getElementById("syncNow");
   if (syncNow) {
-    syncNow.onclick = () =>
-      api && api.syncNow().catch((error) => setError(error.message));
+    syncNow.onclick = async () => {
+      if (!api) return;
+      setError("");
+      setBusy(syncNow, true, "Sync now", "Syncing…");
+      try {
+        await api.syncNow();
+      } catch (error) {
+        setError(error.message || String(error));
+      } finally {
+        setBusy(syncNow, false, "Sync now", "Syncing…");
+      }
+    };
   }
   const sessionMode = document.getElementById("sessionMode");
   if (sessionMode) {

@@ -106,9 +106,16 @@
         <ul id="runProgress"></ul>
       </section>
       <section id="sync" class="panel">
-        <p>Offline captures stay on this Mac until Oppvera is reachable. Retrying does not duplicate rows.</p>
-        <p id="syncStatus" class="status"></p>
-        <button id="syncNow" class="primary">Sync now</button>
+        <p class="hint">
+          Offline captures stay on this Mac until Oppvera is reachable. Retrying
+          does not duplicate rows.
+        </p>
+        <div id="syncCard" class="sync-card" hidden>
+          <p id="syncHeadline" class="sync-headline"></p>
+          <p id="syncDetail" class="sync-detail"></p>
+        </div>
+        <p id="syncUnpaired" class="status">Pair before syncing.</p>
+        <button id="syncNow" class="primary" type="button">Sync now</button>
       </section>
     </main>
     <p id="error" class="error"></p>
