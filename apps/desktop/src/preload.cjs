@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+console.log("[watch] preload loaded");
+
 contextBridge.exposeInMainWorld("watch", {
 	getState: () => ipcRenderer.invoke("watch:getState"),
 	pair: (payload) => ipcRenderer.invoke("watch:pair", payload),

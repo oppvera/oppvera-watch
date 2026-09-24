@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self'; script-src 'self'"
+      content="default-src 'self'; style-src 'self'; script-src 'self' 'unsafe-inline'"
     />
     <title>Oppvera Watch</title>
     <link rel="stylesheet" href="styles.css" />
@@ -30,18 +30,20 @@
           Paste a pairing code from the campaign Visibility page in Oppvera.
           Scores stay on Oppvera. This app only records consumer UI answers.
         </p>
-        <label>Oppvera base URL
-          <input id="apiBase" value="https://oppvera.com" />
-        </label>
-        <label>Pairing code
-          <input id="code" placeholder="K7QM-2P9L" />
-        </label>
-        <label>This Mac
-          <input id="label" placeholder="Craig's Mac" />
-        </label>
-        <button id="pairBtn" class="primary" type="button">Pair</button>
-        <button id="unpairBtn" class="ghost" type="button">Unpair</button>
-        <p id="pairStatus" class="status"></p>
+        <form id="pairForm">
+          <label>Oppvera base URL
+            <input id="apiBase" value="https://oppvera.com" />
+          </label>
+          <label>Pairing code
+            <input id="code" placeholder="K7QM-2P9L" autocomplete="off" />
+          </label>
+          <label>This Mac
+            <input id="label" placeholder="Craig's Mac" />
+          </label>
+          <button id="pairBtn" class="primary" type="submit">Pair this Mac</button>
+          <button id="unpairBtn" class="ghost" type="button">Unpair</button>
+        </form>
+        <p id="pairStatus" class="status">Ready to pair.</p>
         <p id="pairError" class="error"></p>
       </section>
       <section id="bank" class="panel">
@@ -72,5 +74,47 @@
     </main>
     <p id="error" class="error"></p>
     <script src="app.js"></script>
+    <script>
+      (function () {
+        var form = document.getElementById("pairForm");
+        if (!form || form.dataset.watchBound === "1") return;
+        form.dataset.watchBound = "1";
+        async function pairFromForm(event) {
+          if (event) event.preventDefault();
+          var status = document.getElementById("pairStatus");
+          var error = document.getElementById("pairError");
+          if (status) status.textContent = "Pairing…";
+          if (error) error.textContent = "";
+          var api = window.watch;
+          if (!api || typeof api.pair !== "function") {
+            var msg =
+              "Watch preload failed to load. Quit the app fully, then run pnpm --filter @oppvera/watch-desktop dev.";
+            if (status) status.textContent = msg;
+            if (error) error.textContent = msg;
+            return;
+          }
+          try {
+            var state = await api.pair({
+              apiBase: document.getElementById("apiBase").value,
+              code: document.getElementById("code").value,
+              label: document.getElementById("label").value,
+            });
+            if (typeof window.renderWatch === "function") {
+              window.renderWatch(state);
+            } else if (status) {
+              status.textContent =
+                state && state.paired
+                  ? "Paired."
+                  : (state && state.lastError) || "Pairing finished.";
+            }
+          } catch (err) {
+            var message = err && err.message ? err.message : String(err);
+            if (status) status.textContent = message;
+            if (error) error.textContent = message;
+          }
+        }
+        form.addEventListener("submit", pairFromForm);
+      })();
+    </script>
   </body>
 </html>

@@ -113,11 +113,21 @@ const AUTH_FOR: Record<Provider, AuthProvider> = {
 
 async function snapshot(): Promise<AppState> {
 	const device = readDevice();
+	let providers: AppState["providers"] = AUTH_PROVIDER_LIST.map((id) => ({
+		id,
+		connected: false,
+		error: null,
+	}));
+	try {
+		providers = await providerCards();
+	} catch (error) {
+		console.error("[watch] provider status failed:", error);
+	}
 	return {
 		paired: Boolean(device),
 		device: publicDevice(device),
 		queries,
-		providers: await providerCards(),
+		providers,
 		runtimeProviders: PROVIDER_LIST.map((id) => ({
 			id,
 			connected: existsSync(getAuthSessionFile(AUTH_FOR[id])),
@@ -192,17 +202,31 @@ async function syncPending(): Promise<void> {
 }
 
 const createWindow = () => {
+	const preloadPath = join(here, "preload.cjs");
+	console.log("[watch] preload path", preloadPath, "exists", existsSync(preloadPath));
 	win = new BrowserWindow({
 		width: 980,
 		height: 760,
 		title: "Oppvera Watch",
 		webPreferences: {
-			preload: join(here, "preload.cjs"),
+			preload: preloadPath,
 			contextIsolation: true,
 			nodeIntegration: false,
 			sandbox: false,
 		},
 	});
+	win.webContents.on("preload-error", (_event, path, error) => {
+		console.error("[watch] preload-error", path, error);
+	});
+	win.webContents.on("console-message", (_event, _level, message) => {
+		console.log("[watch renderer]", message);
+	});
+	win.webContents.on("did-fail-load", (_event, code, desc, url) => {
+		console.error("[watch] did-fail-load", code, desc, url);
+	});
+	if (!app.isPackaged) {
+		win.webContents.openDevTools({ mode: "bottom" });
+	}
 	void win.loadFile(join(here, "renderer", "index.html"));
 };
 
@@ -227,6 +251,7 @@ ipcMain.handle("watch:getState", () => snapshot());
 ipcMain.handle(
 	"watch:pair",
 	async (_event, payload: { apiBase: string; code: string; label: string }) => {
+		console.log("[watch] pair IPC", payload?.apiBase, "code length", payload?.code?.length ?? 0);
 		try {
 			const device = await pairDevice(payload);
 			saveDevice(device);

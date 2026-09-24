@@ -88,6 +88,10 @@ h1 {
   display: block;
 }
 
+#pairForm {
+  margin: 0;
+}
+
 label {
   display: block;
   margin: 12px 0;
