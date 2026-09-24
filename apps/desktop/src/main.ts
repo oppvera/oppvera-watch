@@ -32,6 +32,10 @@ import {
 	writeCapture,
 } from "./storage.js";
 import type { CaptureSession, SessionMode, StoredCapture } from "./ingest.js";
+import {
+	formatWatchVersionLabel,
+	WATCH_VERSION,
+} from "./version.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -63,6 +67,8 @@ type AppState = {
 	lastError: string | null;
 	python: { ok: boolean; message: string };
 	sessionMode: SessionMode;
+	appVersion: string;
+	appVersionLabel: string;
 };
 
 let win: BrowserWindow | null = null;
@@ -150,6 +156,8 @@ async function snapshot(): Promise<AppState> {
 		lastError,
 		python: { ok: python.ok, message: python.message },
 		sessionMode,
+		appVersion: WATCH_VERSION.version,
+		appVersionLabel: formatWatchVersionLabel(),
 	};
 }
 
@@ -353,6 +361,11 @@ const createWindow = () => {
 app.setName("Oppvera Watch");
 
 app.whenReady().then(async () => {
+	app.setAboutPanelOptions({
+		applicationName: WATCH_VERSION.productName,
+		applicationVersion: WATCH_VERSION.version,
+		version: WATCH_VERSION.version,
+	});
 	supportEnv();
 	await refreshPython();
 	const device = readDevice();

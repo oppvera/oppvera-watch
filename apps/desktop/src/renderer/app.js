@@ -128,6 +128,11 @@ function renderSync(state) {
 
 function render(state) {
   if (!state) return;
+  text(
+    "appVersion",
+    state.appVersionLabel ||
+      (state.appVersion ? `Oppvera Watch v${state.appVersion}` : "Oppvera Watch"),
+  );
   text("python-status", state.python && state.python.message);
   if (!pythonBusy) {
     text("pythonHelp", state.python && state.python.message);
