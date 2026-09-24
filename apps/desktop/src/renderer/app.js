@@ -18,6 +18,8 @@ function setError(message) {
 function render(state) {
   document.getElementById("python-status").textContent = state.python.message;
   document.getElementById("pythonHelp").textContent = state.python.message;
+  document.getElementById("pairError").textContent = state.lastError || "";
+  setError(state.lastError || "");
   const pairStatus = document.getElementById("pairStatus");
   if (state.paired && state.device) {
     pairStatus.textContent = `Paired with ${state.device.company_name} / ${state.device.campaign_name} (${state.device.api_base})`;
@@ -90,19 +92,29 @@ function render(state) {
     ? `${state.pendingSync} waiting to sync.${state.lastSyncAt ? ` Last success: ${state.lastSyncAt}` : ""}`
     : "Pair before syncing.";
   document.getElementById("startRun").disabled = state.running || !state.paired;
-  if (state.lastError) setError(state.lastError);
 }
 
 document.getElementById("pairBtn").onclick = async () => {
   setError("");
+  document.getElementById("pairError").textContent = "Pairing…";
+  const api = window.watch;
+  if (!api || typeof api.pair !== "function") {
+    setError("Watch preload failed to load. Restart the app.");
+    document.getElementById("pairError").textContent =
+      "Watch preload failed to load. Restart the app.";
+    return;
+  }
   try {
-    await watch.pair({
+    const state = await api.pair({
       apiBase: document.getElementById("apiBase").value,
       code: document.getElementById("code").value,
       label: document.getElementById("label").value,
     });
+    render(state);
   } catch (error) {
-    setError(error.message || String(error));
+    const message = error.message || String(error);
+    setError(message);
+    document.getElementById("pairError").textContent = message;
   }
 };
 
@@ -122,5 +134,9 @@ document.getElementById("startRun").onclick = async () => {
   }
 };
 
-watch.onState(render);
-watch.getState().then(render);
+if (watch && typeof watch.onState === "function") {
+  watch.onState(render);
+  watch.getState().then(render);
+} else {
+  setError("Watch preload failed to load. Restart the app.");
+}

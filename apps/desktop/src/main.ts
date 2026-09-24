@@ -197,7 +197,7 @@ const createWindow = () => {
 		height: 760,
 		title: "Oppvera Watch",
 		webPreferences: {
-			preload: join(here, "preload.js"),
+			preload: join(here, "preload.cjs"),
 			contextIsolation: true,
 			nodeIntegration: false,
 			sandbox: false,
@@ -230,11 +230,19 @@ ipcMain.handle(
 		try {
 			const device = await pairDevice(payload);
 			saveDevice(device);
-			queries = await fetchQueryBank(device);
-			lastError = null;
+			try {
+				queries = await fetchQueryBank(device);
+				lastError = null;
+			} catch (error) {
+				queries = [];
+				lastError =
+					error instanceof Error
+						? `Paired, but query bank failed: ${error.message}`
+						: String(error);
+			}
 		} catch (error) {
 			lastError = error instanceof Error ? error.message : String(error);
-			throw error;
+			console.error("[watch] pair failed:", lastError);
 		}
 		return pushState();
 	},

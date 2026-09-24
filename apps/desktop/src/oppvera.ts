@@ -1,4 +1,6 @@
+import { net } from "electron";
 import { ingestBodyFromCaptures, type StoredCapture } from "./ingest.js";
+import { normalizePairCode } from "./pairCode.js";
 import type { DeviceRecord } from "./storage.js";
 
 export type QueryBankItem = {
@@ -9,6 +11,14 @@ export type QueryBankItem = {
 };
 
 type ApiError = { detail?: string };
+
+async function http(
+	url: string,
+	init: RequestInit = {},
+): Promise<Response> {
+	const fetchFn = net.fetch.bind(net) as typeof fetch;
+	return fetchFn(url, init);
+}
 
 async function probeFetch(
 	device: DeviceRecord,
@@ -21,17 +31,22 @@ async function probeFetch(
 	if (init.body && !headers.has("Content-Type")) {
 		headers.set("Content-Type", "application/json");
 	}
-	return fetch(url, { ...init, headers });
+	return http(url, { ...init, headers });
 }
 
 async function readDetail(response: Response): Promise<string> {
+	const text = await response.text();
 	try {
-		const payload = (await response.json()) as ApiError;
-		if (payload.detail) return payload.detail;
+		const payload = JSON.parse(text) as ApiError;
+		if (payload.detail) return String(payload.detail);
 	} catch {
-		// ignore
+		const snippet = text.replace(/\s+/g, " ").trim().slice(0, 120);
+		if (snippet.startsWith("<")) {
+			return `${response.status} from ${response.url} (HTML, not the probe API). Check the Oppvera base URL.`;
+		}
+		if (snippet) return `${response.status}: ${snippet}`;
 	}
-	return `${response.status} ${response.statusText}`;
+	return `${response.status} ${response.statusText || "error"} from the probe API`;
 }
 
 export async function pairDevice(input: {
@@ -39,19 +54,36 @@ export async function pairDevice(input: {
 	code: string;
 	label: string;
 }): Promise<DeviceRecord> {
-	const api_base = input.apiBase.trim().replace(/\/$/, "") || "https://oppvera.com";
-	const response = await fetch(`${api_base}/api/probe/devices/pair`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			code: input.code.trim(),
-			label: input.label.trim() || "Oppvera Watch",
-		}),
-	});
+	const api_base =
+		input.apiBase.trim().replace(/\/$/, "") || "https://oppvera.com";
+	const code = normalizePairCode(input.code);
+	if (code.length !== 8) {
+		throw new Error(
+			"Pairing code should be 8 characters (for example K7QM-2P9L).",
+		);
+	}
+	const url = `${api_base}/api/probe/devices/pair`;
+	console.log(`[watch] pairing POST ${url}`);
+	let response: Response;
+	try {
+		response = await http(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json", Accept: "application/json" },
+			body: JSON.stringify({
+				code,
+				label: input.label.trim() || "Oppvera Watch",
+			}),
+		});
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Could not reach ${url}: ${message}`);
+	}
+	console.log(`[watch] pairing status ${response.status}`);
 	if (!response.ok) {
 		throw new Error(await readDetail(response));
 	}
-	const payload = (await response.json()) as {
+	const text = await response.text();
+	let payload: {
 		device_token: string;
 		workspace_id: string;
 		company_id: string | null;
@@ -61,6 +93,16 @@ export async function pairDevice(input: {
 		brand_domain: string;
 		api_base?: string;
 	};
+	try {
+		payload = JSON.parse(text);
+	} catch {
+		throw new Error(
+			`Pairing returned ${response.status} but not JSON. Check the Oppvera base URL.`,
+		);
+	}
+	if (!payload.device_token || !payload.campaign_id) {
+		throw new Error("Pairing response was missing a device token.");
+	}
 	return {
 		device_token: payload.device_token,
 		api_base: payload.api_base || api_base,

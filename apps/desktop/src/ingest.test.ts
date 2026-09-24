@@ -6,6 +6,7 @@ import {
 	ingestBodyFromCaptures,
 	WATCH_PROVIDER_LABELS,
 } from "./ingest.ts";
+import { normalizePairCode } from "./pairCode.ts";
 
 describe("capture mapping", () => {
 	it("maps a prompt result without cookies or favicon", () => {
@@ -48,5 +49,12 @@ describe("capture mapping", () => {
 			() => assertNoSecretKeys({ nested: { storageState: {} } }),
 			/storageState/,
 		);
+	});
+});
+
+describe("pairing code", () => {
+	it("strips hyphens and unicode dashes", () => {
+		assert.equal(normalizePairCode("PB5K-2F2E"), "PB5K2F2E");
+		assert.equal(normalizePairCode("pb5k–2f2e"), "PB5K2F2E");
 	});
 });
