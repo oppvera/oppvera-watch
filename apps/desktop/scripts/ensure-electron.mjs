@@ -1,39 +1,76 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const require = createRequire(import.meta.url);
 const electronDir = dirname(require.resolve("electron/package.json"));
+const { downloadArtifact } = require(
+	require.resolve("@electron/get", { paths: [electronDir] }),
+);
+const { version } = require(join(electronDir, "package.json"));
+
+const distDir = join(electronDir, "dist");
 const pathFile = join(electronDir, "path.txt");
+const platform = process.env.npm_config_platform || process.platform;
+const arch = process.env.npm_config_arch || process.arch;
 const platformPath =
-	process.platform === "darwin"
+	platform === "darwin"
 		? "Electron.app/Contents/MacOS/Electron"
-		: process.platform === "win32"
+		: platform === "win32"
 			? "electron.exe"
 			: "electron";
+const frameworkPath = join(
+	distDir,
+	"Electron.app/Contents/Frameworks/Electron Framework.framework",
+);
 
-function hasBinary() {
-	return existsSync(join(electronDir, "dist", platformPath));
+function isComplete() {
+	if (!existsSync(join(distDir, platformPath))) return false;
+	if (platform === "darwin" && !existsSync(frameworkPath)) return false;
+	return true;
 }
 
-if (hasBinary()) {
-	if (!existsSync(pathFile)) {
-		writeFileSync(pathFile, platformPath);
-	}
-	process.exit(0);
-}
-
-console.log("Downloading the Electron binary (pnpm skipped its install script)…");
-const result = spawnSync(process.execPath, [join(electronDir, "install.js")], {
-	stdio: "inherit",
-	cwd: electronDir,
-	env: process.env,
-});
-if (hasBinary() && !existsSync(pathFile)) {
+function writePathFile() {
 	writeFileSync(pathFile, platformPath);
 }
-if (!hasBinary() || !existsSync(pathFile)) {
-	process.exit(result.status === null ? 1 : result.status || 1);
+
+async function main() {
+	if (isComplete()) {
+		if (!existsSync(pathFile)) writePathFile();
+		return;
+	}
+
+	console.log("Downloading a complete Electron binary…");
+	const zipPath = await downloadArtifact({
+		version,
+		artifactName: "electron",
+		force: process.env.force_no_cache === "true",
+		platform,
+		arch,
+	});
+
+	rmSync(distDir, { recursive: true, force: true });
+	mkdirSync(distDir, { recursive: true });
+
+	const unzip = spawnSync("unzip", ["-o", zipPath, "-d", distDir], {
+		stdio: "inherit",
+	});
+	if (unzip.status !== 0) {
+		throw new Error(
+			`unzip failed (${unzip.status ?? "signal"}). Install the macOS unzip tool or delete node_modules/electron and retry.`,
+		);
+	}
+
+	if (!isComplete()) {
+		throw new Error(
+			"Electron is still incomplete after unzip (missing Frameworks).",
+		);
+	}
+	writePathFile();
 }
-process.exit(0);
+
+main().catch((error) => {
+	console.error(error instanceof Error ? error.message : String(error));
+	process.exit(1);
+});
