@@ -8,7 +8,8 @@
 	"scripts": {
 		"build:deps": "pnpm --filter @oneglanse/types --filter @oneglanse/errors --filter @oneglanse/utils --filter @oneglanse/services --filter @oneglanse/agent build",
 		"build": "tsc -p tsconfig.json && node scripts/copy-renderer.mjs",
-		"dev": "pnpm build:deps && pnpm build && electron .",
+		"dev": "pnpm build:deps && pnpm build && node scripts/ensure-electron.mjs && electron .",
+		"postinstall": "node scripts/ensure-electron.mjs",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"test": "tsx --test src/ingest.test.ts",
 		"dist:mac": "pnpm build && electron-builder --mac --arm64"
