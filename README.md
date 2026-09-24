@@ -24,7 +24,7 @@ A third surface, **Studio / Brand Security**, diagnoses owned content in Oppvera
 
 ## Status
 
-- **Desktop v1 (in progress):** macOS Electron app in `apps/desktop`. Pairing, provider Connect, query-bank runs (signed-out, signed-in, or both), Stop, and sync to Oppvera `source=watch`.
+- **Desktop v1 (in progress):** macOS Electron app in `apps/desktop`, currently **v0.2.0**. Pairing, provider Connect, signed-in query-bank runs, Stop, and sync to Oppvera `source=watch`.
 - **Hosted ingest:** Oppvera pairing tokens and `POST /api/probe/captures` (Oppvera v0.95.0+).
 - **Windows:** planned as desktop v2. Linux desktop is not on the roadmap.
 - **Not the install path:** `pnpm local`, Docker Desktop, Postgres/Redis/ClickHouse, Better Auth, and `OPENAI_API_KEY` on this machine. Those remain in the monorepo as leftover OneGlanse packages. Do not follow them to run Watch.
@@ -36,9 +36,9 @@ This repo does **not** routinely merge OneGlanse. The `oneglanse` git remote is 
 1. In Oppvera, open the campaign **Visibility** page and generate a pairing code.
 2. In Watch, paste the Oppvera base URL (`https://oppvera.com` or local `http://127.0.0.1:8000`) and the code. Pairing survives app restarts until you unpair.
 3. Install **Python 3.10+** from [python.org](https://www.python.org/downloads/) if needed, then use **Set up Camoufox Python** once so Firefox can launch.
-4. On **Providers**, Connect (or skip Connect for signed-out-only runs). Disconnect removes the saved login on this Mac. It does not reset Oppvera.
+4. On **Providers**, Connect with the consumer accounts you already pay for. Disconnect removes the saved login from this Mac. It does not reset Oppvera.
 5. **Query bank** is read-only here. Add or edit questions in Oppvera.
-6. On **Run**, pick providers and session mode (signed-out, signed-in, or both). Stop kills the capture process, including Firefox.
+6. On **Run**, pick connected providers. Stop kills the capture process, including Firefox.
 7. **Sync** uploads pending captures. Oppvera scores them. Watch never asks for an analysis key.
 
 Packaged `.dmg` users do not need Node.js. Developers running from git do (see below).
@@ -48,7 +48,7 @@ Packaged `.dmg` users do not need Node.js. Developers running from git do (see b
 | Who | Need |
 | --- | --- |
 | Anyone capturing | macOS, Python 3.10+, network, an Oppvera campaign + pairing code |
-| Signed-in captures | Your consumer logins in the Camoufox window |
+| Signed-in captures | Your consumer logins in the Camoufox window (Connect before Run) |
 | Developers from this repo | Node.js 20+, pnpm 10+, Git |
 
 Docker is not required for Watch.

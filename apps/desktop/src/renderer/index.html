@@ -89,16 +89,12 @@
         <div id="providerList"></div>
       </section>
       <section id="run" class="panel">
-        <p>Runs one provider at a time. Results upload as Watch captures, not API Probe rows.</p>
-        <fieldset id="sessionMode">
-          <legend>Session</legend>
-          <label><input type="radio" name="sessionMode" value="signed-out" /> Signed-out only</label>
-          <label><input type="radio" name="sessionMode" value="signed-in" /> Signed-in only</label>
-          <label><input type="radio" name="sessionMode" value="both" checked /> Both</label>
-        </fieldset>
+        <p>
+          Runs one provider at a time using the login you saved with Connect.
+          Results upload as Watch captures, not API Probe rows.
+        </p>
         <p class="status">
-          Signed-out opens a fresh Firefox window and does not need Connect.
-          Signed-in uses the login you saved on this Mac.
+          Connect each provider on the Providers tab before you run it.
         </p>
         <div id="runProviders"></div>
         <button id="startRun" class="primary">Run query bank</button>

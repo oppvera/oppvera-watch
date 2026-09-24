@@ -31,7 +31,7 @@ import {
 	saveDevice,
 	writeCapture,
 } from "./storage.js";
-import type { CaptureSession, SessionMode, StoredCapture } from "./ingest.js";
+import type { CaptureSession, StoredCapture } from "./ingest.js";
 import {
 	formatWatchVersionLabel,
 	WATCH_VERSION,
@@ -66,7 +66,6 @@ type AppState = {
 	lastSyncFailed: number | null;
 	lastError: string | null;
 	python: { ok: boolean; message: string };
-	sessionMode: SessionMode;
 	appVersion: string;
 	appVersionLabel: string;
 };
@@ -81,7 +80,6 @@ let lastSyncAt: string | null = null;
 let lastSyncUploaded: number | null = null;
 let lastSyncFailed: number | null = null;
 let lastError: string | null = null;
-let sessionMode: SessionMode = "both";
 let python = {
 	ok: false,
 	message: "Checking Python…",
@@ -155,7 +153,6 @@ async function snapshot(): Promise<AppState> {
 		lastSyncFailed,
 		lastError,
 		python: { ok: python.ok, message: python.message },
-		sessionMode,
 		appVersion: WATCH_VERSION.version,
 		appVersionLabel: formatWatchVersionLabel(),
 	};
@@ -472,7 +469,7 @@ ipcMain.handle(
 	"watch:startRun",
 	async (
 		_event,
-		payload: { providers: Provider[]; sessionMode?: SessionMode } | Provider[],
+		payload: { providers: Provider[] } | Provider[],
 	) => {
 	const device = readDevice();
 	if (!device) throw new Error("Pair first.");
@@ -480,15 +477,6 @@ ipcMain.handle(
 		throw new Error("The campaign query bank is empty. Add questions in Oppvera.");
 	}
 	const providers = Array.isArray(payload) ? payload : payload.providers;
-	const requestedMode = Array.isArray(payload)
-		? "signed-in"
-		: payload.sessionMode;
-	sessionMode =
-		requestedMode === "signed-in" ||
-		requestedMode === "signed-out" ||
-		requestedMode === "both"
-			? requestedMode
-			: "both";
 	const selected = providers.filter((id) => PROVIDER_LIST.includes(id));
 	if (selected.length === 0) {
 		throw new Error("Select at least one provider.");
@@ -497,38 +485,27 @@ ipcMain.handle(
 	if (!python.ok) throw new Error(python.message);
 	const connected = (id: Provider) =>
 		existsSync(getAuthSessionFile(AUTH_FOR[id]));
-	if (sessionMode === "signed-in") {
-		const missing = selected.filter((id) => !connected(id));
-		if (missing.length > 0) {
-			throw new Error(
-				`Connect ${missing.join(", ")} before a signed-in run, or choose signed-out.`,
-			);
-		}
+	const missing = selected.filter((id) => !connected(id));
+	if (missing.length > 0) {
+		throw new Error(
+			`Connect ${missing.join(", ")} on the Providers tab before running.`,
+		);
 	}
-	const sessions: CaptureSession[] =
-		sessionMode === "both"
-			? ["signed-out", "signed-in"]
-			: [sessionMode];
 	running = true;
 	runCancelled = false;
 	const runId = randomUUID();
 	runItems = selected.flatMap((provider) =>
-		sessions.flatMap((session) => {
-			if (session === "signed-in" && !connected(provider)) return [];
-			return queries.map((query) => ({
-				provider,
-				session,
-				query_item_id: query.query_item_id,
-				question: query.text,
-				status: "pending" as const,
-			}));
-		}),
+		queries.map((query) => ({
+			provider,
+			session: "signed-in" as const,
+			query_item_id: query.query_item_id,
+			question: query.text,
+			status: "pending" as const,
+		})),
 	);
 	if (runItems.length === 0) {
 		running = false;
-		throw new Error(
-			"Nothing to run. Connect a provider for signed-in, or pick signed-out.",
-		);
+		throw new Error("Nothing to run. Connect a provider, then select it here.");
 	}
 	await pushState();
 	const dirs = supportEnv();

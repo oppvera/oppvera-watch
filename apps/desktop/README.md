@@ -35,3 +35,5 @@ The app version is **semver in `apps/desktop/package.json`** (`version` field). 
 # edit "version" in apps/desktop/package.json, then:
 pnpm --filter @oppvera/watch-desktop dist:mac
 ```
+
+**v0.2.0** captures **signed-in** consumer sessions only. Connect a provider before Run. Signed-out capture remains in the capture runner for a later release; it is not in the UI.

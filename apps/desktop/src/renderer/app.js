@@ -32,11 +32,6 @@ function setBusy(button, busy, idleLabel, busyLabel) {
 
 window.setWatchBusy = setBusy;
 
-function readSessionMode() {
-  const checked = document.querySelector("#sessionMode input:checked");
-  return checked && checked.value ? checked.value : "both";
-}
-
 function formatLastSync(iso) {
   if (!iso) return "";
   const then = new Date(iso);
@@ -232,13 +227,9 @@ function render(state) {
       [...runProviders.querySelectorAll("input:checked")].map((input) => input.value),
     );
     const hadBoxes = Boolean(runProviders.querySelector("input"));
-    const mode = readSessionMode();
-    document.querySelectorAll("#sessionMode input").forEach((input) => {
-      input.disabled = state.running;
-    });
     runProviders.innerHTML = "";
     for (const provider of state.runtimeProviders || []) {
-      const needsLogin = mode === "signed-in" && !provider.connected;
+      const needsLogin = !provider.connected;
       const label = document.createElement("label");
       const box = document.createElement("input");
       box.type = "checkbox";
@@ -247,14 +238,11 @@ function render(state) {
       if (hadBoxes) {
         box.checked = previous.has(provider.id) && !needsLogin;
       } else {
-        box.checked = mode === "signed-in" ? provider.connected : true;
+        box.checked = provider.connected;
       }
-      const suffix =
-        provider.connected
-          ? " · connected"
-          : mode === "signed-in"
-            ? " (connect first)"
-            : " · signed-out";
+      const suffix = provider.connected
+        ? " · connected"
+        : " (connect first)";
       label.append(box, document.createTextNode(` ${provider.id}${suffix}`));
       runProviders.appendChild(label);
     }
@@ -264,7 +252,7 @@ function render(state) {
     progress.innerHTML = "";
     for (const item of state.runItems || []) {
       const li = document.createElement("li");
-      li.textContent = `${item.provider} · ${item.session || "signed-in"} · ${item.question} · ${item.status}${
+      li.textContent = `${item.provider} · ${item.question} · ${item.status}${
         item.error ? ` · ${item.error}` : ""
       }`;
       progress.appendChild(li);
@@ -398,14 +386,6 @@ try {
       }
     };
   }
-  const sessionMode = document.getElementById("sessionMode");
-  if (sessionMode) {
-    sessionMode.addEventListener("change", () => {
-      if (api && typeof api.getState === "function") {
-        api.getState().then(render);
-      }
-    });
-  }
   const startRun = document.getElementById("startRun");
   if (startRun) {
     startRun.onclick = async () => {
@@ -417,7 +397,6 @@ try {
       try {
         await api.startRun({
           providers: selected,
-          sessionMode: readSessionMode(),
         });
       } catch (error) {
         setError(error.message || String(error));
