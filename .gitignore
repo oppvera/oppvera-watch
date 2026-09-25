@@ -48,6 +48,9 @@ coverage/
 # Claude Code
 .claude/
 
+# Local Cursor plans (rules under .cursor/rules/ stay tracked)
+.cursor/plans/
+
 .oneglanse-storage/
 
 # Desktop Electron output

@@ -8,6 +8,8 @@ Oppvera Watch is a macOS capture client for hosted Oppvera. It is MIT-licensed. 
 
 ## Development setup
 
+Root `package.json` sets `"private": true` so this monorepo is not published to npm. It does not affect GitHub visibility.
+
 Requirements: Apple silicon or any Mac for `pnpm dev:desktop`, Node.js 20+, pnpm 10+, Git. Python 3.10+ is needed only when you connect a provider.
 
 ```bash
