@@ -9,9 +9,8 @@ import {
 	readPersistedAuthStatus,
 	saveAuthSession,
 	saveReusableIdentitySessions,
-	uploadAuthSession,
 	writeProviderAuthStatus,
-} from "@oneglanse/services/auth";
+} from "./sessionStore.js";
 import { AUTH_PROVIDER_LIST, type AuthProvider } from "@oneglanse/types";
 import {
 	AUTH_PROVIDER_CONFIG,
@@ -792,8 +791,7 @@ async function waitForAuthSessionComplete(
 		);
 	}
 	await saveReusableIdentitySessions(finalState);
-	const savedState = await saveAuthSession(provider, finalState);
-	await uploadAuthSession(provider, savedState);
+	await saveAuthSession(provider, finalState);
 	await context.close().catch(() => {});
 }
 

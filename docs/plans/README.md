@@ -40,7 +40,7 @@ Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06
 | [06](06-query-bank-and-runs.md) | **Done** — v0.91.0 | [PR #270](https://github.com/codetricity/oppvera/pull/270) |
 | [08](08-email-reports-and-nudges.md) | **Done** — v0.94.3 | [PR #276](https://github.com/codetricity/oppvera/pull/276) (PRs #273–#276) |
 | [03](03-oppvera-probe-ingest-api.md) | **Done** — v0.95.0 | [PR #277](https://github.com/codetricity/oppvera/pull/277) |
-| [02](02-watch-desktop-electron.md) | Watch repo | **In progress** — `apps/desktop` Electron v1 |
+| [02](02-watch-desktop-electron.md) | Watch repo | **Packaged** — `apps/desktop` 0.3.0. See [releasing-macos.md](../releasing-macos.md) |
 
 Update this table when each spec lands on [codetricity/oppvera](https://github.com/codetricity/oppvera) `main`.
 
@@ -48,7 +48,7 @@ Update this table when each spec lands on [codetricity/oppvera](https://github.c
 
 Hosted Oppvera Phase A plus Watch ingest (**03**, v0.95.0) is complete.
 
-1. **[02](02-watch-desktop-electron.md)** (this repo) — `pnpm dev:desktop`. Pair, Camoufox login, run bank, sync `source=watch`.
+1. **[02](02-watch-desktop-electron.md)** — arm64 `.dmg` via [releasing-macos.md](../releasing-macos.md). Link it from the Oppvera Visibility page.
 2. Then exercise UI-vs-API compare on the Oppvera visibility page once Watch rows exist.
 
 ## Reading order

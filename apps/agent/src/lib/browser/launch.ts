@@ -3,7 +3,7 @@ import { ExternalServiceError, toErrorMessage } from "@oneglanse/errors";
 import {
 	ensureAuthDirectories,
 	getRuntimeProfileSeedPlan,
-} from "@oneglanse/services/auth";
+} from "../../auth/sessionStore.js";
 import {
 	type Provider,
 	resolveAppMode,

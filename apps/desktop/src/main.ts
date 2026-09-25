@@ -7,6 +7,7 @@ import {
 	app,
 	BrowserWindow,
 	ipcMain,
+	nativeImage,
 } from "electron";
 import type { AuthProvider, Provider } from "@oneglanse/types";
 import {
@@ -17,7 +18,7 @@ import {
 	getAuthSessionFile,
 	readPersistedAuthStatus,
 	resetProviderAuthData,
-} from "@oneglanse/services/auth";
+} from "@oneglanse/agent/auth-sessions";
 import type { QueryBankItem } from "./oppvera.js";
 import { fetchQueryBank, pairDevice, uploadCaptures } from "./oppvera.js";
 import { ensureSupportDirs } from "./paths.js";
@@ -173,7 +174,19 @@ function looksLikeNode(bin: string): boolean {
 	return name === "node";
 }
 
+function packagedRoot(): string {
+	return join(process.resourcesPath, "app.asar.unpacked");
+}
+
+function childScript(name: string): string {
+	if (app.isPackaged) {
+		return join(process.resourcesPath, "app.asar", "dist", name);
+	}
+	return join(here, name);
+}
+
 function childNodeBin(): string {
+	if (app.isPackaged) return process.execPath;
 	const candidates = [
 		process.env.npm_node_execpath,
 		"/opt/homebrew/bin/node",
@@ -203,7 +216,7 @@ function childEnv(bin: string): NodeJS.ProcessEnv {
 	delete env.CHROME_CRASHPAD_PIPE_NAME;
 	delete env.ELECTRON_NO_ASAR;
 	delete env.ELECTRON_NO_ATTACH_CONSOLE;
-	if (isElectronBinary(bin)) {
+	if (app.isPackaged || isElectronBinary(bin)) {
 		env.ELECTRON_RUN_AS_NODE = "1";
 	} else {
 		delete env.ELECTRON_RUN_AS_NODE;
@@ -224,7 +237,7 @@ function spawnNode(script: string, args: string[]) {
 	const bin = childNodeBin();
 	console.log("[watch] spawn", bin, script, args.join(" "));
 	return spawn(bin, [script, ...args], {
-		cwd: join(here, ".."),
+		cwd: app.isPackaged ? packagedRoot() : join(here, ".."),
 		env: childEnv(bin),
 		stdio: ["ignore", "pipe", "pipe"],
 		detached: process.platform !== "win32",
@@ -363,6 +376,13 @@ app.whenReady().then(async () => {
 		applicationVersion: WATCH_VERSION.version,
 		version: WATCH_VERSION.version,
 	});
+	const iconPath = join(here, "..", "build", "icon.png");
+	if (existsSync(iconPath)) {
+		const icon = nativeImage.createFromPath(iconPath);
+		if (!icon.isEmpty()) {
+			app.dock?.setIcon(icon);
+		}
+	}
 	supportEnv();
 	await refreshPython();
 	const device = readDevice();
@@ -428,7 +448,7 @@ ipcMain.handle("watch:connectProvider", async (_event, provider: AuthProvider) =
 	const dirs = supportEnv();
 	try {
 		await waitForChild(
-			spawnNode(join(here, "auth-child.js"), [
+			spawnNode(childScript("auth-child.js"), [
 				provider,
 				dirs.authRoot,
 				python.ok ? process.env.CAMOUFOX_PYTHON_BIN || "" : "",
@@ -536,7 +556,7 @@ ipcMain.handle(
 				}),
 			);
 			await new Promise<void>((resolve, reject) => {
-				const child = spawnNode(join(here, "capture.js"), [jobPath]);
+				const child = spawnNode(childScript("capture.js"), [jobPath]);
 				activeChild = child;
 				let leftover = "";
 				child.stdout?.on("data", (chunk) => {

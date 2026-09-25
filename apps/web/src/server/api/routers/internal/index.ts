@@ -1,1 +1,0 @@
-export { internalRouter } from "./internal";

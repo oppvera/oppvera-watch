@@ -1,1 +1,0 @@
-export { promptRouter } from "./prompt";

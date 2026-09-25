@@ -36,13 +36,9 @@ body:
     attributes:
       label: Area
       options:
-        - Provider coverage (new AI product)
-        - Response analysis / scoring
-        - Scheduling / automation
-        - Auth / session management
-        - Dashboard / UI
-        - Self-host / deployment
-        - API / integrations
+        - Desktop capture
+        - Provider sign-in
+        - Pairing and sync
         - Docs
         - Other
 

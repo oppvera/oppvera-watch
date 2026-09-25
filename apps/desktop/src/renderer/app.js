@@ -456,9 +456,16 @@ try {
       const state = await api.setupPython();
       pythonBusy = false;
       render(state);
+      if (state && state.python && !state.python.ok) {
+        text(
+          "pythonHelp",
+          state.python.message || "Camoufox setup did not finish.",
+        );
+      }
     } catch (error) {
-      setError(error.message || String(error));
-      text("pythonHelp", error.message || String(error));
+      const message = error.message || String(error);
+      setError(message);
+      text("pythonHelp", message);
     } finally {
       pythonBusy = false;
       if (button && button.id === "setupPython") {

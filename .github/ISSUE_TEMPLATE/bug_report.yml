@@ -13,11 +13,10 @@ body:
     attributes:
       label: Area
       options:
-        - Web app (UI / dashboard)
-        - Agent / browser automation
-        - Provider auth (pnpm auth)
-        - Response analysis (LLM)
-        - Self-host / Docker / VPS
+        - Desktop app
+        - Capture / Camoufox
+        - Provider sign-in
+        - Pairing and sync
         - Docs
         - Other
     validations:
@@ -28,8 +27,8 @@ body:
     attributes:
       label: Setup path
       options:
-        - Local (pnpm local)
-        - Self-host (VPS / Docker)
+        - Packaged macOS app
+        - Developer checkout (pnpm dev:desktop)
     validations:
       required: true
 
@@ -56,7 +55,7 @@ body:
     id: logs
     attributes:
       label: Relevant logs or errors
-      description: Set `DEBUG_ENABLED=true` in `.env` for verbose agent output. Paste any relevant output here.
+      description: Paste Watch or Camoufox errors from the app, if you have them.
       render: shell
 
   - type: textarea

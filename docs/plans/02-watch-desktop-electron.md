@@ -2,7 +2,7 @@
 
 ## Status
 
-**In progress** in this repo: `apps/desktop` (Electron shell, pairing, Camoufox connect, query-bank run, capture sync). Hosted ingest is Oppvera v0.95.0.
+**Packaged** in this repo as `apps/desktop` **0.3.0** (arm64 `.dmg`). Pairing, Camoufox connect, query-bank run, and capture sync ship inside the app. How to build and publish: [releasing-macos.md](../releasing-macos.md). Hosted ingest is Oppvera v0.95.0. The Visibility download button is an Oppvera follow-up that links the GitHub Release.
 
 ## Recommendation
 

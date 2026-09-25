@@ -36,5 +36,4 @@ import { formatDate, getDomain, filterAnalysisRecords } from "@oneglanse/utils";
 ## Contribution Guidance
 
 - Keep helpers deterministic and side-effect minimal.
-- Put domain orchestration in `@oneglanse/services`, not in utility functions.
 - Prefer small focused modules with explicit named exports.

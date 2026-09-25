@@ -24,10 +24,9 @@ Do not fetch or merge `oneglanse` proactively. Clean merges need no intervention
 
 **Prefer Oppvera (ours)** when the conflict is fork-specific:
 
-- Branding: Oppvera Watch name, logos, `apps/web/src/lib/branding.ts`
-- Docs/README aimed at marketers and GEO learners
-- Removed upstream telemetry (PostHog) and related wiring
-- Oppvera install/setup guides, org URLs (`oppvera/oppvera-watch`)
+- Branding: Oppvera Watch name, logos, desktop UI copy
+- Docs/README for the macOS capture client
+- Oppvera install and release notes, org URLs (`oppvera/oppvera-watch`)
 - Disabled or fork-specific CI/GitHub Actions
 
 **Prefer upstream (theirs)** when the conflict is core product work:
@@ -49,5 +48,5 @@ If there is no real conflict (different files or non-overlapping edits), merge s
 
 ## After merging
 
-- Verify fork-specific removals still hold (no PostHog reintroduced)
+- Verify the desktop app still does not upload cookies or call analysis APIs
 - Push to `oppvera`, never `oneglanse`

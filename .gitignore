@@ -7,6 +7,8 @@ dist/
 .next/
 out/
 build/
+!apps/desktop/build/
+!apps/desktop/build/**
 
 # IDE
 .idea/
@@ -50,6 +52,7 @@ coverage/
 
 # Desktop Electron output
 apps/desktop/release/
+apps/desktop/.stage/
 
 # Improvement reports
 improvements/
