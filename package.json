@@ -1,0 +1,38 @@
+{
+	"name": "oppvera-watch",
+	"description": "Oppvera Watch — macOS capture client for hosted Oppvera",
+	"license": "MIT",
+	"homepage": "https://github.com/oppvera/oppvera-watch",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/oppvera/oppvera-watch"
+	},
+	"private": true,
+	"scripts": {
+		"build": "turbo build",
+		"dev:desktop": "pnpm --filter @oppvera/watch-desktop dev",
+		"dist:mac": "pnpm --filter @oppvera/watch-desktop dist:mac",
+		"lint": "turbo lint",
+		"typecheck": "turbo typecheck",
+		"test": "pnpm --filter @oppvera/watch-desktop test",
+		"clean": "turbo clean && rm -rf node_modules",
+		"lint:fix": "biome check . --fix"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"knip": "^5.85.0",
+		"turbo": "^2.3.3",
+		"typescript": "^5.9.3"
+	},
+	"packageManager": "pnpm@10.16.0",
+	"engines": {
+		"node": ">=20"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"electron",
+			"electron-winstaller",
+			"esbuild"
+		]
+	}
+}

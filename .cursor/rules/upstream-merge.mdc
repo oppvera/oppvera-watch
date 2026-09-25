@@ -1,0 +1,52 @@
+---
+description: Oppvera Watch fork remotes and OneGlanse upstream merge policy
+alwaysApply: true
+---
+
+# Oppvera Watch — remotes and upstream merges
+
+This repo is an educational fork of OneGlanse. Remotes:
+
+- **`oppvera`** → `oppvera/oppvera-watch` — our repo. Push here (`git push oppvera`).
+- **`oneglanse`** → `aryamantodkar/oneglanse` — upstream snapshot (fetch only; push disabled). Do not merge routinely; cherry-pick capture fixes if needed.
+
+## Upstream merge workflow (optional, rare)
+
+OneGlanse upstream is not a product dependency. Only when the user explicitly asks to pull upstream:
+
+1. `git fetch oneglanse`
+2. `git merge oneglanse/main` (or cherry-pick specific commits)
+3. Resolve conflicts, then push to `oppvera`
+
+Do not fetch or merge `oneglanse` proactively. Clean merges need no intervention beyond conflict policy when the user requested a merge.
+
+## Conflict resolution policy
+
+**Prefer Oppvera (ours)** when the conflict is fork-specific:
+
+- Branding: Oppvera Watch name, logos, desktop UI copy
+- Docs/README for the macOS capture client
+- Oppvera install and release notes, org URLs (`oppvera/oppvera-watch`)
+- Disabled or fork-specific CI/GitHub Actions
+
+**Prefer upstream (theirs)** when the conflict is core product work:
+
+- New features, APIs, routes, or UI behavior we did not customize
+- Bug fixes and security patches in shared application code
+- Dependency and tooling updates unless they re-enable removed telemetry
+
+**Combine both** when upstream adds new code in an area we rebranded — take their logic, keep our Oppvera naming/docs where they diverge intentionally.
+
+**Ask the user** when:
+
+- Both sides changed the same business logic and the right merge is unclear
+- A change might be a bug fix or a branding/doc edit
+- Re-enabling telemetry, analytics, or upstream-only product behavior is involved
+- You would drop substantial upstream functionality to keep a local edit
+
+If there is no real conflict (different files or non-overlapping edits), merge silently — do not rewrite working Oppvera customizations.
+
+## After merging
+
+- Verify the desktop app still does not upload cookies or call analysis APIs
+- Push to `oppvera`, never `oneglanse`

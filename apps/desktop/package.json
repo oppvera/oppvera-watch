@@ -1,0 +1,59 @@
+{
+	"name": "@oppvera/watch-desktop",
+	"version": "0.3.0",
+	"private": true,
+	"type": "module",
+	"description": "Oppvera Watch macOS capture client",
+	"main": "dist/main.js",
+	"scripts": {
+		"build:deps": "pnpm --filter @oneglanse/types --filter @oneglanse/errors --filter @oneglanse/utils --filter @oneglanse/agent build",
+		"build": "tsc -p tsconfig.json && node scripts/copy-renderer.mjs",
+		"dev": "pnpm build:deps && pnpm build && node scripts/ensure-electron.mjs && electron .",
+		"postinstall": "node scripts/ensure-electron.mjs",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test": "tsx --test src/ingest.test.ts",
+		"icon:mac": "node scripts/build-mac-icon.mjs",
+		"dist:mac": "node scripts/stage-mac.mjs"
+	},
+	"dependencies": {
+		"@oneglanse/agent": "workspace:*",
+		"@oneglanse/types": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.3",
+		"electron": "37.10.3",
+		"electron-builder": "^26.0.12",
+		"tsx": "^4.20.5",
+		"typescript": "^5.9.3"
+	},
+	"build": {
+		"appId": "com.oppvera.watch",
+		"electronVersion": "37.10.3",
+		"productName": "Oppvera Watch",
+		"directories": {
+			"output": "release"
+		},
+		"asar": true,
+		"asarUnpack": [
+			"dist/**",
+			"node_modules/playwright-core/**",
+			"node_modules/@oneglanse/**"
+		],
+		"files": [
+			"dist/**/*",
+			"package.json",
+			"node_modules/**/*"
+		],
+		"mac": {
+			"category": "public.app-category.productivity",
+			"icon": "build/icon.icns",
+			"identity": null,
+			"target": [
+				{
+					"target": "dmg",
+					"arch": ["arm64"]
+				}
+			]
+		}
+	}
+}

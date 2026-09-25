@@ -1,0 +1,43 @@
+{
+	"name": "@oneglanse/agent",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Local agent that runs Camoufox-backed Playwright sessions to execute LLM prompts",
+	"exports": {
+		"./create-agent": {
+			"types": "./dist/core/createAgent.d.ts",
+			"default": "./dist/core/createAgent.js"
+		},
+		"./execute-prompt": {
+			"types": "./dist/core/prompt-runner/executePrompt.d.ts",
+			"default": "./dist/core/prompt-runner/executePrompt.js"
+		},
+		"./auth-cli": {
+			"types": "./dist/auth/cli.d.ts",
+			"default": "./dist/auth/cli.js"
+		},
+		"./auth-sessions": {
+			"types": "./dist/auth/sessionStore.d.ts",
+			"default": "./dist/auth/sessionStore.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@oneglanse/errors": "workspace:*",
+		"@oneglanse/types": "workspace:*",
+		"@oneglanse/utils": "workspace:*",
+		"dotenv": "^17.2.3",
+		"playwright-core": "^1.51.1",
+		"turndown": "^7.2.2",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.3",
+		"@types/turndown": "^5.0.6",
+		"typescript": "^5.9.3"
+	}
+}
