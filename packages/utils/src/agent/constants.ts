@@ -1,7 +1,7 @@
 import type { Provider } from "@oneglanse/types";
 
 export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
-	chatgpt: 90_000,
+	chatgpt: 180_000,
 	perplexity: 45_000,
 	gemini: 45_000,
 	claude: 60_000,

@@ -58,16 +58,41 @@ export async function getResponseStateSignature(
 	return await page.evaluate(({ selectors, provider: currentProvider }) => {
 		const visible = (element: Element | null): element is HTMLElement => {
 			if (!(element instanceof HTMLElement)) return false;
+			if (!element.isConnected) return false;
 			const style = window.getComputedStyle(element);
-			return (
-				element.offsetParent !== null &&
-				style.visibility !== "hidden" &&
-				style.display !== "none"
-			);
+			if (
+				style.display === "none" ||
+				style.visibility === "hidden" ||
+				style.opacity === "0"
+			) {
+				return false;
+			}
+			const rect = element.getBoundingClientRect();
+			return rect.width > 0 && rect.height > 0;
 		};
 
 		const textOf = (el: HTMLElement) =>
 			(el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
+
+		const findLatestChatGpt = (): HTMLElement | null => {
+			const assistants = Array.from(
+				document.querySelectorAll('[data-message-author-role="assistant"]'),
+			);
+			for (const root of assistants.reverse()) {
+				if (!(root instanceof HTMLElement)) continue;
+				const markdown = root.querySelector(
+					'.markdown, .prose, [class*="markdown"]',
+				);
+				if (markdown instanceof HTMLElement && textOf(markdown).length > 0) {
+					return markdown;
+				}
+				if (textOf(root).length > 0) return root;
+			}
+			const turn = document.querySelector(".agent-turn:last-of-type");
+			return turn instanceof HTMLElement && textOf(turn).length > 0
+				? turn
+				: null;
+		};
 
 		const elements = (selectors || [])
 			.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
@@ -76,22 +101,7 @@ export async function getResponseStateSignature(
 		let latest = elements.at(-1) ?? null;
 
 		if (!latest && currentProvider === "chatgpt") {
-			const assistants = Array.from(
-				document.querySelectorAll('[data-message-author-role="assistant"]'),
-			).filter((el): el is HTMLElement => visible(el));
-			for (const root of assistants.reverse()) {
-				const markdown = root.querySelector(
-					'.markdown, .prose, [class*="markdown"]',
-				);
-				if (markdown instanceof HTMLElement && visible(markdown)) {
-					latest = markdown;
-					break;
-				}
-				if (textOf(root).length > 0) {
-					latest = root;
-					break;
-				}
-			}
+			latest = findLatestChatGpt();
 		}
 
 		if (!latest) {
@@ -99,8 +109,12 @@ export async function getResponseStateSignature(
 		}
 
 		const text = textOf(latest);
+		const signature =
+			currentProvider === "chatgpt"
+				? `${text.length}`
+				: `${text.length}:${latest.innerHTML.length}:${latest.childElementCount}:${text.slice(-120)}`;
 		return {
-			signature: `${text.length}:${latest.innerHTML.length}:${latest.childElementCount}:${text.slice(-120)}`,
+			signature,
 			textLength: text.length,
 		};
 	}, {
