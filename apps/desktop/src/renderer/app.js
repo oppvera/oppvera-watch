@@ -283,14 +283,14 @@ function render(state) {
     const primaryBox = addGroup(
       providerList,
       "ChatGPT and Claude",
-      "These are the providers Watch is focused on right now.",
+      "ChatGPT: free and Plus. Claude: free only.",
       false,
     );
     for (const provider of groups.primary) renderAuthRow(provider, primaryBox);
     const experimentalBox = addGroup(
       providerList,
       "Experimental",
-      "Gemini, Google, and Perplexity are available but not the current focus.",
+      "Gemini, Google, and Perplexity have not been tested yet.",
       true,
     );
     for (const provider of groups.experimental) {
@@ -335,7 +335,7 @@ function render(state) {
     const primaryBox = addGroup(
       runProviders,
       "ChatGPT and Claude",
-      "Run these first.",
+      "ChatGPT: free and Plus. Claude: free only.",
       false,
     );
     for (const provider of groups.primary) {
@@ -344,7 +344,7 @@ function render(state) {
     const experimentalBox = addGroup(
       runProviders,
       "Experimental",
-      "Optional. Capture is less proven here.",
+      "Not tested yet (Gemini, Google AI Overview, Perplexity).",
       true,
     );
     for (const provider of groups.experimental) {
@@ -379,6 +379,16 @@ try {
       showTab(tab.dataset.tab);
     });
   });
+
+  const coverageDialog = document.getElementById("coverageDialog");
+  const coverageHelpBtn = document.getElementById("coverageHelpBtn");
+  if (coverageHelpBtn && coverageDialog) {
+    coverageHelpBtn.addEventListener("click", () => {
+      if (typeof coverageDialog.showModal === "function") {
+        coverageDialog.showModal();
+      }
+    });
+  }
 
   const pairForm = document.getElementById("pairForm");
   const pairBtn = document.getElementById("pairBtn");
