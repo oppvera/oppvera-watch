@@ -376,18 +376,56 @@ ul {
   width: 100%;
 }
 
-.campaign-active {
+#campaignList {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#campaignList .row {
+  margin: 0;
+}
+
+#campaignList .campaign-active {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-weight: 500;
+}
+
+#campaignList .campaign-active input {
+  display: inline;
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+#campaignList > .ghost {
+  justify-self: start;
 }
 
 #groupCampaigns {
   display: grid;
   gap: 8px;
   margin: 12px 0;
+}
+
+#groupCampaigns label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 500;
+}
+
+#groupCampaigns input {
+  display: inline;
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .app-version {
