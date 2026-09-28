@@ -16,6 +16,8 @@ describe("capture mapping", () => {
 			query_item_id: "q_intro",
 			question: "What is the best tool?",
 			response: "A signed-in answer",
+			campaign_id: "camp-1",
+			campaign_name: "NASA",
 			sources: [
 				{
 					title: "Docs",
@@ -43,11 +45,14 @@ describe("capture mapping", () => {
 			response: "A signed-out answer",
 			sources: [],
 			session: "signed-out",
+			campaign_id: "camp-1",
 		});
 		assert.equal(signedOut.provider_label, "ChatGPT.com (signed-out)");
 		const body = ingestBodyFromCaptures("run-1", [stored]);
 		assert.equal(body.captures.length, 1);
 		assert.equal(body.captures[0]?.client_capture_id, stored.client_capture_id);
+		assert.equal(body.campaign_id, "camp-1");
+		assert.equal(body.captures[0]?.campaign_id, "camp-1");
 	});
 
 	it("rejects cookie blobs", () => {

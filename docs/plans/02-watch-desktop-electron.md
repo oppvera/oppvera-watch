@@ -2,7 +2,7 @@
 
 ## Status
 
-**Packaged** in this repo as `apps/desktop` **0.3.0** (arm64 `.dmg`). Pairing, Camoufox connect, query-bank run, and capture sync ship inside the app. How to build and publish: [releasing-macos.md](../releasing-macos.md). Hosted ingest is Oppvera v0.95.0. The Visibility download button is an Oppvera follow-up that links the GitHub Release.
+**Packaged** in this repo as `apps/desktop` **0.4.0-alpha** (arm64 `.dmg`). Pairing stores one Oppvera device token per campaign. The desktop app can hold several campaigns and switches the active one; tokens stay single-campaign. Grouped runs are sequential and hidden in an advanced dialog. How to build and publish: [releasing-macos.md](../releasing-macos.md). Hosted ingest is Oppvera v0.95.0. The Visibility download button is an Oppvera follow-up that links the GitHub Release.
 
 ## Recommendation
 
@@ -53,6 +53,8 @@ The desktop app is a capture client. It is not the current Next.js product.
 4. **Run** — user picks which connected providers to run, then starts. Sequential, one provider at a time (today's worker concurrency is already 1). Progress per prompt: pending, running, captured, failed.
 5. **Sync** — uploads unsynced captures. Shows last success, retry, and a count waiting offline.
 
+**Oppvera Visibility copy (hosted app):** pairing is one code per campaign. Tell operators they can pair the same Mac on every campaign; Watch keeps a token per campaign and they pick the active one in Settings. Do not imply one token covers the workspace.
+
 No dashboard, no scores, no workspace admin, no email/password account local to Watch.
 
 ## What to keep from this repo
@@ -72,8 +74,12 @@ Session files stay on the Mac under an app support directory, replacing `.onegla
   auth/sessions/{provider}/{provider}-auth.json
   auth/status/{provider}.json
   captures/{client_capture_id}.json
-  sync-queue.json
+  devices.json
+  watch.json
+  device.json   (legacy; migrated then removed)
 ```
+
+Each Oppvera token is still one campaign. `devices.json` can list several tokens; `watch.json` stores the active campaign and max group size (2–4). Provider logins under `auth/` are shared. Group runs are sequential and live only in a hidden Advanced dialog (seven clicks or Option-click on the footer version).
 
 `storageState` JSON is a secret. Do not log it, do not upload it, do not put it in the pairing token file.
 

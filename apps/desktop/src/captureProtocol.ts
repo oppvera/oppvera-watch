@@ -11,6 +11,8 @@ export type CaptureChildEvent = {
 	error?: string;
 	level?: string;
 	message?: string;
+	campaign_id?: string;
+	campaign_name?: string;
 };
 
 export function sendCaptureLog(

@@ -21,6 +21,8 @@ export type CaptureJob = {
 	queries: Array<{ query_item_id: string; text: string }>;
 	authRoot: string;
 	pythonBin?: string | null;
+	campaign_id: string;
+	campaign_name?: string;
 };
 
 function emit(event: string, payload: Record<string, unknown> = {}): void {
@@ -80,6 +82,8 @@ async function runJob(job: CaptureJob): Promise<void> {
 				provider: job.provider,
 				session,
 				status: "running",
+				campaign_id: job.campaign_id,
+				campaign_name: job.campaign_name,
 			});
 			try {
 				const { response, sources } = await executePrompt(
@@ -95,6 +99,8 @@ async function runJob(job: CaptureJob): Promise<void> {
 					response,
 					sources,
 					session,
+					campaign_id: job.campaign_id,
+					campaign_name: job.campaign_name,
 				});
 				const path = writeCapture(stored);
 				emit("captured", {
@@ -104,6 +110,8 @@ async function runJob(job: CaptureJob): Promise<void> {
 					status: "captured",
 					path,
 					client_capture_id: stored.client_capture_id,
+					campaign_id: job.campaign_id,
+					campaign_name: job.campaign_name,
 				});
 			} catch (error) {
 				emit("failed", {
@@ -112,6 +120,8 @@ async function runJob(job: CaptureJob): Promise<void> {
 					session,
 					status: "failed",
 					error: formatCaptureError(error),
+					campaign_id: job.campaign_id,
+					campaign_name: job.campaign_name,
 				});
 			}
 			if (i < job.queries.length - 1) {

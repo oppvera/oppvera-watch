@@ -26,6 +26,16 @@ You do not need Node.js, Git, or this repository to use the app.
 4. Run connected providers one at a time. Stop ends the capture, including Firefox.
 5. Sync uploads pending captures. Oppvera scores them. Watch never asks for an analysis key.
 
+## Developer console
+
+Capture logs appear in Chromium DevTools.
+
+- Alpha builds open the panel at the bottom when Oppvera Watch starts.
+- Choose **View → Toggle Developer Tools**, or press Option-Command-I (⌥⌘I).
+- Use the **Console** tab.
+
+See [apps/desktop/README.md](apps/desktop/README.md) for `WATCH_OPEN_DEVTOOLS` and verbose capture logging.
+
 ## Requirements
 
 | Who | Need |

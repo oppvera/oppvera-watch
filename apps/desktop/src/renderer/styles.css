@@ -376,6 +376,20 @@ ul {
   width: 100%;
 }
 
+.campaign-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 500;
+}
+
+#groupCampaigns {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
 .app-version {
   margin: 0;
   padding-top: 12px;
@@ -383,4 +397,6 @@ ul {
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.02em;
+  cursor: default;
+  user-select: none;
 }
