@@ -2,6 +2,7 @@ import { ExternalServiceError } from "@oneglanse/errors";
 import { exponentialBackoff, logger } from "@oneglanse/utils";
 import type { Provider } from "@oneglanse/types";
 import type { Page } from "playwright";
+import { dismissChatgptStoragePrompt } from "../providers/chatgpt/lib/dismissStoragePrompt.js";
 import { getText } from "../../lib/input/response/getText.js";
 import { PROVIDER_CONFIGS } from "../providers/index.js";
 
@@ -14,6 +15,10 @@ export async function fetchPromptResponses(
 	provider: Provider,
 ): Promise<string> {
 	const config = PROVIDER_CONFIGS[provider];
+
+	if (provider === "chatgpt") {
+		await dismissChatgptStoragePrompt(page);
+	}
 
 	await config.waitForResponse(page);
 
@@ -43,11 +48,37 @@ export async function fetchPromptResponses(
 		}
 	}
 
-	const visibleTextChars = (await getText(page, provider).catch(() => ""))?.trim().length ?? 0;
+	const visibleText = (await getText(page, provider).catch(() => ""))?.trim() ?? "";
+	const debug =
+		provider === "chatgpt"
+			? await page
+					.evaluate(
+						(_unused) => ({
+							bodyTextChars: (document.body?.innerText || "").trim().length,
+							assistantNodes: document.querySelectorAll(
+								'[data-message-author-role="assistant"]',
+							).length,
+							articleNodes: document.querySelectorAll("article").length,
+							markdownNodes: document.querySelectorAll(".markdown").length,
+							storagePrompt: /persistent storage/i.test(
+								document.body?.innerText || "",
+							),
+						}),
+						null,
+					)
+					.catch(() => null)
+			: null;
+	if (debug) {
+		logger.warn(`[chatgpt] extract debug ${JSON.stringify(debug)}`);
+	}
 	throw new ExternalServiceError(
 		provider,
 		`Markdown response extraction failed after ${MAX_EXTRACTION_RETRIES} retries`,
 		502,
-		{ visibleTextChars, retries: MAX_EXTRACTION_RETRIES },
+		{
+			visibleTextChars: visibleText.length,
+			retries: MAX_EXTRACTION_RETRIES,
+			...debug,
+		},
 	);
 }

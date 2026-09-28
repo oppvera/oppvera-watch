@@ -6,6 +6,7 @@ import {
 	PROVIDER_FORCE_EXIT_STABLE_MS,
 	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
 } from "@oneglanse/utils";
+import { dismissChatgptStoragePrompt } from "../../../core/providers/chatgpt/lib/dismissStoragePrompt.js";
 import {
 	getGenerationStateSignature,
 	getResponseStateSignature,
@@ -55,9 +56,15 @@ export async function waitForAssistantToFinish(
 	let lastChangeAt = Date.now();
 	let initialized = false;
 	let seenResponse = false;
+	let lastSeenTextLength = 0;
+	let lastTextLengthChangeAt = Date.now();
+	let loggedNoOutputTimeout = false;
 
 	await pollUntilCondition(
 		async () => {
+			if (provider === "chatgpt") {
+				await dismissChatgptStoragePrompt(page);
+			}
 			const [currentGenerationState, currentResponseState, hasVisibleIndicator] =
 				await Promise.all([
 				getGenerationStateSignature(page, provider),
@@ -83,7 +90,13 @@ export async function waitForAssistantToFinish(
 
 			if (currentResponseState.textLength > 0) {
 				seenResponse = true;
+				if (currentResponseState.textLength !== lastSeenTextLength) {
+					lastSeenTextLength = currentResponseState.textLength;
+					lastTextLengthChangeAt = Date.now();
+				}
 			}
+
+			const textStableFor = Date.now() - lastTextLengthChangeAt;
 
 			if (responseStateChanged || generationStateChanged) {
 				lastGenerationState = currentGenerationState;
@@ -105,11 +118,35 @@ export async function waitForAssistantToFinish(
 				return true;
 			}
 
+			// ChatGPT Pro may keep a stop control in the DOM while the answer text is done growing.
+			if (
+				provider === "chatgpt" &&
+				seenResponse &&
+				lastSeenTextLength >= 20 &&
+				textStableFor >= 3500
+			) {
+				logger.debug("✅ Assistant finished (ChatGPT text stable)");
+				return true;
+			}
+
 			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
-			if (waitedFor >= noOutputTimeoutMs) {
+			if (waitedFor >= noOutputTimeoutMs && !loggedNoOutputTimeout) {
+				loggedNoOutputTimeout = true;
 				logger.warn(
-					`Generation state did not stabilize within ${Math.round(noOutputTimeoutMs / 1000)}s`,
+					`Still waiting for assistant output after ${Math.round(noOutputTimeoutMs / 1000)}s${seenResponse ? " (partial text seen)" : ""}`,
 				);
+			}
+
+			if (
+				provider === "chatgpt" &&
+				!seenResponse &&
+				waitedFor >= noOutputTimeoutMs &&
+				stableFor >= 15_000
+			) {
+				logger.warn(
+					"No assistant text detected yet — proceeding to extraction attempt",
+				);
+				return true;
 			}
 
 			if (stableFor >= forceExitStableMs) {

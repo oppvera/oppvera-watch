@@ -153,48 +153,82 @@ export async function runPageDomOp<T>(
 				return element ? { selector, element } : null;
 			}
 
+			function querySelectorAllDeep(
+				selector: string,
+				root: ParentNode = document,
+			): Element[] {
+				const matches: Element[] = [];
+				const visit = (node: ParentNode) => {
+					if ("querySelectorAll" in node) {
+						matches.push(...Array.from(node.querySelectorAll(selector)));
+					}
+					const elements =
+						node instanceof Element
+							? [node, ...Array.from(node.querySelectorAll("*"))]
+							: Array.from((node as Document | ShadowRoot).querySelectorAll("*"));
+					for (const el of elements) {
+						if (el.shadowRoot) visit(el.shadowRoot);
+					}
+				};
+				visit(root);
+				return dedupeElements(matches);
+			}
+
 			function findLatestChatGptResponseElement(
 				selectors: string[],
 			): { selector: string; element: HTMLElement } | null {
-				const primary = findLatestResponseElement(selectors, 20);
-				if (primary) return primary;
+				const usable = (el: Element | null): el is HTMLElement =>
+					el instanceof HTMLElement &&
+					el.isConnected &&
+					!isResponsePlaceholder(el) &&
+					elementText(el).length >= 20;
 
-				const assistants = Array.from(
-					document.querySelectorAll('[data-message-author-role="assistant"]'),
-				).filter(
-					(el): el is HTMLElement =>
-						el instanceof HTMLElement &&
-						isVisible(el) &&
-						!isResponsePlaceholder(el),
-				);
+				const fromSelector = (selector: string): HTMLElement | null =>
+					querySelectorAllDeep(selector).filter(usable).at(-1) ?? null;
 
-				for (const root of assistants.reverse()) {
-					const markdown = root.querySelector(
+				for (const selector of selectors || []) {
+					const match = fromSelector(selector);
+					if (match) return { selector, element: match };
+				}
+
+				const assistant =
+					fromSelector('[data-message-author-role="assistant"]') ??
+					fromSelector('[data-message-author-role="assistant"] .markdown');
+				if (assistant) {
+					const markdown = assistant.querySelector(
 						'.markdown, .prose, [class*="markdown"]',
 					);
-					if (
-						markdown instanceof HTMLElement &&
-						isVisible(markdown) &&
-						elementText(markdown).length >= 20
-					) {
+					if (usable(markdown)) {
 						return {
 							selector: '[data-message-author-role="assistant"] .markdown',
 							element: markdown,
 						};
 					}
-					if (elementText(root).length >= 20) {
-						return {
-							selector: '[data-message-author-role="assistant"]',
-							element: root,
-						};
-					}
+					return {
+						selector: '[data-message-author-role="assistant"]',
+						element: assistant,
+					};
 				}
 
-				const agentTurns = Array.from(document.querySelectorAll(".agent-turn"))
-					.filter((el): el is HTMLElement => el instanceof HTMLElement && isVisible(el));
-				const lastTurn = agentTurns.at(-1);
-				if (lastTurn && elementText(lastTurn).length >= 20) {
-					return { selector: ".agent-turn", element: lastTurn };
+				const articles = querySelectorAllDeep(
+					'article[data-testid^="conversation-turn"], article',
+				).filter(usable);
+				const lastArticle = articles.at(-1);
+				if (lastArticle && !/^\s*(You|User)\s*$/i.test(elementText(lastArticle).slice(0, 24))) {
+					return { selector: "article", element: lastArticle };
+				}
+
+				const main = document.querySelector("main");
+				if (main instanceof HTMLElement) {
+					const clone = main.cloneNode(true) as HTMLElement;
+					clone
+						.querySelectorAll(
+							'nav, aside, form, header, footer, [contenteditable="true"], [role="textbox"], button, [role="dialog"]',
+						)
+						.forEach((el) => el.remove());
+					if (elementText(clone).length >= 80) {
+						return { selector: "main-fallback", element: clone };
+					}
 				}
 
 				return null;

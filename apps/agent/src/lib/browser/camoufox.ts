@@ -579,7 +579,15 @@ async function buildLaunchPayload(args: {
 	};
 	if (Object.keys(config).length > 0) payload.config = config;
 
+	const persistentStoragePrefs = {
+		// 1 = allow. Capture and auth both hit this Firefox prompt on chatgpt.com.
+		"permissions.default.persistent-storage": 1,
+		"dom.storageManager.prompt.testing": true,
+		"dom.storageManager.prompt.testing.allow_granted": true,
+	};
+
 	const firefoxUserPrefs = {
+		...persistentStoragePrefs,
 		...(args.plainAuthMode
 			? {
 					// Camoufox's patched Firefox binary may override prefers-color-scheme
@@ -590,11 +598,6 @@ async function buildLaunchPayload(args: {
 					// Light (1) but the user's OS is in dark mode.
 					// Values: 0 = Dark, 1 = Light, 2 = System (follows OS)
 					"layout.css.prefers-color-scheme.content-override": 2,
-					// Auto-grant persistent storage permission without showing a dialog.
-					// Without these, Firefox prompts "Allow X to store data in persistent
-					// storage?" during auth sessions, requiring user interaction to dismiss.
-					"dom.storageManager.prompt.testing": true,
-					"dom.storageManager.prompt.testing.allow_granted": true,
 				}
 			: {
 					...(isJsonRecord(extraLaunch.firefox_user_prefs)

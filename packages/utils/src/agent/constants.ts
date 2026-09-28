@@ -1,7 +1,7 @@
 import type { Provider } from "@oneglanse/types";
 
 export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
-	chatgpt: 90_000,
+	chatgpt: 180_000,
 	perplexity: 45_000,
 	gemini: 45_000,
 	claude: 60_000,
@@ -60,6 +60,8 @@ export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 		'[data-message-author-role="assistant"]',
 		'[data-testid^="conversation-turn"][data-turn="assistant"] .markdown',
 		'[data-testid^="conversation-turn"][data-turn="assistant"]',
+		'article[data-testid^="conversation-turn"]',
+		'[data-message-id] .markdown',
 		'[data-role="assistant"]',
 		'[data-message-author="assistant"]',
 		".agent-turn",
