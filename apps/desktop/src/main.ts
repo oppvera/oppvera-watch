@@ -570,8 +570,14 @@ ipcMain.handle(
 				let stdoutBuffer = "";
 				let stderr = "";
 				const forwardLog = (level: string, message: string) => {
-					console.error(`[watch capture]`, message);
-					sendCaptureLog(win?.webContents, level, message);
+					const line = message.trimEnd();
+					if (!line) return;
+					if (level === "error") {
+						console.error("[watch capture]", line);
+					} else {
+						console.log("[watch capture]", line);
+					}
+					sendCaptureLog(win?.webContents, level, line);
 				};
 				child.stdout?.on("data", (chunk) => {
 					stdoutBuffer += String(chunk);
@@ -606,12 +612,7 @@ ipcMain.handle(
 					}
 				});
 				child.stderr?.on("data", (chunk) => {
-					const text = String(chunk);
-					stderr += text;
-					for (const line of text.split("\n")) {
-						if (!line.trim()) continue;
-						forwardLog("error", line);
-					}
+					stderr += String(chunk);
 				});
 				child.on("error", (error) => {
 					if (activeChild === child) activeChild = null;

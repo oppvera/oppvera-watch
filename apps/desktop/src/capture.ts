@@ -27,10 +27,8 @@ function emit(event: string, payload: Record<string, unknown> = {}): void {
 	process.stdout.write(`${JSON.stringify({ event, ...payload })}\n`);
 }
 
-/** Agent logging uses console.log; keep NDJSON events alone on stdout. */
-function routeAgentLogsToStderr(): void {
-	const stderrWarn = console.warn.bind(console);
-	const stderrError = console.error.bind(console);
+/** Agent logging uses console.log; route to NDJSON log events only (no stderr dupes). */
+function routeAgentLogsToEvents(): void {
 	const toLine = (args: unknown[]) =>
 		args
 			.map((arg) =>
@@ -38,18 +36,15 @@ function routeAgentLogsToStderr(): void {
 			)
 			.join(" ");
 
-	console.log = (...args: unknown[]) => {
-		emit("log", { level: "log", message: toLine(args) });
-		process.stderr.write(`${toLine(args)}\n`);
-	};
-	console.warn = (...args: unknown[]) => {
-		emit("log", { level: "warn", message: toLine(args) });
-		stderrWarn(...args);
-	};
-	console.error = (...args: unknown[]) => {
-		emit("log", { level: "error", message: toLine(args) });
-		stderrError(...args);
-	};
+	const forward =
+		(level: "log" | "warn" | "error") =>
+		(...args: unknown[]) => {
+			emit("log", { level, message: toLine(args) });
+		};
+
+	console.log = forward("log");
+	console.warn = forward("warn");
+	console.error = forward("error");
 }
 
 function formatCaptureError(error: unknown): string {
@@ -65,7 +60,7 @@ function formatCaptureError(error: unknown): string {
 }
 
 async function runJob(job: CaptureJob): Promise<void> {
-	routeAgentLogsToStderr();
+	routeAgentLogsToEvents();
 	const session: CaptureSession =
 		job.session === "signed-out" ? "signed-out" : "signed-in";
 	applyDesktopRuntimeEnv({ authRoot: job.authRoot, pythonBin: job.pythonBin });
