@@ -1,6 +1,20 @@
 # Oppvera Watch desktop
 
-macOS capture client for hosted Oppvera. Current version is **0.3.0** (`version` in `package.json`). The footer and About panel read that value.
+macOS capture client for hosted Oppvera. Current version is **0.3.1-alpha** (`version` in `package.json`). The footer and About panel read that value.
+
+## Debugging during alpha
+
+Prerelease versions whose semver includes `alpha` automatically:
+
+- Open Chromium DevTools when the app starts (capture logs appear in the Console tab).
+- Set `DEBUG_ENABLED=1` for the Camoufox capture child (verbose agent `logger.debug` output).
+
+You can force the same behavior on any build:
+
+- `WATCH_OPEN_DEVTOOLS=1` — open DevTools in a packaged app.
+- `WATCH_DEBUG_LOGS=1` or `DEBUG_ENABLED=1` — verbose agent logs (forwarded to DevTools via `watch:log`).
+
+Run failures also surface `lastError` in the footer error line, including per-query metadata when the capture engine throws `BaseError`.
 
 Scores stay on Oppvera. This app never asks for an analysis API key.
 

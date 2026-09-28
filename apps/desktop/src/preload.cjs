@@ -20,4 +20,9 @@ contextBridge.exposeInMainWorld("watch", {
 		ipcRenderer.on("watch:state", listener);
 		return () => ipcRenderer.removeListener("watch:state", listener);
 	},
+	onLog: (handler) => {
+		const listener = (_event, payload) => handler(payload);
+		ipcRenderer.on("watch:log", listener);
+		return () => ipcRenderer.removeListener("watch:log", listener);
+	},
 });

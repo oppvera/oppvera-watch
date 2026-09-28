@@ -34,6 +34,14 @@ import {
 } from "./storage.js";
 import type { CaptureSession, StoredCapture } from "./ingest.js";
 import {
+	handleCaptureStdoutLine,
+	sendCaptureLog,
+} from "./captureProtocol.js";
+import {
+	applyWatchDebugEnv,
+	shouldOpenWatchDevTools,
+} from "./watchDebug.js";
+import {
 	formatWatchVersionLabel,
 	WATCH_VERSION,
 } from "./version.js";
@@ -362,7 +370,7 @@ const createWindow = () => {
 	win.webContents.on("did-fail-load", (_event, code, desc, url) => {
 		console.error("[watch] did-fail-load", code, desc, url);
 	});
-	if (!app.isPackaged) {
+	if (shouldOpenWatchDevTools(app.isPackaged)) {
 		win.webContents.openDevTools({ mode: "bottom" });
 	}
 	void win.loadFile(join(here, "renderer", "index.html"));
@@ -383,6 +391,7 @@ app.whenReady().then(async () => {
 			app.dock?.setIcon(icon);
 		}
 	}
+	applyWatchDebugEnv();
 	supportEnv();
 	await refreshPython();
 	const device = readDevice();
@@ -558,20 +567,20 @@ ipcMain.handle(
 			await new Promise<void>((resolve, reject) => {
 				const child = spawnNode(childScript("capture.js"), [jobPath]);
 				activeChild = child;
-				let leftover = "";
+				let stdoutBuffer = "";
+				let stderr = "";
+				const forwardLog = (level: string, message: string) => {
+					console.error(`[watch capture]`, message);
+					sendCaptureLog(win?.webContents, level, message);
+				};
 				child.stdout?.on("data", (chunk) => {
-					for (const line of String(chunk).split("\n")) {
-						if (!line.trim()) continue;
-						try {
-							const event = JSON.parse(line) as {
-								event: string;
-								query_item_id?: string;
-								provider?: Provider;
-								session?: CaptureSession;
-								status?: RunItem["status"];
-								error?: string;
-							};
-							if (event.query_item_id && event.provider) {
+					stdoutBuffer += String(chunk);
+					let newlineAt = stdoutBuffer.indexOf("\n");
+					while (newlineAt !== -1) {
+						const line = stdoutBuffer.slice(0, newlineAt);
+						stdoutBuffer = stdoutBuffer.slice(newlineAt + 1);
+						handleCaptureStdoutLine(line, {
+							onProgress: (event) => {
 								const item = runItems.find(
 									(row) =>
 										row.query_item_id === event.query_item_id &&
@@ -581,19 +590,28 @@ ipcMain.handle(
 								if (item && event.status) {
 									item.status = event.status;
 									item.error = event.error;
+									if (event.status === "failed" && event.error) {
+										lastError = event.error;
+									}
 								}
-							}
-							void pushState();
-						} catch {
-							leftover += `${line}\n`;
-							console.log("[watch capture]", line);
-						}
+								void pushState();
+							},
+							onLog: forwardLog,
+							onUnparsed: (unparsed) => {
+								console.log("[watch capture]", unparsed);
+								sendCaptureLog(win?.webContents, "log", unparsed);
+							},
+						});
+						newlineAt = stdoutBuffer.indexOf("\n");
 					}
 				});
-				let stderr = "";
 				child.stderr?.on("data", (chunk) => {
-					stderr += String(chunk);
-					console.error("[watch capture]", String(chunk).trimEnd());
+					const text = String(chunk);
+					stderr += text;
+					for (const line of text.split("\n")) {
+						if (!line.trim()) continue;
+						forwardLog("error", line);
+					}
 				});
 				child.on("error", (error) => {
 					if (activeChild === child) activeChild = null;
@@ -605,12 +623,10 @@ ipcMain.handle(
 						resolve();
 						return;
 					}
-					reject(
-						new Error(
-							(stderr.trim() || leftover.trim()) ||
-								`Capture exited ${code}`,
-						),
-					);
+					const tail = (stderr.trim() || stdoutBuffer.trim()) || "";
+					const detail = tail || `Capture exited ${code}`;
+					lastError = detail;
+					reject(new Error(detail));
 				});
 			});
 		}
