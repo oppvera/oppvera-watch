@@ -308,6 +308,67 @@ ul {
   display: none;
 }
 
+.top-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  text-align: right;
+}
+
+#python-status {
+  margin: 0;
+}
+
+.coverage-dialog {
+  width: min(560px, calc(100vw - 48px));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px 22px 18px;
+  color: var(--ink);
+  background: var(--card);
+}
+
+.coverage-dialog::backdrop {
+  background: rgb(18 35 46 / 35%);
+}
+
+.coverage-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.coverage-dialog .hint {
+  margin: 0 0 14px;
+}
+
+.coverage-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.coverage-table th,
+.coverage-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.coverage-table thead th {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.coverage-dialog .primary {
+  margin-top: 4px;
+}
+
 .app-footer {
   max-width: 880px;
   margin: 24px auto 0;

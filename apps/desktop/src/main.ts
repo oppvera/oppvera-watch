@@ -8,6 +8,7 @@ import {
 	BrowserWindow,
 	ipcMain,
 	nativeImage,
+	shell,
 } from "electron";
 import type { AuthProvider, Provider } from "@oneglanse/types";
 import {
@@ -373,6 +374,12 @@ const createWindow = () => {
 	if (shouldOpenWatchDevTools(app.isPackaged)) {
 		win.webContents.openDevTools({ mode: "bottom" });
 	}
+	win.webContents.setWindowOpenHandler(({ url }) => {
+		if (url.startsWith("https://github.com/oppvera/oppvera-watch")) {
+			void shell.openExternal(url);
+		}
+		return { action: "deny" };
+	});
 	void win.loadFile(join(here, "renderer", "index.html"));
 };
 

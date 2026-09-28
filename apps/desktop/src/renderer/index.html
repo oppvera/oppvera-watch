@@ -16,7 +16,12 @@
         <h1 id="appTitle">Capture consumer UI answers</h1>
         <p class="hint" id="campaignHint"></p>
       </div>
-      <p class="hint" id="python-status"></p>
+      <div class="top-meta">
+        <p class="hint" id="python-status"></p>
+        <button id="coverageHelpBtn" class="ghost" type="button">
+          What we have tested
+        </button>
+      </div>
     </header>
     <nav class="tabs">
       <button data-tab="bank">Query bank</button>
@@ -65,10 +70,10 @@
         <p>
           Sign in with the consumer accounts you already pay for. Watch is
           focused on ChatGPT and Claude. Google (Gemini and AI Overview) and
-          Perplexity are experimental. Camoufox opens a visible Firefox window.
-          Watch saves the session once you land on the product home. You can
-          also close the window to finish. Disconnect removes the saved login
-          from this Mac.
+          Perplexity have not been tested yet. Camoufox opens a visible Firefox
+          window. Watch saves the session once you land on the product home. You
+          can also close the window to finish. Disconnect removes the saved
+          login from this Mac.
         </p>
         <div class="python-row">
           <p id="pythonHelp" class="status"></p>
@@ -97,7 +102,9 @@
           Results upload as Watch captures, not API Probe rows.
         </p>
         <p class="status">
-          Connect each provider on the Providers tab before you run it.
+          Connect each provider on the Providers tab before you run it. Use
+          <strong>What we have tested</strong> in the header for current
+          coverage.
         </p>
         <div id="runProviders"></div>
         <button id="startRun" class="primary">Run query bank</button>
@@ -121,6 +128,60 @@
     <footer class="app-footer">
       <p id="appVersion" class="app-version"></p>
     </footer>
+    <dialog id="coverageDialog" class="coverage-dialog">
+      <form method="dialog">
+        <h2>What we have tested</h2>
+        <p class="hint">
+          Alpha coverage only. If you hit a problem or test another account
+          type, open a GitHub issue.
+        </p>
+        <table class="coverage-table">
+          <thead>
+            <tr>
+              <th scope="col">Provider</th>
+              <th scope="col">Accounts tested</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">ChatGPT</th>
+              <td>Free and ChatGPT Plus</td>
+              <td>Tested</td>
+            </tr>
+            <tr>
+              <th scope="row">Claude</th>
+              <td>Free only</td>
+              <td>Tested</td>
+            </tr>
+            <tr>
+              <th scope="row">Gemini</th>
+              <td>None</td>
+              <td>Not tested</td>
+            </tr>
+            <tr>
+              <th scope="row">Google AI Overview</th>
+              <td>None</td>
+              <td>Not tested</td>
+            </tr>
+            <tr>
+              <th scope="row">Perplexity</th>
+              <td>None</td>
+              <td>Not tested</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="hint">
+          Report problems or extra testing:
+          <a
+            href="https://github.com/oppvera/oppvera-watch/issues"
+            target="_blank"
+            rel="noreferrer"
+            >github.com/oppvera/oppvera-watch/issues</a>
+        </p>
+        <button class="primary" value="close">Close</button>
+      </form>
+    </dialog>
     <script src="app.js"></script>
     <script>
       (function () {
