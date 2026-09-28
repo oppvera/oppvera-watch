@@ -1,7 +1,10 @@
+import { applyWatchDebugEnv } from "./watchDebug.js";
+
 export function applyDesktopRuntimeEnv(input: {
 	authRoot: string;
 	pythonBin?: string | null;
 }): void {
+	applyWatchDebugEnv();
 	process.env.ONEGLANSE_APP_MODE = "local";
 	process.env.CAMOUFOX_HEADLESS_MODE = "headful";
 	process.env.AGENT_AUTH_ROOT_DIR = input.authRoot;

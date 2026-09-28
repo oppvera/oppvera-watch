@@ -10,5 +10,11 @@
 		"skipLibCheck": true
 	},
 	"include": ["src/**/*.ts"],
-	"exclude": ["src/ingest.test.ts", "src/renderer/**", "node_modules", "dist"]
+	"exclude": [
+		"src/ingest.test.ts",
+		"src/captureProtocol.test.ts",
+		"src/renderer/**",
+		"node_modules",
+		"dist"
+	]
 }

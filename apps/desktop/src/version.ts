@@ -28,5 +28,7 @@ export function readWatchVersion(): WatchVersionInfo {
 export const WATCH_VERSION = readWatchVersion();
 
 export function formatWatchVersionLabel(info: WatchVersionInfo = WATCH_VERSION): string {
-	return `${info.productName} v${info.version}`;
+	const alpha = /alpha/i.test(info.version);
+	const name = alpha ? `${info.productName} (alpha)` : info.productName;
+	return `${name} v${info.version}`;
 }

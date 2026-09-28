@@ -61,6 +61,9 @@ importers:
       '@oneglanse/agent':
         specifier: workspace:*
         version: link:../agent
+      '@oneglanse/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@oneglanse/types':
         specifier: workspace:*
         version: link:../../packages/types

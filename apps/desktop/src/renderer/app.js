@@ -531,6 +531,17 @@ try {
     };
   }
 
+  if (api && typeof api.onLog === "function") {
+    api.onLog(({ level, message }) => {
+      const prefix = `[watch capture ${level || "log"}]`;
+      if (level === "error" || level === "warn") {
+        console.warn(prefix, message);
+      } else {
+        console.log(prefix, message);
+      }
+    });
+  }
+
   if (api && typeof api.onState === "function") {
     api.onState(render);
     api.getState().then(render).catch((error) => {
