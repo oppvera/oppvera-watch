@@ -20,7 +20,15 @@ Scores stay on Oppvera. This app never asks for an analysis API key.
 
 ## Install a built app
 
-Download the `.dmg` from the Oppvera Visibility page or [GitHub Releases](https://github.com/oppvera/oppvera-watch/releases/latest). Drag it to Applications. Right-click **Open** the first time if Gatekeeper blocks an unsigned build.
+Download the `.dmg` from the Oppvera Visibility page or [GitHub Releases](https://github.com/oppvera/oppvera-watch/releases/latest). Drag it to Applications.
+
+If macOS says the app is **damaged** (common after a browser download), clear the quarantine flag:
+
+```bash
+xattr -cr "/Applications/Oppvera Watch.app"
+```
+
+Otherwise right-click **Open** the first time if Gatekeeper blocks an unsigned build. See [releasing-macos.md](../../docs/releasing-macos.md) for more detail.
 
 ## Develop from this repo
 
