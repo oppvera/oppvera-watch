@@ -2,9 +2,22 @@
 
 macOS capture client for hosted Oppvera. Current version is **0.4.0-alpha** (`version` in `package.json`). The footer and About panel read that value.
 
-Pair once per campaign from that campaign’s Visibility page. Settings lists every paired campaign and chooses the **active** one used by the query bank and the Run tab. Provider logins are shared. Pending captures sync with the token for the campaign they were captured under.
+Pair once per campaign from that campaign’s Visibility page. **Settings** lists every paired campaign, lets you add or remove campaigns, and chooses the **active** one used by the query bank and the **Run** tab. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
 
-A sequential group run (more than one campaign) is not on the Run tab. It is only available from an undocumented control on the version label in the footer.
+## Multiple campaigns
+
+- One pairing code per campaign (from each campaign’s Visibility page in Oppvera).
+- Tokens live in `devices.json`; the active campaign id and max group size live in `watch.json` under app support.
+- **Query bank** and **Run → Run query bank** always use the active campaign only.
+
+## Advanced: sequential group runs
+
+Group runs are **not** on the **Run** tab. Open the **Advanced** dialog from the footer:
+
+- **Option-click** (⌥-click) the version label (`Oppvera Watch v…` at the bottom of the window), or
+- **Click that label seven times** within about two seconds.
+
+In Advanced you can set **Max campaigns in a group** (2–4), select campaigns and providers, then **Run selected campaigns**. Watch runs one campaign’s query bank to completion, then the next, using the same saved provider logins. Providers still run one at a time within each campaign. There is no parallel multi-campaign capture.
 
 ## Developer console
 

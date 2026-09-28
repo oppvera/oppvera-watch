@@ -14,17 +14,28 @@ The capture engine started as a fork of [OneGlanse](https://github.com/aryamanto
 2. Open the `.dmg` and drag **Oppvera Watch** to Applications.
 3. The build is ad-hoc signed. If macOS blocks the first open, right-click the app and choose **Open**. You can also run `xattr -dr com.apple.quarantine "/Applications/Oppvera Watch.app"`.
 4. Install [Python 3.12](https://www.python.org/downloads/) if the app asks, then use **Set up Camoufox Python** once.
-5. Paste a pairing code from the same Visibility page.
+5. Paste a pairing code from that campaign’s Visibility page. Repeat for each campaign you want on this Mac (one code per campaign).
 
 You do not need Node.js, Git, or this repository to use the app.
 
 ## How it works
 
-1. Pair with `https://oppvera.com` (or `http://127.0.0.1:8000` for a local Oppvera).
-2. Connect the consumer accounts you already pay for. Logins stay on this Mac.
+1. Pair with `https://oppvera.com` (or `http://127.0.0.1:8000` for a local Oppvera). Use **Settings** to add more campaigns; pick the **active** campaign for the query bank and **Run** tab.
+2. Connect the consumer accounts you already pay for. Logins stay on this Mac and are shared across paired campaigns.
 3. The query bank is read-only. Edit questions in Oppvera.
-4. Run connected providers one at a time. Stop ends the capture, including Firefox.
-5. Sync uploads pending captures. Oppvera scores them. Watch never asks for an analysis key.
+4. Run connected providers one at a time for the active campaign. Stop ends the capture, including Firefox.
+5. Sync uploads pending captures (each row uses the token for the campaign it was captured under). Oppvera scores them. Watch never asks for an analysis key.
+
+### Multiple campaigns and group runs
+
+One Mac can hold several paired campaigns. Only the **active** campaign drives **Query bank** and **Run → Run query bank**.
+
+To run **2–4 campaigns in one session** (sequential: each campaign’s full query bank, then the next, same provider logins), open **Advanced**:
+
+- **Option-click** (⌥-click) the version label in the footer, or
+- **Click the version label seven times** within about two seconds.
+
+Choose campaigns and providers, then **Run selected campaigns**. Runs are not parallel. Details: [apps/desktop/README.md](apps/desktop/README.md).
 
 ## Developer console
 
@@ -40,7 +51,7 @@ See [apps/desktop/README.md](apps/desktop/README.md) for `WATCH_OPEN_DEVTOOLS` a
 
 | Who | Need |
 | --- | --- |
-| Anyone capturing | Apple silicon macOS, Python 3.10+, network, an Oppvera campaign and pairing code |
+| Anyone capturing | Apple silicon macOS, Python 3.10+, network, and a pairing code per campaign you capture |
 | Signed-in captures | Your consumer logins in the Camoufox window |
 | Developers | Node.js 20+, pnpm 10+, this git checkout |
 
@@ -60,7 +71,7 @@ To build a `.dmg` and publish it, see [docs/releasing-macos.md](docs/releasing-m
 Under `~/Library/Application Support/Oppvera Watch/`:
 
 - Playwright session files (cookies / `storageState`)
-- Device pairing token
+- Device pairing tokens (one per paired campaign)
 - Unsynced capture files
 
 Camoufox’s Firefox build is cached at `~/Library/Caches/camoufox` (the Camoufox installer has no custom directory flag).
