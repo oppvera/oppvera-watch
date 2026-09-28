@@ -6,6 +6,7 @@ import {
 	PROVIDER_FORCE_EXIT_STABLE_MS,
 	PROVIDER_NO_OUTPUT_TIMEOUT_MS,
 } from "@oneglanse/utils";
+import { dismissChatgptStoragePrompt } from "../../../core/providers/chatgpt/lib/dismissStoragePrompt.js";
 import {
 	getGenerationStateSignature,
 	getResponseStateSignature,
@@ -61,6 +62,9 @@ export async function waitForAssistantToFinish(
 
 	await pollUntilCondition(
 		async () => {
+			if (provider === "chatgpt") {
+				await dismissChatgptStoragePrompt(page);
+			}
 			const [currentGenerationState, currentResponseState, hasVisibleIndicator] =
 				await Promise.all([
 				getGenerationStateSignature(page, provider),

@@ -102,6 +102,20 @@ export async function getResponseStateSignature(
 
 		if (!latest && currentProvider === "chatgpt") {
 			latest = findLatestChatGpt();
+			if (!latest) {
+				const articles = Array.from(
+					document.querySelectorAll(
+						'article[data-testid^="conversation-turn"], article',
+					),
+				).filter((el): el is HTMLElement => el instanceof HTMLElement);
+				latest = articles.at(-1) ?? null;
+			}
+			if (!latest) {
+				const main = document.querySelector("main");
+				if (main instanceof HTMLElement && textOf(main).length > 80) {
+					latest = main;
+				}
+			}
 		}
 
 		if (!latest) {
