@@ -2,7 +2,27 @@
 
 Build on an Apple silicon Mac that has this repository, Node.js 20+, and pnpm 10. Partners do not need that checkout.
 
-The `.dmg` is ad-hoc signed (`identity: null`). Release notes must say to right-click the app and choose **Open** the first time.
+The `.dmg` is ad-hoc signed (`identity: "-"` in electron-builder). Release notes must tell users how to open an unsigned build (see below).
+
+### If macOS says the app is “damaged”
+
+Browsers attach a **quarantine** flag to downloaded files. With an unsigned app, macOS often shows **damaged and can’t be opened** instead of the normal Gatekeeper prompt.
+
+After installing from the `.dmg`, run in Terminal (adjust the path if needed):
+
+```bash
+xattr -cr "/Applications/Oppvera Watch.app"
+```
+
+Then open the app normally, or right-click → **Open** once if macOS still asks.
+
+To clear quarantine on the download before mounting:
+
+```bash
+xattr -cr ~/Downloads/OppveraWatch-arm64.dmg
+```
+
+Long term, a Developer ID certificate plus notarization removes this friction; until then, document the `xattr` step on the release and Oppvera download page.
 
 ## Produce a DMG
 
