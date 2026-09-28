@@ -55,7 +55,7 @@ export async function getResponseStateSignature(
 	page: Page,
 	provider: Provider,
 ): Promise<{ signature: string; textLength: number }> {
-	return await page.evaluate((selectors) => {
+	return await page.evaluate(({ selectors, provider: currentProvider }) => {
 		const visible = (element: Element | null): element is HTMLElement => {
 			if (!(element instanceof HTMLElement)) return false;
 			const style = window.getComputedStyle(element);
@@ -66,22 +66,45 @@ export async function getResponseStateSignature(
 			);
 		};
 
+		const textOf = (el: HTMLElement) =>
+			(el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
+
 		const elements = (selectors || [])
 			.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
-			.filter(
-				(el): el is HTMLElement =>
-					visible(el) && (el.innerText || "").trim().length > 0,
-			);
+			.filter((el): el is HTMLElement => visible(el) && textOf(el).length > 0);
 
-		const latest = elements.at(-1) ?? null;
+		let latest = elements.at(-1) ?? null;
+
+		if (!latest && currentProvider === "chatgpt") {
+			const assistants = Array.from(
+				document.querySelectorAll('[data-message-author-role="assistant"]'),
+			).filter((el): el is HTMLElement => visible(el));
+			for (const root of assistants.reverse()) {
+				const markdown = root.querySelector(
+					'.markdown, .prose, [class*="markdown"]',
+				);
+				if (markdown instanceof HTMLElement && visible(markdown)) {
+					latest = markdown;
+					break;
+				}
+				if (textOf(root).length > 0) {
+					latest = root;
+					break;
+				}
+			}
+		}
+
 		if (!latest) {
 			return { signature: "", textLength: 0 };
 		}
 
-		const text = (latest.innerText || "").replace(/\s+/g, " ").trim();
+		const text = textOf(latest);
 		return {
 			signature: `${text.length}:${latest.innerHTML.length}:${latest.childElementCount}:${text.slice(-120)}`,
 			textLength: text.length,
 		};
-	}, PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || []);
+	}, {
+		selectors: PROVIDER_MODEL_RESPONSE_SELECTORS[provider] || [],
+		provider,
+	});
 }

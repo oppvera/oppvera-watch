@@ -134,6 +134,7 @@ export async function runPageDomOp<T>(
 
 			function findLatestResponseElement(
 				selectors: string[],
+				minChars = 50,
 			): { selector: string; element: HTMLElement } | null {
 				const selector = (selectors || []).join(", ");
 				if (!selector.trim()) return null;
@@ -145,11 +146,68 @@ export async function runPageDomOp<T>(
 								el instanceof HTMLElement &&
 								isVisible(el) &&
 								!isResponsePlaceholder(el) &&
-								el.innerText.trim().length > 50,
+								elementText(el).length >= minChars,
 						)
 						.pop() ?? null;
 
 				return element ? { selector, element } : null;
+			}
+
+			function findLatestChatGptResponseElement(
+				selectors: string[],
+			): { selector: string; element: HTMLElement } | null {
+				const primary = findLatestResponseElement(selectors, 20);
+				if (primary) return primary;
+
+				const assistants = Array.from(
+					document.querySelectorAll('[data-message-author-role="assistant"]'),
+				).filter(
+					(el): el is HTMLElement =>
+						el instanceof HTMLElement &&
+						isVisible(el) &&
+						!isResponsePlaceholder(el),
+				);
+
+				for (const root of assistants.reverse()) {
+					const markdown = root.querySelector(
+						'.markdown, .prose, [class*="markdown"]',
+					);
+					if (
+						markdown instanceof HTMLElement &&
+						isVisible(markdown) &&
+						elementText(markdown).length >= 20
+					) {
+						return {
+							selector: '[data-message-author-role="assistant"] .markdown',
+							element: markdown,
+						};
+					}
+					if (elementText(root).length >= 20) {
+						return {
+							selector: '[data-message-author-role="assistant"]',
+							element: root,
+						};
+					}
+				}
+
+				const agentTurns = Array.from(document.querySelectorAll(".agent-turn"))
+					.filter((el): el is HTMLElement => el instanceof HTMLElement && isVisible(el));
+				const lastTurn = agentTurns.at(-1);
+				if (lastTurn && elementText(lastTurn).length >= 20) {
+					return { selector: ".agent-turn", element: lastTurn };
+				}
+
+				return null;
+			}
+
+			function resolveLatestResponseElement(
+				provider: string,
+				selectors: string[],
+			): { selector: string; element: HTMLElement } | null {
+				if (provider === "chatgpt") {
+					return findLatestChatGptResponseElement(selectors);
+				}
+				return findLatestResponseElement(selectors);
 			}
 
 			function getCachedRawSources(key: string): Array<{
@@ -268,8 +326,9 @@ export async function runPageDomOp<T>(
 				);
 			}
 
-			function readResponseText(_provider: string, selectors: string[]): string {
-				return findLatestResponseElement(selectors)?.element.innerText.trim() || "";
+			function readResponseText(provider: string, selectors: string[]): string {
+				const latest = resolveLatestResponseElement(provider, selectors);
+				return latest ? elementText(latest.element) : "";
 			}
 
 			function isCitationAnchor(anchor: HTMLAnchorElement): boolean {
@@ -333,7 +392,7 @@ export async function runPageDomOp<T>(
 					return clone.innerHTML.trim();
 				}
 
-				const latestResponse = findLatestResponseElement(selectors);
+				const latestResponse = resolveLatestResponseElement(provider, selectors);
 				if (!latestResponse) return "";
 
 				if (provider === "claude") {

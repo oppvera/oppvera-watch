@@ -533,8 +533,10 @@ try {
 
   if (api && typeof api.onLog === "function") {
     api.onLog(({ level, message }) => {
-      const prefix = `[watch capture ${level || "log"}]`;
-      if (level === "error" || level === "warn") {
+      const prefix = `[watch capture${level && level !== "log" ? ` ${level}` : ""}]`;
+      if (level === "error") {
+        console.error(prefix, message);
+      } else if (level === "warn") {
         console.warn(prefix, message);
       } else {
         console.log(prefix, message);
