@@ -9,7 +9,7 @@ export const PROVIDER_NO_OUTPUT_TIMEOUT_MS: Record<Provider, number> = {
 };
 
 export const PROVIDER_FORCE_EXIT_STABLE_MS: Record<Provider, number> = {
-	chatgpt: 45_000,
+	chatgpt: 120_000,
 	perplexity: 30_000,
 	gemini: 45_000,
 	claude: 45_000,
@@ -43,7 +43,11 @@ export const PROVIDER_EDITOR_SELECTORS: Record<Provider, string[]> = {
 };
 
 export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
-	chatgpt: ['button[data-testid="send-button"]'],
+	chatgpt: [
+		'button[data-testid="send-button"]',
+		'button[aria-label="Send prompt"]',
+		'button[aria-label*="Send" i]',
+	],
 	perplexity: ['button[aria-label*="Submit"]'],
 	gemini: ['button[aria-label*="Send"]'],
 	claude: ['button[aria-label*="Send"]'],
@@ -52,8 +56,13 @@ export const PROVIDER_SUBMIT_BTN_SELECTORS: Record<Provider, string[]> = {
 
 export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 	chatgpt: [
+		'[data-message-author-role="assistant"] .markdown',
 		'[data-message-author-role="assistant"]',
-		'[data-testid^="conversation-turn"][data-turn="assistant"]'
+		'[data-testid^="conversation-turn"][data-turn="assistant"] .markdown',
+		'[data-testid^="conversation-turn"][data-turn="assistant"]',
+		'[data-role="assistant"]',
+		'[data-message-author="assistant"]',
+		".agent-turn",
 	],
 	perplexity: [
 		'div[id^="markdown-content-"]',

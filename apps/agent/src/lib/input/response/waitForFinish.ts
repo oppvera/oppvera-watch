@@ -113,6 +113,9 @@ export async function waitForAssistantToFinish(
 			}
 
 			if (stableFor >= forceExitStableMs) {
+				if (!seenResponse && waitedFor < noOutputTimeoutMs) {
+					return false;
+				}
 				logger.warn(
 					`${hasVisibleIndicator ? "Generation indicator still visible and " : ""}generation state stable for ${Math.round(forceExitStableMs / 1000)}s — forcing exit`,
 				);
