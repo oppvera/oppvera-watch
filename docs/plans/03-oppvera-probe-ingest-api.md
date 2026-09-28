@@ -127,17 +127,19 @@ Empty bank: `200` with `"queries": []`.
 
 ### `POST /api/probe/captures`
 
-Bearer device token. Batch ingest. The token's campaign is the only campaign accepted; ignore any campaign id in the body that does not match, and return `403` if the body disagrees.
+Bearer device token. Batch ingest. The token's campaign is the only campaign accepted; ignore any campaign id in the body that does not match, and return `403` if the body disagrees. Watch sends `campaign_id` on the batch and on each capture.
 
 Body:
 
 ```json
 {
   "run_id": "uuid",
+  "campaign_id": "uuid",
   "captures": [
     {
       "client_capture_id": "uuid",
       "source": "watch",
+      "campaign_id": "uuid",
       "provider_id": "chatgpt",
       "provider_label": "ChatGPT.com (signed-in session)",
       "grounded": null,

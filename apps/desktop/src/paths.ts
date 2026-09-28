@@ -26,6 +26,8 @@ export function ensureSupportDirs(): {
 	capturesDir: string;
 	pythonVenv: string;
 	deviceFile: string;
+	devicesFile: string;
+	prefsFile: string;
 } {
 	const root = supportRoot();
 	const authRoot = join(root, "auth");
@@ -40,5 +42,7 @@ export function ensureSupportDirs(): {
 		capturesDir,
 		pythonVenv,
 		deviceFile: join(root, "device.json"),
+		devicesFile: join(root, "devices.json"),
+		prefsFile: join(root, "watch.json"),
 	};
 }

@@ -28,9 +28,16 @@ import { applyDesktopRuntimeEnv } from "./runtimeEnv.js";
 import type { DeviceRecord } from "./storage.js";
 import {
 	clearDevice,
+	deviceByCampaign,
+	listDevices,
 	pendingCaptures,
 	readDevice,
+	readPrefs,
+	removeDevice,
 	saveDevice,
+	setActiveCampaign,
+	setMaxGroupSize,
+	assertGroupSize,
 	writeCapture,
 } from "./storage.js";
 import type { CaptureSession, StoredCapture } from "./ingest.js";
@@ -50,6 +57,8 @@ import {
 const here = dirname(fileURLToPath(import.meta.url));
 
 type RunItem = {
+	campaign_id: string;
+	campaign_name: string;
 	provider: Provider;
 	session: CaptureSession;
 	query_item_id: string;
@@ -58,9 +67,13 @@ type RunItem = {
 	error?: string;
 };
 
+type PublicDevice = Omit<DeviceRecord, "device_token">;
+
 type AppState = {
 	paired: boolean;
-	device: Omit<DeviceRecord, "device_token"> | null;
+	device: PublicDevice | null;
+	campaigns: PublicDevice[];
+	maxGroupSize: number;
 	queries: QueryBankItem[];
 	providers: Array<{
 		id: AuthProvider;
@@ -149,6 +162,8 @@ async function snapshot(): Promise<AppState> {
 	return {
 		paired: Boolean(device),
 		device: publicDevice(device),
+		campaigns: listDevices().map((row) => publicDevice(row)!),
+		maxGroupSize: readPrefs().maxGroupSize,
 		queries,
 		providers,
 		runtimeProviders: PROVIDER_LIST.map((id) => ({
@@ -310,21 +325,39 @@ async function refreshPython(): Promise<void> {
 	}
 }
 
-async function syncPending(): Promise<void> {
-	const device = readDevice();
-	if (!device) throw new Error("Pair Oppvera Watch before syncing.");
-	const pending = pendingCaptures();
-	const byRun = new Map<string, StoredCapture[]>();
+async function syncPending(campaignId?: string): Promise<void> {
+	const pending = pendingCaptures().filter((capture) =>
+		campaignId ? capture.campaign_id === campaignId : true,
+	);
+	const byKey = new Map<string, StoredCapture[]>();
 	for (const capture of pending) {
-		const list = byRun.get(capture.run_id) ?? [];
+		if (!capture.campaign_id) {
+			capture.sync_status = "failed";
+			capture.sync_error = "missing campaign";
+			writeCapture(capture);
+			continue;
+		}
+		const key = `${capture.campaign_id}:${capture.run_id}`;
+		const list = byKey.get(key) ?? [];
 		list.push(capture);
-		byRun.set(capture.run_id, list);
+		byKey.set(key, list);
 	}
 	let uploaded = 0;
 	let failed = 0;
-	for (const [runId, captures] of byRun) {
+	for (const [, captures] of byKey) {
+		const campaign = captures[0]?.campaign_id;
+		const device = campaign ? deviceByCampaign(campaign) : null;
 		const chunk = captures.slice(0, 50);
-		const results = await uploadCaptures(device, runId, chunk);
+		if (!device) {
+			for (const row of chunk) {
+				row.sync_status = "failed";
+				row.sync_error = "campaign not paired";
+				writeCapture(row);
+				failed += 1;
+			}
+			continue;
+		}
+		const results = await uploadCaptures(device, chunk[0]?.run_id || "", chunk);
 		for (const result of results) {
 			const match = chunk.find(
 				(row) => row.client_capture_id === result.client_capture_id,
@@ -346,6 +379,15 @@ async function syncPending(): Promise<void> {
 	lastSyncUploaded = pending.length === 0 ? 0 : uploaded;
 	lastSyncFailed = pending.length === 0 ? 0 : failed;
 	lastError = null;
+}
+
+async function refreshActiveBank(): Promise<void> {
+	const device = readDevice();
+	if (!device) {
+		queries = [];
+		return;
+	}
+	queries = await fetchQueryBank(device);
 }
 
 const createWindow = () => {
@@ -404,7 +446,7 @@ app.whenReady().then(async () => {
 	const device = readDevice();
 	if (device) {
 		try {
-			queries = await fetchQueryBank(device);
+			await refreshActiveBank();
 		} catch (error) {
 			lastError = error instanceof Error ? error.message : String(error);
 		}
@@ -422,7 +464,7 @@ ipcMain.handle(
 			const device = await pairDevice(payload);
 			saveDevice(device);
 			try {
-				queries = await fetchQueryBank(device);
+				await refreshActiveBank();
 				lastError = null;
 			} catch (error) {
 				queries = [];
@@ -439,17 +481,52 @@ ipcMain.handle(
 	},
 );
 
-ipcMain.handle("watch:unpair", async () => {
-	clearDevice();
-	queries = [];
+ipcMain.handle(
+	"watch:unpair",
+	async (_event, payload?: { campaignId?: string; all?: boolean }) => {
+		if (!payload?.campaignId || payload.all) {
+			clearDevice();
+		} else {
+			removeDevice(payload.campaignId);
+		}
+		try {
+			await refreshActiveBank();
+			lastError = null;
+		} catch (error) {
+			queries = [];
+			lastError = error instanceof Error ? error.message : String(error);
+		}
+		return pushState();
+	},
+);
+
+ipcMain.handle("watch:setActiveCampaign", async (_event, campaignId: string) => {
+	setActiveCampaign(campaignId);
+	try {
+		await refreshActiveBank();
+		lastError = null;
+	} catch (error) {
+		queries = [];
+		lastError = error instanceof Error ? error.message : String(error);
+	}
+	return pushState();
+});
+
+ipcMain.handle("watch:setMaxGroupSize", async (_event, value: number) => {
+	setMaxGroupSize(value);
 	return pushState();
 });
 
 ipcMain.handle("watch:refreshBank", async () => {
 	const device = readDevice();
 	if (!device) throw new Error("Pair first.");
-	queries = await fetchQueryBank(device);
-	lastError = null;
+	try {
+		await refreshActiveBank();
+		lastError = null;
+	} catch (error) {
+		queries = [];
+		throw error;
+	}
 	return pushState();
 });
 
@@ -501,6 +578,162 @@ ipcMain.handle("watch:syncNow", async () => {
 	return pushState();
 });
 
+function selectedProviders(
+	payload: { providers: Provider[] } | Provider[],
+): Provider[] {
+	const providers = Array.isArray(payload) ? payload : payload.providers;
+	const selected = providers.filter((id) => PROVIDER_LIST.includes(id));
+	if (selected.length === 0) {
+		throw new Error("Select at least one provider.");
+	}
+	const connected = (id: Provider) =>
+		existsSync(getAuthSessionFile(AUTH_FOR[id]));
+	const missing = selected.filter((id) => !connected(id));
+	if (missing.length > 0) {
+		throw new Error(
+			`Connect ${missing.join(", ")} on the Providers tab before running.`,
+		);
+	}
+	return selected;
+}
+
+async function captureCampaign(input: {
+	device: DeviceRecord;
+	bank: QueryBankItem[];
+	providers: Provider[];
+	replaceItems: boolean;
+}): Promise<void> {
+	const runId = randomUUID();
+	const items: RunItem[] = input.providers.flatMap((provider) =>
+		input.bank.map((query) => ({
+			campaign_id: input.device.campaign_id,
+			campaign_name: input.device.campaign_name,
+			provider,
+			session: "signed-in" as const,
+			query_item_id: query.query_item_id,
+			question: query.text,
+			status: "pending" as const,
+		})),
+	);
+	runItems = input.replaceItems ? items : [...runItems, ...items];
+	await pushState();
+	const dirs = supportEnv();
+	const jobs = [
+		...new Map(
+			items.map((item) => [
+				`${item.provider}:${item.session}`,
+				{ provider: item.provider, session: item.session },
+			]),
+		).values(),
+	];
+	for (const job of jobs) {
+		if (runCancelled) break;
+		const jobPath = join(
+			dirs.root,
+			`job-${input.device.campaign_id}-${job.provider}-${job.session}.json`,
+		);
+		writeFileSync(
+			jobPath,
+			JSON.stringify({
+				run_id: runId,
+				provider: job.provider,
+				session: job.session,
+				campaign_id: input.device.campaign_id,
+				campaign_name: input.device.campaign_name,
+				queries: input.bank.map((query) => ({
+					query_item_id: query.query_item_id,
+					text: query.text,
+				})),
+				authRoot: dirs.authRoot,
+				pythonBin: process.env.CAMOUFOX_PYTHON_BIN || null,
+			}),
+		);
+		await new Promise<void>((resolve, reject) => {
+			const child = spawnNode(childScript("capture.js"), [jobPath]);
+			activeChild = child;
+			let stdoutBuffer = "";
+			let stderr = "";
+			const forwardLog = (level: string, message: string) => {
+				const line = message.trimEnd();
+				if (!line) return;
+				if (level === "error") {
+					console.error("[watch capture]", line);
+				} else {
+					console.log("[watch capture]", line);
+				}
+				sendCaptureLog(win?.webContents, level, line);
+			};
+			child.stdout?.on("data", (chunk) => {
+				stdoutBuffer += String(chunk);
+				let newlineAt = stdoutBuffer.indexOf("\n");
+				while (newlineAt !== -1) {
+					const line = stdoutBuffer.slice(0, newlineAt);
+					stdoutBuffer = stdoutBuffer.slice(newlineAt + 1);
+					handleCaptureStdoutLine(line, {
+						onProgress: (event) => {
+							const campaignId = event.campaign_id || input.device.campaign_id;
+							const item = runItems.find(
+								(row) =>
+									row.campaign_id === campaignId &&
+									row.query_item_id === event.query_item_id &&
+									row.provider === event.provider &&
+									row.session === (event.session || job.session),
+							);
+							if (item && event.status) {
+								item.status = event.status;
+								item.error = event.error;
+								if (event.status === "failed" && event.error) {
+									lastError = event.error;
+								}
+							}
+							void pushState();
+						},
+						onLog: forwardLog,
+						onUnparsed: (unparsed) => {
+							console.log("[watch capture]", unparsed);
+							sendCaptureLog(win?.webContents, "log", unparsed);
+						},
+					});
+					newlineAt = stdoutBuffer.indexOf("\n");
+				}
+			});
+			child.stderr?.on("data", (chunk) => {
+				stderr += String(chunk);
+			});
+			child.on("error", (error) => {
+				if (activeChild === child) activeChild = null;
+				reject(new Error(`Could not start capture: ${error.message}`));
+			});
+			child.on("exit", (code) => {
+				if (activeChild === child) activeChild = null;
+				if (runCancelled || code === 0) {
+					resolve();
+					return;
+				}
+				const tail = (stderr.trim() || stdoutBuffer.trim()) || "";
+				const detail = tail || `Capture exited ${code}`;
+				lastError = detail;
+				reject(new Error(detail));
+			});
+		});
+	}
+	if (runCancelled) {
+		for (const item of runItems) {
+			if (item.status === "pending" || item.status === "running") {
+				item.status = "failed";
+				item.error = "Stopped";
+			}
+		}
+		lastError = "Run stopped.";
+		return;
+	}
+	try {
+		await syncPending(input.device.campaign_id);
+	} catch (error) {
+		lastError = error instanceof Error ? error.message : String(error);
+	}
+}
+
 ipcMain.handle(
 	"watch:startRun",
 	async (
@@ -512,147 +745,18 @@ ipcMain.handle(
 	if (queries.length === 0) {
 		throw new Error("The campaign query bank is empty. Add questions in Oppvera.");
 	}
-	const providers = Array.isArray(payload) ? payload : payload.providers;
-	const selected = providers.filter((id) => PROVIDER_LIST.includes(id));
-	if (selected.length === 0) {
-		throw new Error("Select at least one provider.");
-	}
+	const selected = selectedProviders(payload);
 	await refreshPython();
 	if (!python.ok) throw new Error(python.message);
-	const connected = (id: Provider) =>
-		existsSync(getAuthSessionFile(AUTH_FOR[id]));
-	const missing = selected.filter((id) => !connected(id));
-	if (missing.length > 0) {
-		throw new Error(
-			`Connect ${missing.join(", ")} on the Providers tab before running.`,
-		);
-	}
 	running = true;
 	runCancelled = false;
-	const runId = randomUUID();
-	runItems = selected.flatMap((provider) =>
-		queries.map((query) => ({
-			provider,
-			session: "signed-in" as const,
-			query_item_id: query.query_item_id,
-			question: query.text,
-			status: "pending" as const,
-		})),
-	);
-	if (runItems.length === 0) {
-		running = false;
-		throw new Error("Nothing to run. Connect a provider, then select it here.");
-	}
-	await pushState();
-	const dirs = supportEnv();
-	const jobs = [
-		...new Map(
-			runItems.map((item) => [
-				`${item.provider}:${item.session}`,
-				{ provider: item.provider, session: item.session },
-			]),
-		).values(),
-	];
 	try {
-		for (const job of jobs) {
-			if (runCancelled) break;
-			const jobPath = join(dirs.root, `job-${job.provider}-${job.session}.json`);
-			writeFileSync(
-				jobPath,
-				JSON.stringify({
-					run_id: runId,
-					provider: job.provider,
-					session: job.session,
-					queries: queries.map((query) => ({
-						query_item_id: query.query_item_id,
-						text: query.text,
-					})),
-					authRoot: dirs.authRoot,
-					pythonBin: process.env.CAMOUFOX_PYTHON_BIN || null,
-				}),
-			);
-			await new Promise<void>((resolve, reject) => {
-				const child = spawnNode(childScript("capture.js"), [jobPath]);
-				activeChild = child;
-				let stdoutBuffer = "";
-				let stderr = "";
-				const forwardLog = (level: string, message: string) => {
-					const line = message.trimEnd();
-					if (!line) return;
-					if (level === "error") {
-						console.error("[watch capture]", line);
-					} else {
-						console.log("[watch capture]", line);
-					}
-					sendCaptureLog(win?.webContents, level, line);
-				};
-				child.stdout?.on("data", (chunk) => {
-					stdoutBuffer += String(chunk);
-					let newlineAt = stdoutBuffer.indexOf("\n");
-					while (newlineAt !== -1) {
-						const line = stdoutBuffer.slice(0, newlineAt);
-						stdoutBuffer = stdoutBuffer.slice(newlineAt + 1);
-						handleCaptureStdoutLine(line, {
-							onProgress: (event) => {
-								const item = runItems.find(
-									(row) =>
-										row.query_item_id === event.query_item_id &&
-										row.provider === event.provider &&
-										row.session === (event.session || job.session),
-								);
-								if (item && event.status) {
-									item.status = event.status;
-									item.error = event.error;
-									if (event.status === "failed" && event.error) {
-										lastError = event.error;
-									}
-								}
-								void pushState();
-							},
-							onLog: forwardLog,
-							onUnparsed: (unparsed) => {
-								console.log("[watch capture]", unparsed);
-								sendCaptureLog(win?.webContents, "log", unparsed);
-							},
-						});
-						newlineAt = stdoutBuffer.indexOf("\n");
-					}
-				});
-				child.stderr?.on("data", (chunk) => {
-					stderr += String(chunk);
-				});
-				child.on("error", (error) => {
-					if (activeChild === child) activeChild = null;
-					reject(new Error(`Could not start capture: ${error.message}`));
-				});
-				child.on("exit", (code) => {
-					if (activeChild === child) activeChild = null;
-					if (runCancelled || code === 0) {
-						resolve();
-						return;
-					}
-					const tail = (stderr.trim() || stdoutBuffer.trim()) || "";
-					const detail = tail || `Capture exited ${code}`;
-					lastError = detail;
-					reject(new Error(detail));
-				});
-			});
-		}
-		if (runCancelled) {
-			for (const item of runItems) {
-				if (item.status === "pending" || item.status === "running") {
-					item.status = "failed";
-					item.error = "Stopped";
-				}
-			}
-			lastError = "Run stopped.";
-		} else {
-			try {
-				await syncPending();
-			} catch (error) {
-				lastError = error instanceof Error ? error.message : String(error);
-			}
-		}
+		await captureCampaign({
+			device,
+			bank: queries,
+			providers: selected,
+			replaceItems: true,
+		});
 	} finally {
 		activeChild = null;
 		running = false;
@@ -661,6 +765,60 @@ ipcMain.handle(
 	}
 	return snapshot();
 });
+
+ipcMain.handle(
+	"watch:startGroupRun",
+	async (
+		_event,
+		payload: { providers: Provider[]; campaignIds: string[] },
+	) => {
+		const ids = [...new Set(payload.campaignIds || [])].filter(Boolean);
+		assertGroupSize(ids.length, readPrefs().maxGroupSize);
+		const selected = selectedProviders(payload);
+		await refreshPython();
+		if (!python.ok) throw new Error(python.message);
+		running = true;
+		runCancelled = false;
+		runItems = [];
+		try {
+			for (const campaignId of ids) {
+				if (runCancelled) break;
+				const device = deviceByCampaign(campaignId);
+				if (!device) {
+					lastError = `Campaign ${campaignId} is not paired.`;
+					continue;
+				}
+				let bank: QueryBankItem[] = [];
+				try {
+					bank = await fetchQueryBank(device);
+				} catch (error) {
+					lastError = error instanceof Error ? error.message : String(error);
+					continue;
+				}
+				if (bank.length === 0) {
+					lastError = `${device.campaign_name} query bank is empty.`;
+					continue;
+				}
+				try {
+					await captureCampaign({
+						device,
+						bank,
+						providers: selected,
+						replaceItems: false,
+					});
+				} catch (error) {
+					lastError = error instanceof Error ? error.message : String(error);
+				}
+			}
+		} finally {
+			activeChild = null;
+			running = false;
+			runCancelled = false;
+			await pushState();
+		}
+		return snapshot();
+	},
+);
 
 ipcMain.handle("watch:stopRun", async () => {
 	if (!running) return snapshot();

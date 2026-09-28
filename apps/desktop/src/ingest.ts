@@ -55,6 +55,8 @@ export type WatchCapturePayload = {
 	citations: WatchCitation[];
 	captured_at: string;
 	account_hint: null;
+	campaign_id: string;
+	campaign_name?: string;
 };
 
 export type StoredCapture = WatchCapturePayload & {
@@ -98,6 +100,8 @@ export function captureFromPromptResult(input: {
 	sources: Source[];
 	session?: CaptureSession;
 	captured_at?: string;
+	campaign_id: string;
+	campaign_name?: string;
 }): StoredCapture {
 	const session = input.session ?? "signed-in";
 	const payload: StoredCapture = {
@@ -113,6 +117,8 @@ export function captureFromPromptResult(input: {
 		citations: citationsFromSources(input.sources),
 		captured_at: input.captured_at ?? new Date().toISOString(),
 		account_hint: null,
+		campaign_id: input.campaign_id,
+		campaign_name: input.campaign_name,
 		sync_status: "pending",
 	};
 	assertNoSecretKeys(payload);
@@ -120,11 +126,16 @@ export function captureFromPromptResult(input: {
 }
 
 export function ingestBodyFromCaptures(runId: string, captures: StoredCapture[]) {
+	const campaignIds = [
+		...new Set(captures.map((capture) => capture.campaign_id).filter(Boolean)),
+	];
 	const body = {
 		run_id: runId,
+		campaign_id: campaignIds.length === 1 ? campaignIds[0] : undefined,
 		captures: captures.map((capture) => ({
 			client_capture_id: capture.client_capture_id,
 			source: "watch" as const,
+			campaign_id: capture.campaign_id,
 			provider_id: capture.provider_id,
 			provider_label: capture.provider_label,
 			grounded: null,

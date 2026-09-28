@@ -5,7 +5,11 @@ console.log("[watch] preload loaded");
 contextBridge.exposeInMainWorld("watch", {
 	getState: () => ipcRenderer.invoke("watch:getState"),
 	pair: (payload) => ipcRenderer.invoke("watch:pair", payload),
-	unpair: () => ipcRenderer.invoke("watch:unpair"),
+	unpair: (payload) => ipcRenderer.invoke("watch:unpair", payload),
+	setActiveCampaign: (campaignId) =>
+		ipcRenderer.invoke("watch:setActiveCampaign", campaignId),
+	setMaxGroupSize: (value) => ipcRenderer.invoke("watch:setMaxGroupSize", value),
+	startGroupRun: (payload) => ipcRenderer.invoke("watch:startGroupRun", payload),
 	refreshBank: () => ipcRenderer.invoke("watch:refreshBank"),
 	connectProvider: (provider) =>
 		ipcRenderer.invoke("watch:connectProvider", provider),

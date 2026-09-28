@@ -193,24 +193,73 @@ function render(state) {
   if (retryPython) retryPython.hidden = !pythonReady || pythonBusy;
   text("pairError", state.lastError || "");
   setError(state.lastError || "");
-  const pairedCard = document.getElementById("pairedCard");
-  const pairSetup = document.getElementById("pairSetup");
+  const pairBtn = document.getElementById("pairBtn");
   const pairStatus = document.getElementById("pairStatus");
+  const campaigns = state.campaigns || [];
+  const campaignList = document.getElementById("campaignList");
+  if (campaignList) {
+    campaignList.innerHTML = "";
+    for (const campaign of campaigns) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const label = document.createElement("label");
+      label.className = "campaign-active";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "activeCampaign";
+      radio.value = campaign.campaign_id;
+      radio.checked = state.device && state.device.campaign_id === campaign.campaign_id;
+      radio.disabled = state.running;
+      radio.onchange = async () => {
+        if (!api || typeof api.setActiveCampaign !== "function") return;
+        try {
+          render(await api.setActiveCampaign(campaign.campaign_id));
+        } catch (error) {
+          setError(error.message || String(error));
+        }
+      };
+      label.append(
+        radio,
+        document.createTextNode(
+          ` ${campaign.company_name} / ${campaign.campaign_name}`,
+        ),
+      );
+      const remove = document.createElement("button");
+      remove.className = "ghost";
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.disabled = state.running;
+      remove.onclick = async () => {
+        if (!api) return;
+        render(await api.unpair({ campaignId: campaign.campaign_id }));
+      };
+      row.append(label, remove);
+      campaignList.appendChild(row);
+    }
+    if (campaigns.length > 1) {
+      const all = document.createElement("button");
+      all.className = "ghost";
+      all.type = "button";
+      all.textContent = "Remove all campaigns";
+      all.disabled = state.running;
+      all.onclick = async () => {
+        if (!api) return;
+        render(await api.unpair({ all: true }));
+      };
+      campaignList.appendChild(all);
+    }
+  }
   if (state.paired && state.device) {
     const summary = `${state.device.company_name} / ${state.device.campaign_name}`;
     text("campaignHint", summary);
-    text("pairedSummary", `Paired with ${summary}`);
     if (pairStatus) pairStatus.textContent = state.device.api_base;
-    if (pairedCard) pairedCard.hidden = false;
-    if (pairSetup) pairSetup.hidden = true;
     const apiBase = document.getElementById("apiBase");
     if (apiBase && state.device.api_base) apiBase.value = state.device.api_base;
+    if (pairBtn) pairBtn.textContent = "Add campaign";
   } else {
     text("campaignHint", "Pair this Mac to a campaign to start.");
-    text("pairedSummary", "");
     if (pairStatus) pairStatus.textContent = "Not paired.";
-    if (pairedCard) pairedCard.hidden = true;
-    if (pairSetup) pairSetup.hidden = false;
+    if (pairBtn) pairBtn.textContent = "Add campaign";
   }
   if (!didInitialTab && !userPickedTab) {
     didInitialTab = true;
@@ -297,13 +346,13 @@ function render(state) {
       renderAuthRow(provider, experimentalBox);
     }
   }
-  const runProviders = document.getElementById("runProviders");
-  if (runProviders) {
+  function fillRunProviderList(container) {
+    if (!container) return;
     const previous = new Set(
-      [...runProviders.querySelectorAll("input:checked")].map((input) => input.value),
+      [...container.querySelectorAll("input:checked")].map((input) => input.value),
     );
-    const hadBoxes = Boolean(runProviders.querySelector("input"));
-    runProviders.innerHTML = "";
+    const hadBoxes = Boolean(container.querySelector("input"));
+    container.innerHTML = "";
     const groups = splitProviders(
       state.runtimeProviders || [],
       PRIMARY_RUN,
@@ -333,7 +382,7 @@ function render(state) {
       target.appendChild(label);
     };
     const primaryBox = addGroup(
-      runProviders,
+      container,
       "ChatGPT and Claude",
       "ChatGPT: free and Plus. Claude: free only.",
       false,
@@ -342,7 +391,7 @@ function render(state) {
       renderRunRow(provider, primaryBox, false);
     }
     const experimentalBox = addGroup(
-      runProviders,
+      container,
       "Experimental",
       "Not tested yet (Gemini, Google AI Overview, Perplexity).",
       true,
@@ -351,15 +400,63 @@ function render(state) {
       renderRunRow(provider, experimentalBox, true);
     }
   }
+  fillRunProviderList(document.getElementById("runProviders"));
+  fillRunProviderList(document.getElementById("groupProviders"));
   const progress = document.getElementById("runProgress");
   if (progress) {
     progress.innerHTML = "";
     for (const item of state.runItems || []) {
       const li = document.createElement("li");
-      li.textContent = `${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${item.status}${
+      li.textContent = `${item.campaign_name ? `${item.campaign_name} · ` : ""}${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${item.status}${
         item.error ? ` · ${item.error}` : ""
       }`;
       progress.appendChild(li);
+    }
+  }
+  const groupProgress = document.getElementById("groupProgress");
+  if (groupProgress) {
+    groupProgress.innerHTML = "";
+    for (const item of state.runItems || []) {
+      const li = document.createElement("li");
+      li.textContent = `${item.campaign_name || "Campaign"} · ${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${item.status}${
+        item.error ? ` · ${item.error}` : ""
+      }`;
+      groupProgress.appendChild(li);
+    }
+  }
+  const maxGroup = document.getElementById("maxGroupSize");
+  if (maxGroup && document.activeElement !== maxGroup) {
+    maxGroup.value = String(state.maxGroupSize || 2);
+  }
+  const groupCampaigns = document.getElementById("groupCampaigns");
+  if (groupCampaigns) {
+    const previous = new Set(
+      [...groupCampaigns.querySelectorAll("input:checked")].map((input) => input.value),
+    );
+    const had = Boolean(groupCampaigns.querySelector("input"));
+    groupCampaigns.innerHTML = "";
+    const cap = Number(state.maxGroupSize || 2);
+    const list = state.campaigns || [];
+    for (const campaign of list) {
+      const label = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = campaign.campaign_id;
+      box.disabled = state.running;
+      box.checked = had
+        ? previous.has(campaign.campaign_id)
+        : state.device && state.device.campaign_id === campaign.campaign_id;
+      label.append(
+        box,
+        document.createTextNode(` ${campaign.company_name} / ${campaign.campaign_name}`),
+      );
+      groupCampaigns.appendChild(label);
+    }
+    const checked = [...groupCampaigns.querySelectorAll("input:checked")];
+    if (checked.length > cap) {
+      checked.slice(cap).forEach((input) => {
+        input.checked = false;
+      });
     }
   }
   renderSync(state);
@@ -390,6 +487,65 @@ try {
     });
   }
 
+  const advancedDialog = document.getElementById("advancedDialog");
+  const appVersion = document.getElementById("appVersion");
+  let versionClicks = 0;
+  let versionClickTimer = 0;
+  function openAdvanced() {
+    if (advancedDialog && typeof advancedDialog.showModal === "function") {
+      advancedDialog.showModal();
+    }
+  }
+  if (appVersion) {
+    appVersion.addEventListener("click", (event) => {
+      if (event.altKey) {
+        openAdvanced();
+        versionClicks = 0;
+        return;
+      }
+      versionClicks += 1;
+      window.clearTimeout(versionClickTimer);
+      versionClickTimer = window.setTimeout(() => {
+        versionClicks = 0;
+      }, 2000);
+      if (versionClicks >= 7) {
+        versionClicks = 0;
+        openAdvanced();
+      }
+    });
+  }
+  const maxGroup = document.getElementById("maxGroupSize");
+  if (maxGroup) {
+    maxGroup.onchange = async () => {
+      if (!api || typeof api.setMaxGroupSize !== "function") return;
+      try {
+        render(await api.setMaxGroupSize(Number(maxGroup.value)));
+      } catch (error) {
+        setError(error.message || String(error));
+      }
+    };
+  }
+  const startGroupRun = document.getElementById("startGroupRun");
+  if (startGroupRun) {
+    startGroupRun.onclick = async () => {
+      const campaignIds = [
+        ...document.querySelectorAll("#groupCampaigns input:checked"),
+      ].map((input) => input.value);
+      const selected = [
+        ...document.querySelectorAll("#groupProviders input:checked"),
+      ].map((input) => input.value);
+      setError("");
+      setBusy(startGroupRun, true, "Run selected campaigns", "Running…");
+      try {
+        await api.startGroupRun({ providers: selected, campaignIds });
+      } catch (error) {
+        setError(error.message || String(error));
+      } finally {
+        setBusy(startGroupRun, false, "Run selected campaigns", "Running…");
+      }
+    };
+  }
+
   const pairForm = document.getElementById("pairForm");
   const pairBtn = document.getElementById("pairBtn");
   if (pairForm && pairForm.dataset.watchBound !== "1") {
@@ -399,14 +555,14 @@ try {
       setError("");
       text("pairError", "");
       text("pairStatus", "Pairing…");
-      setBusy(pairBtn, true, "Pair this Mac", "Pairing…");
+        setBusy(pairBtn, true, "Add campaign", "Pairing…");
       if (!api || typeof api.pair !== "function") {
         const msg =
           "Watch preload failed to load. Quit the app fully, then run pnpm --filter @oppvera/watch-desktop dev.";
         setError(msg);
         text("pairError", msg);
         text("pairStatus", msg);
-        setBusy(pairBtn, false, "Pair this Mac", "Pairing…");
+        setBusy(pairBtn, false, "Add campaign", "Pairing…");
         return;
       }
       try {
@@ -430,7 +586,7 @@ try {
         text("pairError", message);
         text("pairStatus", message);
       } finally {
-        setBusy(pairBtn, false, "Pair this Mac", "Pairing…");
+        setBusy(pairBtn, false, "Add campaign", "Pairing…");
       }
     });
   }
@@ -439,7 +595,7 @@ try {
   if (unpairBtn) {
     unpairBtn.onclick = async () => {
       if (!api) return;
-      await api.unpair();
+      await api.unpair({ all: true });
       userPickedTab = true;
       showTab("pair");
     };
