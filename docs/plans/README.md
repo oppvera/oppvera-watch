@@ -7,7 +7,7 @@ They live in this Watch repo so a Cursor session can implement either side:
 - Watch desktop: this repository (`oppvera/oppvera-watch`)
 - Probe ingest, persistence, and analytics: [codetricity/oppvera](https://github.com/codetricity/oppvera) → `app/lab/demo/`
 
-Do not treat these files as shipped product docs for marketers. The public install guide stays in the root [README](../../README.md) until the desktop app replaces Docker.
+Do not treat these files as shipped product docs for marketers. The public install guide is the root [README](../../README.md) (macOS desktop client; no Docker in this repo).
 
 ## Validate on Oppvera before Oppvera Watch
 
@@ -22,14 +22,14 @@ You can ship and test the **hosted loop first** without changing this Watch repo
 
 At the end of Phase A you have a working product surface: **API-labeled captures, GEO metrics, and HTMX dashboards** on real campaign data. That is the milestone to demo and iterate on before desktop work.
 
-**Phase B — Oppvera Watch (this repo):**
+**Phase B — Oppvera Watch (this repo + Oppvera UI):**
 
 5. ~~Watch ingest API and device pairing~~ **Done** on Oppvera ([03](03-oppvera-probe-ingest-api.md), v0.95.0, [PR #277](https://github.com/codetricity/oppvera/pull/277)).
-6. **macOS** Electron capture client ([02](02-watch-desktop-electron.md)) — desktop v1 in this repo (`apps/desktop`).
-7. UI-vs-API compare and mixed-source filters once both `source=probe` and `source=watch` rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
+6. ~~**macOS** Electron capture client~~ **Shipped** in this repo ([02](02-watch-desktop-electron.md)) — `apps/desktop` **0.5.1-alpha**, arm64 `.dmg`, pairing, query-bank runs, offline pending queue, sync to `POST /api/probe/captures`.
+7. ~~UI-vs-API compare and mixed-source filters~~ **Implemented** on Oppvera when both sources exist ([05](05-unified-analytics.md)) — `?source=watch|probe|all` on the visibility board; `compare_pair()` and lab link on capture detail (`oppvera/routers/visibility.py`, `visibility/queries.py`). **Still to validate in production:** end-to-end compare with real Watch + Probe rows on one campaign (tests cover Probe-only empty compare today).
 8. **Windows** Electron build (planned desktop v2, after macOS v1) — same stack; see [02](02-watch-desktop-electron.md).
 
-Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06 on Oppvera `main`. **04, 05, 06, 08, and 03 are merged.** Next in this repo: the macOS app ([02](02-watch-desktop-electron.md)).
+Phase A and the core Phase B loop are merged on Oppvera `main` and in this repo. Remaining product work is mostly polish, Windows, and optional automation (see [What's next](#whats-next)).
 
 ## Implementation status
 
@@ -40,16 +40,21 @@ Do not start Phase B until Phase A meets the acceptance criteria in docs 04–06
 | [06](06-query-bank-and-runs.md) | **Done** — v0.91.0 | [PR #270](https://github.com/codetricity/oppvera/pull/270) |
 | [08](08-email-reports-and-nudges.md) | **Done** — v0.94.3 | [PR #276](https://github.com/codetricity/oppvera/pull/276) (PRs #273–#276) |
 | [03](03-oppvera-probe-ingest-api.md) | **Done** — v0.95.0 | [PR #277](https://github.com/codetricity/oppvera/pull/277) |
-| [02](02-watch-desktop-electron.md) | Watch repo | **Packaged** — `apps/desktop` 0.3.0. See [releasing-macos.md](../releasing-macos.md) |
+| [02](02-watch-desktop-electron.md) | Watch repo | **Shipped** — `apps/desktop` **0.5.1-alpha** (arm64 `.dmg`). See [releasing-macos.md](../releasing-macos.md) |
+| [05](05-unified-analytics.md) compare + filters | Oppvera | **Done in code** — board filters; detail compare when Watch + Probe share a `query_item_id`; tests for hidden compare when Probe-only |
+| [05](05-unified-analytics.md) + [01](01-product-split.md) lab beside capture (objective 9) | Oppvera | **Done** — v0.110.0 inline panel on capture detail + eval row anchors |
 
 Update this table when each spec lands on [codetricity/oppvera](https://github.com/codetricity/oppvera) `main`.
 
 ## What's next
 
-Hosted Oppvera Phase A plus Watch ingest (**03**, v0.95.0) is complete.
+Core split is implemented. Follow-ups:
 
-1. **[02](02-watch-desktop-electron.md)** — arm64 `.dmg` via [releasing-macos.md](../releasing-macos.md). Link it from the Oppvera Visibility page.
-2. Then exercise UI-vs-API compare on the Oppvera visibility page once Watch rows exist.
+1. **Production validation** — Pair Watch, run a query-bank capture, confirm visibility board filters and the UI-vs-API compare panel on `/workspace/campaigns/{id}/visibility/{capture_id}` for shared bank ids.
+2. **macOS distribution** — Ad-hoc signed `.dmg` today; optional Apple Developer ID notarization ([releasing-macos.md](../releasing-macos.md)).
+3. **Windows desktop v2** — [02](02-watch-desktop-electron.md); not started.
+4. **Optional hosted** — Scheduled Probe runs on the frozen query bank (plan “optional later”; not in Oppvera code yet).
+5. **Objective 9 polish** — Optional: lab highlights in monthly email ([08](08-email-reports-and-nudges.md)); richer Contrast/Showdown widgets on visibility detail.
 
 ## Reading order
 
@@ -76,26 +81,38 @@ Build in this order. Specs can be written together; code should not skip ahead.
 **Phase B (Watch repo + Oppvera ingest):**
 
 5. ~~Watch ingest API and device pairing~~ **Done** ([03](03-oppvera-probe-ingest-api.md), [PR #277](https://github.com/codetricity/oppvera/pull/277)).
-6. **macOS** Electron client ([02](02-watch-desktop-electron.md)) — desktop v1 (`apps/desktop`).
-7. UI-vs-API compare and full mixed-source filters once Watch rows exist ([05](05-unified-analytics.md), [06](06-query-bank-and-runs.md)).
+6. ~~**macOS** Electron client~~ **Done** ([02](02-watch-desktop-electron.md)) — `apps/desktop`.
+7. ~~UI-vs-API compare and mixed-source filters~~ **Done in Oppvera** ([05](05-unified-analytics.md)); validate with live Watch data.
 8. **Windows** Electron client (desktop v2, after macOS v1) — [02](02-watch-desktop-electron.md).
 
 ## Objectives
 
-1. Isolate Watch capture so it runs without Redis or Postgres.
-2. Ship a **macOS** Electron shell (desktop v1); **Windows** build planned as v2 with the same stack.
-3. Bundle or first-launch Camoufox (Python + Firefox).
-4. Device pairing tokens for Watch.
-5. Shared `visibility_captures` store in Oppvera.
-6. Persist Probe passes into that store.
-7. One scorer (`BrandAnalysisResult`) on every row.
-8. One dashboard with source and provider filters, plus UI-vs-API compare.
-9. Studio lab diagnosis shown beside a dated Watch or Probe capture.
-10. Offline queue on the Mac until Oppvera is reachable.
-11. Strip Docker and analysis-key setup from the Watch README once the desktop path exists.
-12. **Desktop v1:** macOS only. **Desktop v2 (planned):** Windows, same Electron stack after macOS capture and sync are proven. Linux desktop is not on the roadmap unless product asks.
-13. No routine merges from OneGlanse. The `oneglanse` git remote is fetch-only for optional capture-engine patches.
-14. Hosted email reports summarize Probe state and nudge stale Oppvera Watch runs when enabled ([08](08-email-reports-and-nudges.md)).
+Status reviewed against `oppvera-watch` and Oppvera `app/lab/demo` (October 2026).
+
+| # | Objective | Status |
+| --- | --- | --- |
+| 1 | Isolate Watch capture (no Redis/Postgres) | **Done** — agent + desktop only; no Docker stack in repo |
+| 2 | macOS Electron shell (v1) | **Done** — `apps/desktop` 0.5.1-alpha |
+| 3 | Camoufox on first launch | **Done** — Python venv + `camoufox fetch` in app (`setupCamoufoxEnv`) |
+| 4 | Device pairing tokens | **Done** — Oppvera `POST /api/probe/devices/pair`; Watch `devices.json` |
+| 5 | Shared `visibility_captures` in Oppvera | **Done** |
+| 6 | Persist Probe passes | **Done** — v0.89.0 |
+| 7 | One scorer per row | **Done** — `visibility/scorer.py`, `analysis_prompt.py` |
+| 8 | Dashboard filters + UI-vs-API compare | **Done in code** — visibility board + `compare_pair` on detail; production smoke test recommended |
+| 9 | Lab beside a dated capture | **Done** (Oppvera v0.110.0) — capture detail shows capture summary beside inline Studio Diagnosis (bucket, rationale, fix, lab answer preview); link to `#eval-query-…` on full report |
+| 10 | Watch offline queue | **Done** — pending captures on disk; `syncNow` / post-run sync |
+| 11 | Strip Docker from Watch README | **Done** — root README is desktop install path |
+| 12 | Windows desktop v2 | **Not started** |
+| 13 | No routine OneGlanse merges | **Done** — `.cursor/rules/upstream-merge.mdc`, `oneglanse` remote |
+| 14 | Email reports + Watch stale nudge | **Done** — v0.94.3 |
+
+### Objective 9: Lab beside capture
+
+**Intent:** On a visibility capture detail page, show **Studio Simulation Lab diagnosis** for the same buyer question (`query_item_id` or question text) **next to** the dated Watch or Probe capture—without claiming the lab predicted ChatGPT or an API answer.
+
+**Shipped (Oppvera v0.110.0, [PR #334](https://github.com/codetricity/oppvera/pull/334)):** capture detail shows a two-column **This capture** / **Studio lab reading** panel (bucket, rationale, fix, lab answer preview) plus **Full Diagnosis report** linking to `#eval-query-{id}` on Inspect → Diagnosis.
+
+**Optional later:** lab highlights in monthly email ([08](08-email-reports-and-nudges.md)); Contrast/Showdown widgets on the same page.
 
 ## Constraints that apply to every doc
 
