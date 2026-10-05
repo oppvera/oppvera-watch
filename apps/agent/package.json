@@ -24,7 +24,8 @@
 	},
 	"scripts": {
 		"build": "tsc",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "tsx --test src/auth/launchSeed.test.ts src/auth/googleProductSignedIn.test.ts"
 	},
 	"dependencies": {
 		"@oneglanse/errors": "workspace:*",

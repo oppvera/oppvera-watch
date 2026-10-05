@@ -258,14 +258,8 @@ class PlaywrightLocatorCompat implements Locator {
 	async dispatchClick(): Promise<void> {
 		await this.locator.evaluate((element) => {
 			if (!(element instanceof HTMLElement)) return;
-			element.dispatchEvent(
-				new MouseEvent("click", {
-					bubbles: true,
-					cancelable: true,
-					composed: true,
-					view: window,
-				}),
-			);
+			// Camoufox/Firefox rejects MouseEventInit.view from Playwright evaluate.
+			element.click();
 		});
 	}
 }
