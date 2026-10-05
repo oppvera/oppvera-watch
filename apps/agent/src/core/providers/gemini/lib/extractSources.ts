@@ -64,8 +64,9 @@ export async function extractSourcesFromGemini(
 		provider: "gemini",
 	})) as RawSource[];
 
-	if (!(await clickButtonViaDispatch(page, sourcesButton))) return [];
-	await page.waitForTimeout(300);
+	if (await clickButtonViaDispatch(page, sourcesButton)) {
+		await page.waitForTimeout(300);
+	}
 
 	return buildSources(rawSources, { provider: "gemini" });
 }

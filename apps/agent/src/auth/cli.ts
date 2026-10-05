@@ -25,6 +25,11 @@ import {
 	type Response,
 	firefox,
 } from "playwright-core";
+import {
+	geminiAuthPageLooksSignedIn,
+	googleSearchAuthPageLooksSignedIn,
+} from "./googleProductSignedIn.js";
+import { shouldIncludeReusableIdentitySeed } from "./launchSeed.js";
 import { perplexityAuthPageLooksSignedIn } from "./perplexitySignedIn.js";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
 import { detectDisplay, isWsl } from "../lib/browser/display.js";
@@ -679,6 +684,9 @@ function isSignedInUrl(provider: AuthProvider, url: string): boolean {
 		if (provider === "claude") {
 			return true;
 		}
+		if (provider === "gemini" || provider === "google") {
+			return false;
+		}
 		return config.postLoginUrls.some((postLoginUrl) => {
 			const expected = new URL(postLoginUrl);
 			if (parsed.origin !== expected.origin) {
@@ -706,6 +714,18 @@ async function contextLooksSignedIn(
 		const url = page.url();
 		if (provider === "perplexity") {
 			if (await perplexityAuthPageLooksSignedIn(page)) {
+				return url;
+			}
+			continue;
+		}
+		if (provider === "gemini") {
+			if (await geminiAuthPageLooksSignedIn(page)) {
+				return url;
+			}
+			continue;
+		}
+		if (provider === "google") {
+			if (await googleSearchAuthPageLooksSignedIn(page)) {
 				return url;
 			}
 			continue;
@@ -810,11 +830,8 @@ export async function runAuthLogin(provider: AuthProvider): Promise<void> {
 	}
 
 	ensureAuthDirectories();
-	// Perplexity shares the same homepage URL for every account; seeding shared
-	// Google identity here auto-logs the Mac's primary Google account into
-	// Perplexity before the user can pick a client account.
 	const authSeedState = await readAuthLaunchSeedState(provider, {
-		includeReusableIdentity: provider !== "perplexity",
+		includeReusableIdentity: shouldIncludeReusableIdentitySeed(provider),
 	});
 	const playwrightStorageState = toPlaywrightStorageState(authSeedState);
 	const systemDarkMode = await detectSystemDarkMode();

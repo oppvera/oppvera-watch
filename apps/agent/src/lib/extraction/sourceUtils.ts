@@ -99,7 +99,7 @@ export function buildSources(
 }
 
 /**
- * Dispatches a synthetic MouseEvent click on a Playwright Locator element.
+ * Clicks a Playwright Locator via the browser (HTMLElement.click).
  * Used by providers that need a JS-level click instead of Playwright's .click()
  * (e.g. to close a sources flyout after reading it).
  *
@@ -109,6 +109,10 @@ export async function clickButtonViaDispatch(
 	_page: Page,
 	button: Locator,
 ): Promise<boolean> {
-	await button.dispatchClick();
-	return true;
+	try {
+		await button.dispatchClick();
+		return true;
+	} catch {
+		return false;
+	}
 }
