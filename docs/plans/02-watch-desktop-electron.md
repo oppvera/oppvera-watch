@@ -2,7 +2,7 @@
 
 ## Status
 
-**Packaged** in this repo as `apps/desktop` **0.4.0-alpha** (arm64 `.dmg`). Pairing stores one Oppvera device token per campaign. The desktop app can hold several campaigns and switches the active one; tokens stay single-campaign. Grouped runs are sequential and hidden in an advanced dialog. How to build and publish: [releasing-macos.md](../releasing-macos.md). Hosted ingest is Oppvera v0.95.0. The Visibility download button is an Oppvera follow-up that links the GitHub Release.
+**Shipped** in this repo as `apps/desktop` **0.5.1-alpha** (arm64 `.dmg`). Pairing stores one Oppvera device token per campaign. The desktop app can hold several campaigns and switches the active one; tokens stay single-campaign. Grouped runs are sequential and hidden in an advanced dialog. How to build and publish: [releasing-macos.md](../releasing-macos.md). Hosted ingest is Oppvera v0.95.0. The Visibility page **Download Oppvera Watch** button links the GitHub Release asset (`visibility_watch_pairing.html`).
 
 ## Recommendation
 

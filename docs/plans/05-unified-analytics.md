@@ -2,11 +2,11 @@
 
 ## Status
 
-**Implemented (Probe-first partial acceptance)** in the Oppvera demo **v0.90.0**, merged to [`main`](https://github.com/codetricity/oppvera) on 2026-09-23 via [PR #269](https://github.com/codetricity/oppvera/pull/269).
+**Implemented** in the Oppvera demo through **v0.95.0+** (Probe-first in v0.90.0 [PR #269](https://github.com/codetricity/oppvera/pull/269); Watch path in v0.95.0 [PR #277](https://github.com/codetricity/oppvera/pull/277)).
 
-Includes GEO scoring (`visibility_analyses`), campaign visibility pages under `oppvera/routers/visibility.py`, and Probe `analysis_mentioned` when analyses are `ready`. UI-vs-API compare and Watch source filters remain Phase B.
+Includes GEO scoring (`visibility_analyses`), campaign visibility pages under `oppvera/routers/visibility.py`, Probe `analysis_mentioned` when analyses are `ready`, **source filters** (`?source=all|probe|watch`), **UI-vs-API compare** on capture detail when both sources share a `query_item_id` (`compare_pair`), and **lab beside capture** on detail (objective 9 — Oppvera v0.110.0, [PR #334](https://github.com/codetricity/oppvera/pull/334)).
 
-**Not in this PR:** doc [06](06-query-bank-and-runs.md) bank runner, doc [08](08-email-reports-and-nudges.md) email.
+Doc [06](06-query-bank-and-runs.md) bank runner and doc [08](08-email-reports-and-nudges.md) email shipped in later Oppvera PRs (#270, #276).
 
 Implement in:
 
@@ -18,11 +18,11 @@ Watch does not score. Oppvera scores every `visibility_captures` row with one pr
 
 ## Probe-first rollout
 
-Implement and test this doc immediately after doc [04](04-oppvera-probe-persistence.md). With only `source=probe` rows:
+Historically, implement and test this doc immediately after doc [04](04-oppvera-probe-persistence.md). With only `source=probe` rows:
 
 - The campaign visibility page should list captures, show scores, and use Probe-only empty states where Watch is mentioned.
-- The UI-vs-API compare panel stays hidden or shows "needs Oppvera Watch capture" until Phase B.
-- Acceptance in this doc (two sources) is the **full** milestone; **partial** acceptance is: one Probe run, analyses `ready`, dashboard usable in the browser without the desktop app.
+- The UI-vs-API compare panel stays hidden until a matching `source=watch` row exists for the same `query_item_id`.
+- **Full** acceptance: one Watch and one Probe capture for the same bank id, both analyzed, compare panel visible without averaging scores.
 
 ## Source of truth to port
 

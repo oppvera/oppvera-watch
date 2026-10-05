@@ -6,6 +6,8 @@
 
 GEO scores, dashboards, and query-bank editing live on **hosted Oppvera**. This app does not score, chart, or store analytics locally.
 
+**Status (October 2026):** macOS client **0.5.1-alpha** pairs to Oppvera, runs the campaign query bank, queues captures offline, and syncs to the shared visibility store. Hosted Oppvera scores rows, filters Watch vs Probe on the campaign visibility page, and shows a UI-vs-API compare panel when both sources exist for the same bank question. Engineering detail: [docs/plans/README.md](docs/plans/README.md).
+
 The capture engine started as a fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). This repository is only the Mac client. Original OneGlanse features (dashboard, Docker, analysis keys) live on that upstream repo if you need to look them up. Do not merge `oneglanse/main`.
 
 ## Install
