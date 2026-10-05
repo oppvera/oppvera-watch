@@ -15,6 +15,7 @@
 		"src/captureProtocol.test.ts",
 		"src/storage.test.ts",
 		"src/watchDebug.test.ts",
+		"src/runItemDisplay.test.ts",
 		"src/renderer/**",
 		"node_modules",
 		"dist"

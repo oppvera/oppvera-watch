@@ -1,6 +1,6 @@
 # Oppvera Watch desktop
 
-macOS capture client for hosted Oppvera. Current version is **0.4.1-alpha** (`version` in `package.json`). The footer and About panel read that value.
+macOS capture client for hosted Oppvera. Current version is **0.5.0-alpha** (`version` in `package.json`). The footer and About panel read that value.
 
 Pair once per campaign from that campaign’s Visibility page. **Settings** lists every paired campaign, lets you add or remove campaigns, and chooses the **active** one used by the query bank and the **Run** tab. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
 

@@ -68,7 +68,11 @@ export const PROVIDER_MODEL_RESPONSE_SELECTORS: Record<Provider, string[]> = {
 	],
 	perplexity: [
 		'div[id^="markdown-content-"]',
-		'[id^="markdown-content-"] .prose'
+		'[id^="markdown-content-"]',
+		'[id^="markdown-content-"] .prose',
+		"main .prose",
+		".prose",
+		'[class*="prose"]',
 	],
 	gemini: ['message-content .markdown'],
 	claude: [

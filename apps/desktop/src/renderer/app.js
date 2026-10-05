@@ -57,6 +57,29 @@ function displayName(map, id) {
   return map[id] || id;
 }
 
+function formatRunProgressItem(item) {
+  const display = window.WatchRunItemDisplay?.formatRunItemStatus;
+  if (typeof display === "function") {
+    return display(item);
+  }
+  return {
+    status: item.status,
+    errorSuffix: item.error ? ` · ${item.error}` : "",
+    title: null,
+  };
+}
+
+function appendRunProgressLine(list, item, prefix) {
+  const formatted = formatRunProgressItem(item);
+  const li = document.createElement("li");
+  li.textContent = `${prefix}${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${formatted.status}${formatted.errorSuffix}`;
+  if (formatted.title) {
+    li.title = formatted.title;
+    li.classList.add("run-progress--no-overview");
+  }
+  list.appendChild(li);
+}
+
 function splitProviders(list, primaryIds, experimentalIds) {
   const byId = new Map(list.map((item) => [item.id, item]));
   return {
@@ -339,7 +362,7 @@ function render(state) {
     const experimentalBox = addGroup(
       providerList,
       "Experimental",
-      "Gemini, Google, and Perplexity have not been tested yet.",
+      "Gemini and Google: free accounts tested. Perplexity not tested yet.",
       true,
     );
     for (const provider of groups.experimental) {
@@ -393,7 +416,7 @@ function render(state) {
     const experimentalBox = addGroup(
       container,
       "Experimental",
-      "Not tested yet (Gemini, Google AI Overview, Perplexity).",
+      "Gemini and Google AI Overview tested on free accounts. Perplexity not tested yet.",
       true,
     );
     for (const provider of groups.experimental) {
@@ -406,22 +429,16 @@ function render(state) {
   if (progress) {
     progress.innerHTML = "";
     for (const item of state.runItems || []) {
-      const li = document.createElement("li");
-      li.textContent = `${item.campaign_name ? `${item.campaign_name} · ` : ""}${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${item.status}${
-        item.error ? ` · ${item.error}` : ""
-      }`;
-      progress.appendChild(li);
+      const prefix = item.campaign_name ? `${item.campaign_name} · ` : "";
+      appendRunProgressLine(progress, item, prefix);
     }
   }
   const groupProgress = document.getElementById("groupProgress");
   if (groupProgress) {
     groupProgress.innerHTML = "";
     for (const item of state.runItems || []) {
-      const li = document.createElement("li");
-      li.textContent = `${item.campaign_name || "Campaign"} · ${displayName(RUN_DISPLAY, item.provider)} · ${item.question} · ${item.status}${
-        item.error ? ` · ${item.error}` : ""
-      }`;
-      groupProgress.appendChild(li);
+      const prefix = `${item.campaign_name || "Campaign"} · `;
+      appendRunProgressLine(groupProgress, item, prefix);
     }
   }
   const maxGroup = document.getElementById("maxGroupSize");

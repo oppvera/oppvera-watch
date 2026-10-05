@@ -1,9 +1,11 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const require = createRequire(import.meta.url);
+const desktopRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const electronDir = dirname(require.resolve("electron/package.json"));
 const { downloadArtifact } = require(
 	require.resolve("@electron/get", { paths: [electronDir] }),
@@ -35,8 +37,44 @@ function writePathFile() {
 	writeFileSync(pathFile, platformPath, "utf8");
 }
 
+function readMacAppDisplayName() {
+	try {
+		const pkg = JSON.parse(
+			readFileSync(join(desktopRoot, "package.json"), "utf8"),
+		);
+		return pkg.build?.productName ?? "Oppvera Watch";
+	} catch {
+		return "Oppvera Watch";
+	}
+}
+
+/** Dev `electron .` runs Electron.app; patch its plist so the Dock shows our name. */
+function patchMacElectronDisplayName() {
+	if (platform !== "darwin") {
+		return;
+	}
+	const plistPath = join(distDir, "Electron.app", "Contents", "Info.plist");
+	if (!existsSync(plistPath)) {
+		return;
+	}
+	const displayName = readMacAppDisplayName();
+	for (const key of ["CFBundleDisplayName", "CFBundleName"]) {
+		const result = spawnSync(
+			"plutil",
+			["-replace", key, "-string", displayName, plistPath],
+			{ encoding: "utf8" },
+		);
+		if (result.status !== 0) {
+			console.warn(
+				`Could not set ${key} on Electron.app (${result.stderr || result.status})`,
+			);
+		}
+	}
+}
+
 async function main() {
 	if (isComplete()) {
+		patchMacElectronDisplayName();
 		writePathFile();
 		return;
 	}
@@ -67,6 +105,7 @@ async function main() {
 			"Electron is still incomplete after unzip (missing Frameworks).",
 		);
 	}
+	patchMacElectronDisplayName();
 	writePathFile();
 }
 

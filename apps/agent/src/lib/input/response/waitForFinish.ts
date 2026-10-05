@@ -129,6 +129,16 @@ export async function waitForAssistantToFinish(
 				return true;
 			}
 
+			if (
+				provider === "perplexity" &&
+				seenResponse &&
+				lastSeenTextLength >= 20 &&
+				textStableFor >= 2500
+			) {
+				logger.debug("✅ Assistant finished (Perplexity text stable)");
+				return true;
+			}
+
 			const noOutputTimeoutMs = PROVIDER_NO_OUTPUT_TIMEOUT_MS[provider];
 			if (waitedFor >= noOutputTimeoutMs && !loggedNoOutputTimeout) {
 				loggedNoOutputTimeout = true;

@@ -25,6 +25,7 @@ import {
 	type Response,
 	firefox,
 } from "playwright-core";
+import { perplexityAuthPageLooksSignedIn } from "./perplexitySignedIn.js";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
 import { detectDisplay, isWsl } from "../lib/browser/display.js";
 
@@ -703,6 +704,12 @@ async function contextLooksSignedIn(
 	for (const page of context.pages()) {
 		if (page.isClosed()) continue;
 		const url = page.url();
+		if (provider === "perplexity") {
+			if (await perplexityAuthPageLooksSignedIn(page)) {
+				return url;
+			}
+			continue;
+		}
 		if (isSignedInUrl(provider, url)) {
 			return url;
 		}
@@ -803,7 +810,12 @@ export async function runAuthLogin(provider: AuthProvider): Promise<void> {
 	}
 
 	ensureAuthDirectories();
-	const authSeedState = await readAuthLaunchSeedState(provider);
+	// Perplexity shares the same homepage URL for every account; seeding shared
+	// Google identity here auto-logs the Mac's primary Google account into
+	// Perplexity before the user can pick a client account.
+	const authSeedState = await readAuthLaunchSeedState(provider, {
+		includeReusableIdentity: provider !== "perplexity",
+	});
 	const playwrightStorageState = toPlaywrightStorageState(authSeedState);
 	const systemDarkMode = await detectSystemDarkMode();
 	const prefersColorSchemeOverride =

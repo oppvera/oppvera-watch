@@ -665,12 +665,19 @@ export async function readReusableIdentitySeedState(): Promise<StorageState | nu
 	return hasUsableAuthState(mergedState) ? mergedState : null;
 }
 
+export type AuthLaunchSeedOptions = {
+	/** When false, do not merge shared Google/Apple/Facebook OAuth cookies. */
+	includeReusableIdentity?: boolean;
+};
+
 export async function readAuthLaunchSeedState(
 	provider: AuthProvider,
+	options: AuthLaunchSeedOptions = {},
 ): Promise<StorageState | null> {
+	const includeReusableIdentity = options.includeReusableIdentity ?? true;
 	const [providerState, reusableState] = await Promise.all([
 		readAuthSession(provider),
-		readReusableIdentitySeedState(),
+		includeReusableIdentity ? readReusableIdentitySeedState() : null,
 	]);
 
 	// Reusable identity state first, provider state last — last entry wins on

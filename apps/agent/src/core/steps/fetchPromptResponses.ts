@@ -67,9 +67,27 @@ export async function fetchPromptResponses(
 						null,
 					)
 					.catch(() => null)
-			: null;
+			: provider === "perplexity"
+				? await page
+						.evaluate(
+							() => ({
+								url: window.location.href,
+								markdownContentNodes: document.querySelectorAll(
+									'div[id^="markdown-content-"]',
+								).length,
+								proseNodes: document.querySelectorAll(
+									".prose, [class*='prose']",
+								).length,
+								mainTextChars: (
+									document.querySelector("main")?.innerText || ""
+								).trim().length,
+							}),
+							null,
+						)
+						.catch(() => null)
+				: null;
 	if (debug) {
-		logger.warn(`[chatgpt] extract debug ${JSON.stringify(debug)}`);
+		logger.warn(`[${provider}] extract debug ${JSON.stringify(debug)}`);
 	}
 	throw new ExternalServiceError(
 		provider,

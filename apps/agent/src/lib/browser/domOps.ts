@@ -174,6 +174,55 @@ export async function runPageDomOp<T>(
 				return dedupeElements(matches);
 			}
 
+			function findLatestPerplexityResponseElement(
+				selectors: string[],
+			): { selector: string; element: HTMLElement } | null {
+				const minChars = 20;
+				const usable = (el: Element | null): el is HTMLElement =>
+					el instanceof HTMLElement &&
+					el.isConnected &&
+					!isResponsePlaceholder(el) &&
+					isVisible(el) &&
+					elementText(el).length >= minChars;
+
+				const fromSelector = (selector: string): HTMLElement | null =>
+					querySelectorAllDeep(selector).filter(usable).at(-1) ?? null;
+
+				for (const selector of selectors || []) {
+					const match = fromSelector(selector);
+					if (match) return { selector, element: match };
+				}
+
+				const prose = querySelectorAllDeep(
+					'.prose, [class*="prose"], [class*="markdown"]',
+				)
+					.filter(usable)
+					.at(-1);
+				if (prose) {
+					return { selector: "perplexity-prose-fallback", element: prose };
+				}
+
+				if (window.location.pathname.includes("/search/")) {
+					const main = document.querySelector("main");
+					if (main instanceof HTMLElement) {
+						const clone = main.cloneNode(true) as HTMLElement;
+						clone
+							.querySelectorAll(
+								'nav, aside, form, header, footer, [contenteditable="true"], [role="textbox"], button, [role="dialog"]',
+							)
+							.forEach((el) => el.remove());
+						if (elementText(clone).length >= minChars) {
+							return {
+								selector: "perplexity-main-fallback",
+								element: clone,
+							};
+						}
+					}
+				}
+
+				return null;
+			}
+
 			function findLatestChatGptResponseElement(
 				selectors: string[],
 			): { selector: string; element: HTMLElement } | null {
@@ -240,6 +289,9 @@ export async function runPageDomOp<T>(
 			): { selector: string; element: HTMLElement } | null {
 				if (provider === "chatgpt") {
 					return findLatestChatGptResponseElement(selectors);
+				}
+				if (provider === "perplexity") {
+					return findLatestPerplexityResponseElement(selectors);
 				}
 				return findLatestResponseElement(selectors);
 			}
