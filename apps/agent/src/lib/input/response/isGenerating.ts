@@ -100,6 +100,15 @@ export async function getResponseStateSignature(
 
 		let latest = elements.at(-1) ?? null;
 
+		const findLatestPerplexity = (): HTMLElement | null => {
+			const prose = Array.from(
+				document.querySelectorAll(
+					'div[id^="markdown-content-"], .prose, [class*="prose"], [class*="markdown"]',
+				),
+			).filter((el): el is HTMLElement => visible(el) && textOf(el).length >= 20);
+			return prose.at(-1) ?? null;
+		};
+
 		if (!latest && currentProvider === "chatgpt") {
 			latest = findLatestChatGpt();
 			if (!latest) {
@@ -113,6 +122,16 @@ export async function getResponseStateSignature(
 			if (!latest) {
 				const main = document.querySelector("main");
 				if (main instanceof HTMLElement && textOf(main).length > 80) {
+					latest = main;
+				}
+			}
+		}
+
+		if (!latest && currentProvider === "perplexity") {
+			latest = findLatestPerplexity();
+			if (!latest && window.location.pathname.includes("/search/")) {
+				const main = document.querySelector("main");
+				if (main instanceof HTMLElement && textOf(main).length >= 40) {
 					latest = main;
 				}
 			}
