@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
 	assertNoSecretKeys,
+	captureFailureRecord,
 	captureFromPromptResult,
 	ingestBodyFromCaptures,
 	WATCH_PROVIDER_LABELS,
@@ -53,6 +54,17 @@ describe("capture mapping", () => {
 		assert.equal(body.captures[0]?.client_capture_id, stored.client_capture_id);
 		assert.equal(body.campaign_id, "camp-1");
 		assert.equal(body.captures[0]?.campaign_id, "camp-1");
+		assert.equal(body.protocol_version, "1.1");
+		const failed = captureFailureRecord({
+			run_id: "run-1",
+			provider: "chatgpt",
+			query_item_id: "q_intro",
+			question: "What is the best tool?",
+			error: "timed out",
+			campaign_id: "camp-1",
+		});
+		assert.equal(failed.collection_status, "failed");
+		assert.equal(failed.raw_answer, "");
 	});
 
 	it("rejects cookie blobs", () => {
