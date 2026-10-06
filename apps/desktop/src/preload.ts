@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld("watch", {
 		ipcRenderer.invoke("watch:connectProvider", provider),
 	resetProvider: (provider: string) =>
 		ipcRenderer.invoke("watch:resetProvider", provider),
+	setProviderAccountLabel: (provider: string, accountLabel: string) =>
+		ipcRenderer.invoke("watch:setProviderAccountLabel", provider, accountLabel),
 	startRun: (payload: { providers: string[] }) =>
 		ipcRenderer.invoke("watch:startRun", payload),
 	stopRun: () => ipcRenderer.invoke("watch:stopRun"),

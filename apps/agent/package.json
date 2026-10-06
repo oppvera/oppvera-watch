@@ -25,7 +25,7 @@
 	"scripts": {
 		"build": "tsc",
 		"typecheck": "tsc --noEmit",
-		"test": "tsx --test src/auth/launchSeed.test.ts src/auth/googleProductSignedIn.test.ts"
+		"test": "tsx --test src/auth/launchSeed.test.ts src/auth/googleProductSignedIn.test.ts src/auth/accountLabel.test.ts src/auth/claudeSignedIn.test.ts src/lib/input/response/botPageSignals.test.ts"
 	},
 	"dependencies": {
 		"@oneglanse/errors": "workspace:*",

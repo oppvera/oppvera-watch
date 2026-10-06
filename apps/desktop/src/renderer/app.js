@@ -22,6 +22,45 @@ function setError(message) {
   text("error", message);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+let accountLabelDialogResolver = null;
+
+function openAccountLabelDialog(providerName, initialValue = "") {
+  const dialog = document.getElementById("providerAccountLabelDialog");
+  const input = document.getElementById("providerAccountLabelInput");
+  const title = document.getElementById("providerAccountLabelTitle");
+  if (!dialog || !input || !title || !dialog.showModal) {
+    return Promise.resolve(null);
+  }
+  title.textContent = `Label ${providerName} login`;
+  input.value = initialValue || "";
+  return new Promise((resolve) => {
+    accountLabelDialogResolver = resolve;
+    dialog.showModal();
+    window.setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 0);
+  });
+}
+
+function closeAccountLabelDialog(value) {
+  const dialog = document.getElementById("providerAccountLabelDialog");
+  if (accountLabelDialogResolver) {
+    accountLabelDialogResolver(value);
+    accountLabelDialogResolver = null;
+  }
+  if (dialog && !dialog.open) return;
+  dialog?.close();
+}
+
 function setBusy(button, busy, idleLabel, busyLabel) {
   if (!button) return;
   button.disabled = busy;
@@ -321,14 +360,52 @@ function render(state) {
       const row = document.createElement("div");
       row.className = "row";
       const label = AUTH_DISPLAY[provider.id] || provider.id;
-      row.innerHTML = `<span>${label}${provider.connected ? " · connected" : ""}${
+      if (provider.connecting) {
+        row.innerHTML = `<span>${label} · <strong>Connecting</strong> — finish sign-in in Firefox, then <strong>close that window</strong> to complete.</span>`;
+        target.appendChild(row);
+        return;
+      }
+      const account =
+        provider.connected && provider.accountLabel
+          ? ` · ${escapeHtml(provider.accountLabel)}`
+          : provider.connected
+            ? " · connected"
+            : "";
+      row.innerHTML = `<span>${label}${account}${
         provider.error ? ` · ${provider.error}` : ""
       }</span>`;
       const actions = document.createElement("div");
+      actions.className = "row-actions";
       const action = document.createElement("button");
       action.className = "ghost";
       action.type = "button";
       if (provider.connected) {
+        const labelIdle = provider.accountLabel ? "Edit label" : "Label account";
+        const labelBtn = document.createElement("button");
+        labelBtn.className = "ghost";
+        labelBtn.type = "button";
+        labelBtn.textContent = labelIdle;
+        labelBtn.onclick = async () => {
+          const named = await openAccountLabelDialog(
+            AUTH_DISPLAY[provider.id] || provider.id,
+            provider.accountLabel || "",
+          );
+          if (!named?.trim()) return;
+          setError("");
+          setBusy(labelBtn, true, labelIdle, "Saving…");
+          try {
+            const nextState = await api.setProviderAccountLabel(
+              provider.id,
+              named.trim(),
+            );
+            render(nextState);
+          } catch (error) {
+            setError(error.message || String(error));
+          } finally {
+            setBusy(labelBtn, false, labelIdle, "Saving…");
+          }
+        };
+        actions.append(labelBtn);
         action.textContent = "Disconnect";
         action.onclick = async () => {
           setError("");
@@ -345,13 +422,23 @@ function render(state) {
         action.textContent = "Connect";
         action.onclick = async () => {
           setError("");
-          setBusy(action, true, "Connect", "Waiting for sign-in…");
+          setBusy(
+            action,
+            true,
+            "Connect",
+            "Finish in Firefox, then close the window…",
+          );
           try {
             await api.connectProvider(provider.id);
           } catch (error) {
             setError(error.message || String(error));
           } finally {
-            setBusy(action, false, "Connect", "Waiting for sign-in…");
+            setBusy(
+              action,
+              false,
+              "Connect",
+              "Finish in Firefox, then close the window…",
+            );
           }
         };
       }
@@ -369,7 +456,7 @@ function render(state) {
     const experimentalBox = addGroup(
       providerList,
       "Experimental",
-      "Gemini and Google: free accounts tested. Perplexity not tested yet.",
+      "Gemini, Google, and Perplexity: free accounts tested.",
       true,
     );
     for (const provider of groups.experimental) {
@@ -420,12 +507,7 @@ function render(state) {
     for (const provider of groups.primary) {
       renderRunRow(provider, primaryBox, false);
     }
-    const experimentalBox = addGroup(
-      container,
-      "Experimental",
-      "Gemini and Google AI Overview tested on free accounts. Perplexity not tested yet.",
-      true,
-    );
+    const experimentalBox = addGroup(container, "Experimental", "", true);
     for (const provider of groups.experimental) {
       renderRunRow(provider, experimentalBox, true);
     }
@@ -733,6 +815,22 @@ try {
       }
     });
   }
+
+  const labelForm = document.getElementById("providerAccountLabelForm");
+  const labelCancel = document.getElementById("providerAccountLabelCancel");
+  const labelDialog = document.getElementById("providerAccountLabelDialog");
+  labelForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = document.getElementById("providerAccountLabelInput");
+    const named = input?.value.trim() || "";
+    if (!named) return;
+    closeAccountLabelDialog(named);
+  });
+  labelCancel?.addEventListener("click", () => closeAccountLabelDialog(null));
+  labelDialog?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeAccountLabelDialog(null);
+  });
 
   if (api && typeof api.onState === "function") {
     api.onState(render);

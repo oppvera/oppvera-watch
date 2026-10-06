@@ -11,6 +11,7 @@ import {
 	saveReusableIdentitySessions,
 	writeProviderAuthStatus,
 } from "./sessionStore.js";
+import { accountLabelFromBrowserContext } from "./accountLabel.js";
 import { AUTH_PROVIDER_LIST, type AuthProvider } from "@oneglanse/types";
 import {
 	AUTH_PROVIDER_CONFIG,
@@ -30,6 +31,7 @@ import {
 	googleSearchAuthPageLooksSignedIn,
 } from "./googleProductSignedIn.js";
 import { shouldIncludeReusableIdentitySeed } from "./launchSeed.js";
+import { claudeAuthPageLooksSignedIn } from "./claudeSignedIn.js";
 import { perplexityAuthPageLooksSignedIn } from "./perplexitySignedIn.js";
 import { resolveCamoufoxLaunchOptions } from "../lib/browser/camoufox.js";
 import { detectDisplay, isWsl } from "../lib/browser/display.js";
@@ -681,9 +683,6 @@ function isSignedInUrl(provider: AuthProvider, url: string): boolean {
 		if (isAuthPath(parsed.pathname)) {
 			return false;
 		}
-		if (provider === "claude") {
-			return true;
-		}
 		if (provider === "gemini" || provider === "google") {
 			return false;
 		}
@@ -714,6 +713,12 @@ async function contextLooksSignedIn(
 		const url = page.url();
 		if (provider === "perplexity") {
 			if (await perplexityAuthPageLooksSignedIn(page)) {
+				return url;
+			}
+			continue;
+		}
+		if (provider === "claude") {
+			if (await claudeAuthPageLooksSignedIn(page)) {
 				return url;
 			}
 			continue;
@@ -786,29 +791,38 @@ async function waitForAuthSessionComplete(
 	tracker.start();
 
 	let finalState: PersistedStorageState | null = null;
+	let domLabel: string | null = null;
 	const abort = new AbortController();
 	try {
+		const closed = waitForAllAuthPagesToClose(context);
 		const signedIn = waitForSignedInUrl(context, provider, abort.signal).then(
-			(url) =>
-				url
-					? { kind: "signed-in" as const, url }
-					: { kind: "closed" as const, url: null },
+			(url) => (url ? { kind: "signed-in" as const, url } : null),
 		);
-		const closed = waitForAllAuthPagesToClose(context).then(() => ({
-			kind: "closed" as const,
-			url: null,
-		}));
-		const result = await Promise.race([signedIn, closed]);
-		abort.abort();
-		if (result.kind === "signed-in") {
+		const result = await Promise.race([
+			signedIn,
+			closed.then(() => ({ kind: "closed" as const, url: null })),
+		]);
+		if (result?.kind === "signed-in" && result.url) {
 			logger.log(
-				`[auth:${provider}] signed-in detected, saving session (${result.url})`,
+				`[auth:${provider}] signed-in detected (${result.url}); close the Firefox window when you are finished.`,
 			);
+			try {
+				domLabel = await accountLabelFromBrowserContext(provider, context);
+			} catch {
+				domLabel = null;
+			}
+			await closed;
 		} else {
+			abort.abort();
 			logger.log(`[auth:${provider}] auth window closed, saving session`);
 		}
 	} finally {
 		abort.abort();
+		try {
+			domLabel = await accountLabelFromBrowserContext(provider, context);
+		} catch {
+			domLabel = null;
+		}
 		finalState = await tracker.finish();
 	}
 
@@ -818,7 +832,7 @@ async function waitForAuthSessionComplete(
 		);
 	}
 	await saveReusableIdentitySessions(finalState);
-	await saveAuthSession(provider, finalState);
+	await saveAuthSession(provider, finalState, { accountLabel: domLabel });
 	await context.close().catch(() => {});
 }
 

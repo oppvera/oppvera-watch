@@ -66,13 +66,13 @@
       </section>
       <section id="providers" class="panel">
         <p>
-          Sign in with the consumer accounts you already pay for. Watch is
-          focused on ChatGPT and Claude. Gemini and Google AI Overview are
-          tested on free Google accounts. Perplexity has not been tested yet.
-          Camoufox opens a visible Firefox window. Watch saves the session once
-          you are signed in (or close that window when you are done). Disconnect
-          removes the saved
-          login from this Mac.
+          Set up a work account for each AI application (example: ChatGPT).
+          Camoufox opens
+          a visible Firefox window. Finish sign-in there, then
+          <strong>close that Firefox window</strong>—Watch saves the session and
+          shows <strong>connected</strong> here. Use <strong>Label account</strong>
+          if the app cannot read your email (common for ChatGPT and Claude).
+          Disconnect removes the saved login from this Mac.
         </p>
         <div class="python-row">
           <p id="pythonHelp" class="status"></p>
@@ -127,6 +127,31 @@
     <footer class="app-footer">
       <p id="appVersion" class="app-version"></p>
     </footer>
+    <dialog id="providerAccountLabelDialog" class="coverage-dialog">
+      <form id="providerAccountLabelForm">
+        <h2 id="providerAccountLabelTitle">Label this login</h2>
+        <p class="hint">
+          Name the account so you can tell logins apart (for example
+          work@gmail.com or Personal ChatGPT).
+        </p>
+        <label class="dialog-field" for="providerAccountLabelInput">
+          <span class="hint">Account label</span>
+          <input
+            id="providerAccountLabelInput"
+            type="text"
+            maxlength="80"
+            autocomplete="off"
+            required
+          />
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="ghost" id="providerAccountLabelCancel">
+            Cancel
+          </button>
+          <button type="submit" class="primary">Save label</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="coverageDialog" class="coverage-dialog">
       <form method="dialog">
         <h2>What we have tested</h2>
@@ -165,8 +190,8 @@
             </tr>
             <tr>
               <th scope="row">Perplexity</th>
-              <td>None</td>
-              <td>Not tested</td>
+              <td>Free only</td>
+              <td>Tested</td>
             </tr>
           </tbody>
         </table>
