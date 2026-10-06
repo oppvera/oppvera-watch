@@ -18,6 +18,7 @@ import {
 	AUTH_PROVIDER_DISPLAY,
 	getAuthProviderForProvider,
 } from "@oneglanse/utils";
+import { accountLabelFromAuthStorage } from "./accountLabel.js";
 
 type PersistedAuthStatus = {
 	connecting: ProviderAuthStatus["connecting"];
@@ -25,6 +26,7 @@ type PersistedAuthStatus = {
 	syncedAt: ProviderAuthStatus["syncedAt"];
 	error: ProviderAuthStatus["error"];
 	launcherPid?: number | null;
+	accountLabel?: string | null;
 };
 
 type StorageState = {
@@ -731,14 +733,27 @@ export async function readAuthSession(
 
 export async function writeProviderAuthStatus(
 	provider: AuthProvider,
-	status: PersistedAuthStatus,
+	status: Partial<PersistedAuthStatus>,
 ): Promise<void> {
 	ensureAuthDirectories();
+	const existing = await readPersistedAuthStatus(provider);
+	const accountLabel =
+		"accountLabel" in status
+			? (status.accountLabel ?? null)
+			: (existing?.accountLabel ?? null);
 	const statusFile = getAuthStatusFile(provider);
 	mkdirSync(path.dirname(statusFile), { recursive: true });
 	await writeFile(
 		statusFile,
-		JSON.stringify(buildPersistedStatus(status), null, 2),
+		JSON.stringify(
+			buildPersistedStatus({
+				...existing,
+				...status,
+				accountLabel,
+			}),
+			null,
+			2,
+		),
 	);
 }
 
@@ -750,9 +765,26 @@ export async function invalidateRuntimeProfilesForAuthProvider(
 	}
 }
 
+async function inferProviderAccountLabel(
+	provider: AuthProvider,
+	state: StorageState | null,
+): Promise<string | null> {
+	const fromSession = accountLabelFromAuthStorage(provider, state);
+	if (fromSession) return fromSession;
+
+	const googleState = await readReusableIdentityState("google");
+	if (!googleState) return null;
+
+	return (
+		accountLabelFromAuthStorage("google", googleState) ??
+		accountLabelFromAuthStorage(provider, googleState)
+	);
+}
+
 export async function saveAuthSession(
 	provider: AuthProvider,
 	state: StorageState,
+	options?: { accountLabel?: string | null },
 ): Promise<StorageState> {
 	ensureAuthDirectories();
 	const compactState = compactStorageStateForProvider(provider, state);
@@ -768,15 +800,66 @@ export async function saveAuthSession(
 	mkdirSync(path.dirname(sessionFile), { recursive: true });
 	await writeFile(sessionFile, JSON.stringify(compactState));
 	await invalidateRuntimeProfilesForAuthProvider(provider);
+	const existing = await readPersistedAuthStatus(provider);
+	const manualLabel = existing?.accountLabel?.trim() || null;
+	const domLabel = options?.accountLabel?.trim() || null;
+	const accountLabel =
+		domLabel ??
+		manualLabel ??
+		(await inferProviderAccountLabel(provider, compactState));
 	await writeProviderAuthStatus(provider, {
 		connecting: false,
 		lastUpdatedAt: now,
 		syncedAt: isRemoteSyncConfigured() ? null : now,
 		error: null,
 		launcherPid: null,
+		accountLabel,
 	});
 
 	return compactState;
+}
+
+export async function setProviderAccountLabel(
+	provider: AuthProvider,
+	accountLabel: string,
+): Promise<void> {
+	const trimmed = accountLabel.trim().slice(0, 80);
+	if (!trimmed) {
+		return;
+	}
+	if (!existsSync(getAuthSessionFile(provider))) {
+		throw new Error("Connect this provider before labeling the account.");
+	}
+	const stored = (await readPersistedAuthStatus(provider)) ?? {
+		connecting: false,
+		lastUpdatedAt: null,
+		syncedAt: null,
+		error: null,
+		launcherPid: null,
+	};
+	await writeProviderAuthStatus(provider, {
+		...stored,
+		accountLabel: trimmed,
+		lastUpdatedAt: new Date().toISOString(),
+	});
+}
+
+export async function readProviderAccountLabel(
+	provider: AuthProvider,
+): Promise<string | null> {
+	const stored = await readPersistedAuthStatus(provider);
+	if (stored?.accountLabel) {
+		return stored.accountLabel;
+	}
+	const session = await readAuthSession(provider);
+	const inferred = await inferProviderAccountLabel(provider, session);
+	if (inferred && stored) {
+		await writeProviderAuthStatus(provider, {
+			...stored,
+			accountLabel: inferred,
+		});
+	}
+	return inferred;
 }
 
 export async function resetProviderAuthData(
@@ -797,6 +880,7 @@ export async function resetProviderAuthData(
 		syncedAt: null,
 		error: null,
 		launcherPid: null,
+		accountLabel: null,
 	});
 }
 

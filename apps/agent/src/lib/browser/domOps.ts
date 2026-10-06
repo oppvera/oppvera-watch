@@ -539,6 +539,20 @@ export async function runPageDomOp<T>(
 				return { selector: "none", html: "" };
 			}
 
+			function hasVisibleChallengeUi(): boolean {
+				const selectors = [
+					"form#captcha-form",
+					'iframe[src*="recaptcha/api2/bframe"]',
+					'iframe[src*="recaptcha/enterprise/bframe"]',
+					'iframe[src*="challenges.cloudflare.com"]',
+				];
+				for (const selector of selectors) {
+					const element = document.querySelector(selector);
+					if (isVisible(element)) return true;
+				}
+				return false;
+			}
+
 			function detectBotPageState(): {
 				botDetected: boolean;
 				reason: string | null;
@@ -557,18 +571,16 @@ export async function runPageDomOp<T>(
 						reason: "bot detection: unusual traffic / sorry page",
 					},
 					{
-						matched: /captcha|recaptcha|turnstile|verify you are human/i.test(
-							bodyText,
-						),
+						matched:
+							/please verify you(?:'re| are) human|verify you(?:'re| are) not a robot|complete the security check|unusual traffic from your (?:computer|ip) address/i.test(
+								bodyText,
+							),
 						reason: "bot detection: captcha or human verification challenge",
 					},
 					{
 						matched:
-							Boolean(
-								document.querySelector(
-									'form#captcha-form, iframe[src*="recaptcha"]',
-								),
-							) || /challenge/i.test(title),
+							hasVisibleChallengeUi() ||
+							/(?:security|captcha) challenge/i.test(title),
 						reason: "bot detection: challenge UI present",
 					},
 					{

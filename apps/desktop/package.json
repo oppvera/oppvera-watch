@@ -1,6 +1,6 @@
 {
 	"name": "@oppvera/watch-desktop",
-	"version": "0.6.0-alpha",
+	"version": "0.6.7-alpha",
 	"private": true,
 	"type": "module",
 	"description": "Oppvera Watch macOS capture client",

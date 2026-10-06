@@ -18,7 +18,9 @@ import {
 import {
 	getAuthSessionFile,
 	readPersistedAuthStatus,
+	readProviderAccountLabel,
 	resetProviderAuthData,
+	setProviderAccountLabel,
 } from "@oneglanse/agent/auth-sessions";
 import type { QueryBankItem } from "./oppvera.js";
 import { fetchQueryBank, pairDevice, uploadCaptures } from "./oppvera.js";
@@ -78,7 +80,9 @@ type AppState = {
 	providers: Array<{
 		id: AuthProvider;
 		connected: boolean;
+		connecting: boolean;
 		error: string | null;
+		accountLabel: string | null;
 	}>;
 	runtimeProviders: Array<{ id: Provider; connected: boolean }>;
 	runItems: RunItem[];
@@ -104,6 +108,7 @@ let lastSyncAt: string | null = null;
 let lastSyncUploaded: number | null = null;
 let lastSyncFailed: number | null = null;
 let lastError: string | null = null;
+const connectingProviders = new Set<AuthProvider>();
 let python = {
 	ok: false,
 	message: "Checking Python…",
@@ -131,10 +136,18 @@ async function providerCards() {
 	const cards = [];
 	for (const id of AUTH_PROVIDER_LIST) {
 		const status = await readPersistedAuthStatus(id).catch(() => null);
+		const connected = existsSync(getAuthSessionFile(id));
+		const manualLabel = status?.accountLabel?.trim() || null;
+		const accountLabel = connected
+			? manualLabel ||
+				(await readProviderAccountLabel(id).catch(() => null))
+			: null;
 		cards.push({
 			id,
-			connected: existsSync(getAuthSessionFile(id)),
+			connected,
+			connecting: connectingProviders.has(id),
 			error: status?.error ?? null,
+			accountLabel,
 		});
 	}
 	return cards;
@@ -153,7 +166,9 @@ async function snapshot(): Promise<AppState> {
 	let providers: AppState["providers"] = AUTH_PROVIDER_LIST.map((id) => ({
 		id,
 		connected: false,
+		connecting: false,
 		error: null,
+		accountLabel: null,
 	}));
 	try {
 		providers = await providerCards();
@@ -542,6 +557,8 @@ ipcMain.handle("watch:connectProvider", async (_event, provider: AuthProvider) =
 		throw new Error(python.message);
 	}
 	const dirs = supportEnv();
+	connectingProviders.add(provider);
+	await pushState();
 	try {
 		await waitForChild(
 			spawnNode(childScript("auth-child.js"), [
@@ -555,6 +572,8 @@ ipcMain.handle("watch:connectProvider", async (_event, provider: AuthProvider) =
 	} catch (error) {
 		lastError = error instanceof Error ? error.message : String(error);
 		throw error;
+	} finally {
+		connectingProviders.delete(provider);
 	}
 	return pushState();
 });
@@ -564,6 +583,18 @@ ipcMain.handle("watch:resetProvider", async (_event, provider: AuthProvider) => 
 	await resetProviderAuthData(provider);
 	return pushState();
 });
+
+ipcMain.handle(
+	"watch:setProviderAccountLabel",
+	async (_event, provider: AuthProvider, accountLabel: string) => {
+		if (!AUTH_PROVIDER_LIST.includes(provider)) {
+			throw new Error("Unknown provider");
+		}
+		supportEnv();
+		await setProviderAccountLabel(provider, String(accountLabel || ""));
+		return pushState();
+	},
+);
 
 ipcMain.handle("watch:setupPython", async () => {
 	python = await setupCamoufoxEnv();
