@@ -177,6 +177,13 @@ function renderSync(state) {
     return;
   }
 
+  if (state.scheduleNote && detail && !detail.dataset.schedule) {
+    const note = document.createElement("p");
+    detail.dataset.schedule = "1";
+    note.textContent = state.scheduleNote;
+    card.appendChild(note);
+  }
+
   if (state.lastSyncAt) {
     card.classList.add("sync-card--success");
     headline.textContent = "All captures synced to Oppvera";

@@ -7,6 +7,7 @@ import {
 	prepareNextPrompt,
 } from "@oneglanse/agent/execute-prompt";
 import {
+	captureFailureRecord,
 	captureFromPromptResult,
 	type CaptureSession,
 } from "./ingest.js";
@@ -114,6 +115,18 @@ async function runJob(job: CaptureJob): Promise<void> {
 					campaign_name: job.campaign_name,
 				});
 			} catch (error) {
+				const message = formatCaptureError(error);
+				const failed = captureFailureRecord({
+					run_id: job.run_id,
+					provider: job.provider,
+					query_item_id: query.query_item_id,
+					question: query.text,
+					error: message,
+					session,
+					campaign_id: job.campaign_id,
+					campaign_name: job.campaign_name,
+				});
+				writeCapture(failed);
 				emit("failed", {
 					query_item_id: query.query_item_id,
 					provider: job.provider,

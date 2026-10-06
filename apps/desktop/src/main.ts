@@ -91,6 +91,7 @@ type AppState = {
 	python: { ok: boolean; message: string };
 	appVersion: string;
 	appVersionLabel: string;
+	scheduleNote: string;
 };
 
 let win: BrowserWindow | null = null;
@@ -180,6 +181,8 @@ async function snapshot(): Promise<AppState> {
 		python: { ok: python.ok, message: python.message },
 		appVersion: WATCH_VERSION.version,
 		appVersionLabel: formatWatchVersionLabel(),
+		scheduleNote:
+			"Weekly checks run on this Mac while Oppvera Watch is open. A hosted email report does not start a capture.",
 	};
 }
 

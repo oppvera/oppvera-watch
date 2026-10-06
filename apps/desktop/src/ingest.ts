@@ -57,6 +57,9 @@ export type WatchCapturePayload = {
 	account_hint: null;
 	campaign_id: string;
 	campaign_name?: string;
+	outcome_kind?: string;
+	collection_status?: string;
+	protocol_version?: string;
 };
 
 export type StoredCapture = WatchCapturePayload & {
@@ -120,9 +123,41 @@ export function captureFromPromptResult(input: {
 		campaign_id: input.campaign_id,
 		campaign_name: input.campaign_name,
 		sync_status: "pending",
+		outcome_kind: "completed",
+		collection_status: "completed",
+		protocol_version: "1.1",
 	};
 	assertNoSecretKeys(payload);
 	return payload;
+}
+
+export function captureFailureRecord(input: {
+	run_id: string;
+	provider: Provider;
+	query_item_id: string;
+	question: string;
+	error: string;
+	campaign_id: string;
+	campaign_name?: string;
+	session?: CaptureSession;
+}): StoredCapture {
+	const stored = captureFromPromptResult({
+		run_id: input.run_id,
+		provider: input.provider,
+		query_item_id: input.query_item_id,
+		question: input.question,
+		response: "",
+		sources: [],
+		session: input.session,
+		campaign_id: input.campaign_id,
+		campaign_name: input.campaign_name,
+	});
+	stored.outcome_kind = "failed";
+	stored.collection_status = "failed";
+	stored.raw_answer = "";
+	stored.sync_error = input.error.slice(0, 500);
+	assertNoSecretKeys(stored);
+	return stored;
 }
 
 export function ingestBodyFromCaptures(runId: string, captures: StoredCapture[]) {
@@ -131,6 +166,7 @@ export function ingestBodyFromCaptures(runId: string, captures: StoredCapture[])
 	];
 	const body = {
 		run_id: runId,
+		protocol_version: "1.1",
 		campaign_id: campaignIds.length === 1 ? campaignIds[0] : undefined,
 		captures: captures.map((capture) => ({
 			client_capture_id: capture.client_capture_id,
@@ -145,6 +181,9 @@ export function ingestBodyFromCaptures(runId: string, captures: StoredCapture[])
 			citations: capture.citations,
 			captured_at: capture.captured_at,
 			account_hint: null,
+			outcome_kind: capture.outcome_kind || "completed",
+			collection_status: capture.collection_status || "completed",
+			protocol_version: capture.protocol_version || "1.1",
 		})),
 	};
 	assertNoSecretKeys(body);
