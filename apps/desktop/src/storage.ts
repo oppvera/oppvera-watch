@@ -8,8 +8,14 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import type { Provider } from "@oneglanse/types";
 import type { StoredCapture } from "./ingest.js";
 import { ensureSupportDirs } from "./paths.js";
+import {
+	DEFAULT_WEEKLY_SCHEDULE,
+	normalizeWeeklySchedule,
+	type WeeklySchedulePrefs,
+} from "./watchSchedule.js";
 
 export type DeviceRecord = {
 	device_token: string;
@@ -29,6 +35,8 @@ export const ABSOLUTE_MAX_GROUP_SIZE = 4;
 export type WatchPrefs = {
 	activeCampaignId: string | null;
 	maxGroupSize: number;
+	weeklySchedule: WeeklySchedulePrefs;
+	lastRunProviders: Provider[];
 };
 
 export function clampMaxGroupSize(value: unknown): number {
@@ -56,7 +64,12 @@ function writePrivate(path: string, contents: string): void {
 }
 
 function defaultPrefs(): WatchPrefs {
-	return { activeCampaignId: null, maxGroupSize: DEFAULT_MAX_GROUP_SIZE };
+	return {
+		activeCampaignId: null,
+		maxGroupSize: DEFAULT_MAX_GROUP_SIZE,
+		weeklySchedule: { ...DEFAULT_WEEKLY_SCHEDULE },
+		lastRunProviders: [],
+	};
 }
 
 function readPrefsFile(): WatchPrefs {
@@ -67,6 +80,10 @@ function readPrefsFile(): WatchPrefs {
 		return {
 			activeCampaignId: raw.activeCampaignId ?? null,
 			maxGroupSize: clampMaxGroupSize(raw.maxGroupSize),
+			weeklySchedule: normalizeWeeklySchedule(raw.weeklySchedule),
+			lastRunProviders: Array.isArray(raw.lastRunProviders)
+				? raw.lastRunProviders.filter((id): id is Provider => typeof id === "string")
+				: [],
 		};
 	} catch {
 		return defaultPrefs();
@@ -81,6 +98,8 @@ function writePrefs(prefs: WatchPrefs): void {
 			{
 				activeCampaignId: prefs.activeCampaignId,
 				maxGroupSize: clampMaxGroupSize(prefs.maxGroupSize),
+				weeklySchedule: normalizeWeeklySchedule(prefs.weeklySchedule),
+				lastRunProviders: prefs.lastRunProviders,
 			},
 			null,
 			2,
@@ -136,8 +155,8 @@ function migrateLegacyDevice(): void {
 	}
 	writeDevices([legacy]);
 	writePrefs({
+		...defaultPrefs(),
 		activeCampaignId: legacy.campaign_id,
-		maxGroupSize: DEFAULT_MAX_GROUP_SIZE,
 	});
 	stampUntaggedCaptures(legacy);
 	rmSync(dirs.deviceFile, { force: true });
@@ -200,6 +219,30 @@ export function setActiveCampaign(campaignId: string): void {
 export function setMaxGroupSize(value: number): WatchPrefs {
 	const prefs = readPrefs();
 	const next = { ...prefs, maxGroupSize: clampMaxGroupSize(value) };
+	writePrefs(next);
+	return next;
+}
+
+export function setWeeklySchedule(patch: Partial<WeeklySchedulePrefs>): WatchPrefs {
+	const prefs = readPrefs();
+	const next = {
+		...prefs,
+		weeklySchedule: normalizeWeeklySchedule({
+			...prefs.weeklySchedule,
+			...patch,
+		}),
+	};
+	writePrefs(next);
+	return next;
+}
+
+export function markWeeklyAutoRun(weekKey: string): WatchPrefs {
+	return setWeeklySchedule({ lastAutoRunWeek: weekKey });
+}
+
+export function setLastRunProviders(providers: Provider[]): WatchPrefs {
+	const prefs = readPrefs();
+	const next = { ...prefs, lastRunProviders: providers };
 	writePrefs(next);
 	return next;
 }

@@ -1,6 +1,6 @@
 {
 	"name": "@oppvera/watch-desktop",
-	"version": "0.6.7-alpha",
+	"version": "0.6.8-alpha",
 	"private": true,
 	"type": "module",
 	"description": "Oppvera Watch macOS capture client",
@@ -11,7 +11,7 @@
 		"dev": "pnpm build:deps && pnpm build && node scripts/ensure-electron.mjs && electron .",
 		"postinstall": "node scripts/ensure-electron.mjs",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test": "tsx --test src/ingest.test.ts src/captureProtocol.test.ts src/storage.test.ts src/watchDebug.test.ts src/runItemDisplay.test.ts",
+		"test": "tsx --test src/ingest.test.ts src/captureProtocol.test.ts src/storage.test.ts src/watchDebug.test.ts src/runItemDisplay.test.ts src/watchSchedule.test.ts",
 		"icon:mac": "node scripts/build-mac-icon.mjs",
 		"dist:mac": "node scripts/stage-mac.mjs"
 	},

@@ -244,8 +244,27 @@ function renderSync(state) {
     "Run the query bank to capture answers, then sync or let a run upload automatically.";
 }
 
+function renderWeeklySchedule(state) {
+  const schedule = state.weeklySchedule;
+  if (!schedule) return;
+  const enabled = document.getElementById("weeklyEnabled");
+  const weekday = document.getElementById("weeklyWeekday");
+  const hour = document.getElementById("weeklyHour");
+  if (enabled && document.activeElement !== enabled) {
+    enabled.checked = Boolean(schedule.enabled);
+  }
+  if (weekday && document.activeElement !== weekday) {
+    weekday.value = String(schedule.weekday ?? 1);
+  }
+  if (hour && document.activeElement !== hour) {
+    hour.value = String(schedule.hour ?? 9);
+  }
+  text("weeklyScheduleNote", state.scheduleNote || "");
+}
+
 function render(state) {
   if (!state) return;
+  renderWeeklySchedule(state);
   text(
     "appVersion",
     state.appVersionLabel ||
@@ -830,6 +849,28 @@ try {
   labelDialog?.addEventListener("cancel", (event) => {
     event.preventDefault();
     closeAccountLabelDialog(null);
+  });
+
+  const weeklyForm = document.getElementById("weeklyScheduleForm");
+  weeklyForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!api || typeof api.setWeeklySchedule !== "function") return;
+    const enabled = document.getElementById("weeklyEnabled");
+    const weekday = document.getElementById("weeklyWeekday");
+    const hour = document.getElementById("weeklyHour");
+    const saveBtn = document.getElementById("saveWeeklySchedule");
+    setBusy(saveBtn, true, "Save schedule", "Saving…");
+    try {
+      await api.setWeeklySchedule({
+        enabled: Boolean(enabled?.checked),
+        weekday: Number(weekday?.value ?? 1),
+        hour: Number(hour?.value ?? 9),
+      });
+    } catch (error) {
+      setError(error.message || String(error));
+    } finally {
+      setBusy(saveBtn, false, "Save schedule", "Saving…");
+    }
   });
 
   if (api && typeof api.onState === "function") {

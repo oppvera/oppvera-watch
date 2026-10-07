@@ -8,6 +8,7 @@ import {
 	BrowserWindow,
 	ipcMain,
 	nativeImage,
+	Notification,
 	shell,
 } from "electron";
 import type { AuthProvider, Provider } from "@oneglanse/types";
@@ -38,7 +39,10 @@ import {
 	removeDevice,
 	saveDevice,
 	setActiveCampaign,
+	setLastRunProviders,
 	setMaxGroupSize,
+	setWeeklySchedule,
+	markWeeklyAutoRun,
 	assertGroupSize,
 	writeCapture,
 } from "./storage.js";
@@ -55,6 +59,12 @@ import {
 	formatWatchVersionLabel,
 	WATCH_VERSION,
 } from "./version.js";
+import {
+	formatWeeklyScheduleLabel,
+	isWeeklyRunDue,
+	isoWeekKey,
+	type WeeklySchedulePrefs,
+} from "./watchSchedule.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -96,6 +106,7 @@ type AppState = {
 	appVersion: string;
 	appVersionLabel: string;
 	scheduleNote: string;
+	weeklySchedule: WeeklySchedulePrefs;
 };
 
 let win: BrowserWindow | null = null;
@@ -196,9 +207,71 @@ async function snapshot(): Promise<AppState> {
 		python: { ok: python.ok, message: python.message },
 		appVersion: WATCH_VERSION.version,
 		appVersionLabel: formatWatchVersionLabel(),
-		scheduleNote:
-			"Weekly checks run on this Mac while Oppvera Watch is open. A hosted email report does not start a capture.",
+		scheduleNote: formatWeeklyScheduleLabel(readPrefs().weeklySchedule),
+		weeklySchedule: readPrefs().weeklySchedule,
 	};
+}
+
+const DEFAULT_AUTO_RUN_PROVIDERS: Provider[] = ["chatgpt", "claude"];
+
+async function runScheduledBankIfDue(): Promise<void> {
+	if (running) return;
+	const prefs = readPrefs();
+	if (!isWeeklyRunDue(prefs.weeklySchedule)) return;
+	const device = readDevice();
+	if (!device) return;
+	if (queries.length === 0) {
+		try {
+			await refreshActiveBank();
+		} catch {
+			return;
+		}
+	}
+	if (queries.length === 0) return;
+	const providers =
+		prefs.lastRunProviders.length > 0
+			? prefs.lastRunProviders
+			: DEFAULT_AUTO_RUN_PROVIDERS;
+	try {
+		selectedProviders(providers);
+	} catch {
+		return;
+	}
+	await refreshPython();
+	if (!python.ok) return;
+	running = true;
+	runCancelled = false;
+	try {
+		await captureCampaign({
+			device,
+			bank: queries,
+			providers,
+			replaceItems: true,
+		});
+		setLastRunProviders(providers);
+		markWeeklyAutoRun(isoWeekKey(new Date()));
+	} catch (error) {
+		lastError = error instanceof Error ? error.message : String(error);
+	} finally {
+		activeChild = null;
+		running = false;
+		runCancelled = false;
+		await pushState();
+	}
+	if (Notification.isSupported()) {
+		new Notification({
+			title: "Oppvera Watch",
+			body: "Weekly query bank run finished. Open Sync to confirm uploads.",
+		}).show();
+	}
+}
+
+function startScheduleTimer(): void {
+	const tick = () => {
+		void runScheduledBankIfDue();
+	};
+	setInterval(tick, 5 * 60 * 1000);
+	setTimeout(tick, 30_000);
 }
 
 async function pushState(): Promise<AppState> {
@@ -470,6 +543,7 @@ app.whenReady().then(async () => {
 		}
 	}
 	createWindow();
+	startScheduleTimer();
 });
 
 ipcMain.handle("watch:getState", () => snapshot());
@@ -534,6 +608,21 @@ ipcMain.handle("watch:setMaxGroupSize", async (_event, value: number) => {
 	setMaxGroupSize(value);
 	return pushState();
 });
+
+ipcMain.handle(
+	"watch:setWeeklySchedule",
+	async (
+		_event,
+		payload: { enabled: boolean; weekday: number; hour: number },
+	) => {
+		setWeeklySchedule({
+			enabled: Boolean(payload.enabled),
+			weekday: payload.weekday,
+			hour: payload.hour,
+		});
+		return pushState();
+	},
+);
 
 ipcMain.handle("watch:refreshBank", async () => {
 	const device = readDevice();
@@ -780,6 +869,7 @@ ipcMain.handle(
 		throw new Error("The campaign query bank is empty. Add questions in Oppvera.");
 	}
 	const selected = selectedProviders(payload);
+	setLastRunProviders(selected);
 	await refreshPython();
 	if (!python.ok) throw new Error(python.message);
 	running = true;

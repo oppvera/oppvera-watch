@@ -58,6 +58,37 @@
         </p>
         <p id="pairStatus" class="status">Ready to pair.</p>
         <p id="pairError" class="error"></p>
+        <div class="schedule-card">
+          <h2>Weekly check (this Mac)</h2>
+          <p class="hint">
+            Runs the query bank while Oppvera Watch is open. It does not capture in
+            the background when the app is closed.
+          </p>
+          <form id="weeklyScheduleForm">
+            <label class="checkbox-row">
+              <input id="weeklyEnabled" type="checkbox" />
+              Enable weekly check
+            </label>
+            <label>Day
+              <select id="weeklyWeekday">
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </label>
+            <label>Hour (local, 24h)
+              <input id="weeklyHour" type="number" min="0" max="23" value="9" />
+            </label>
+            <button id="saveWeeklySchedule" class="ghost" type="submit">
+              Save schedule
+            </button>
+          </form>
+          <p id="weeklyScheduleNote" class="status"></p>
+        </div>
       </section>
       <section id="bank" class="panel">
         <p>Questions come from the campaign query bank. Edit them in Oppvera, not here.</p>
