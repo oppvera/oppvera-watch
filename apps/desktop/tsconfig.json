@@ -16,7 +16,6 @@
 		"src/storage.test.ts",
 		"src/watchDebug.test.ts",
 		"src/runItemDisplay.test.ts",
-		"src/watchSchedule.test.ts",
 		"src/renderer/**",
 		"node_modules",
 		"dist"
