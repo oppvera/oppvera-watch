@@ -4,6 +4,12 @@ macOS capture client for hosted Oppvera. Current version is **0.5.1-alpha** (`ve
 
 Pair once per campaign from that campaign’s Visibility page. **Settings** lists every paired campaign, lets you add or remove campaigns, and chooses the **active** one used by the query bank and the **Run** tab. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
 
+## Weekly check (Settings)
+
+Optional **weekly check** runs the active campaign’s query bank on a weekday + hour (local time) while the app is open. Minimized is fine; quitting Watch stops the schedule.
+
+When enabled, the main process checks the local clock every **5 minutes** (`SCHEDULE_POLL_INTERVAL_MS` in `src/watchSchedule.ts`). That loop does **not** call Oppvera; uploads happen only after capture + sync. The Settings panel and `SCHEDULE_PRIVACY_NOTE` string document this for users.
+
 ## Multiple campaigns
 
 - One pairing code per campaign (from each campaign’s Visibility page in Oppvera).
