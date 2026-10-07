@@ -28,6 +28,20 @@ You do not need Node.js, Git, or this repository to use the app.
 4. Run connected providers one at a time for the active campaign. Stop ends the capture, including Firefox.
 5. Sync uploads pending captures (each row uses the token for the campaign it was captured under). Oppvera scores them. Watch never asks for an analysis key.
 
+### Weekly check (local schedule)
+
+In **Settings**, you can turn on a **weekly check**: run the active campaign’s query bank on a day and hour you choose.
+
+| What it does | What it does not do |
+| --- | --- |
+| Runs while Oppvera Watch is **open** (minimized is OK) | Run after you **quit** the app |
+| Uses your last **Run** providers (or ChatGPT + Claude by default) | Start captures from hosted Oppvera or email reports |
+| At most **once per calendar week** per Mac | Phone home on a timer — see below |
+
+**Trust and network behavior:** With weekly check enabled, the app looks at the **local clock every 5 minutes** to see whether it is time to start a run. Those checks are **on-device only** (no Oppvera API calls, no telemetry ping). Data leaves this Mac only when you **capture** answers and **sync** them, same as a manual run.
+
+Hosted Oppvera can send **visibility report emails** on its own schedule; that email does **not** open ChatGPT or start Watch.
+
 ### Multiple campaigns and group runs
 
 One Mac can hold several paired campaigns. Only the **active** campaign drives **Query bank** and **Run → Run query bank**.

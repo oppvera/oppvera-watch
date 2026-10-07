@@ -260,6 +260,9 @@ function renderWeeklySchedule(state) {
     hour.value = String(schedule.hour ?? 9);
   }
   text("weeklyScheduleNote", state.scheduleNote || "");
+  if (state.schedulePrivacyNote) {
+    text("weeklySchedulePrivacy", state.schedulePrivacyNote);
+  }
 }
 
 function render(state) {

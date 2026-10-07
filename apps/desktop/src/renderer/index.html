@@ -61,8 +61,14 @@
         <div class="schedule-card">
           <h2>Weekly check (this Mac)</h2>
           <p class="hint">
-            Runs the query bank while Oppvera Watch is open. It does not capture in
-            the background when the app is closed.
+            Runs the query bank while Oppvera Watch is open (minimized is fine).
+            Quitting the app stops the schedule. Capture does not run when Watch
+            is fully closed.
+          </p>
+          <p class="hint" id="weeklySchedulePrivacy">
+            While weekly check is on, Watch only reads the clock on this Mac every
+            5 minutes. Those checks do not use the network. Oppvera receives data
+            only when you capture answers and sync.
           </p>
           <form id="weeklyScheduleForm">
             <label class="checkbox-row">

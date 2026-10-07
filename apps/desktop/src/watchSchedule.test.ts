@@ -5,6 +5,8 @@ import {
 	isWeeklyRunDue,
 	isoWeekKey,
 	normalizeWeeklySchedule,
+	SCHEDULE_POLL_INTERVAL_MS,
+	SCHEDULE_PRIVACY_NOTE,
 } from "./watchSchedule.ts";
 
 describe("watchSchedule", () => {
@@ -30,6 +32,12 @@ describe("watchSchedule", () => {
 		assert.equal(isWeeklyRunDue(schedule, tuesday10), true);
 		const sameWeek = { ...schedule, lastAutoRunWeek: isoWeekKey(tuesday10) };
 		assert.equal(isWeeklyRunDue(sameWeek, tuesday10), false);
+	});
+
+	it("documents poll interval and privacy copy", () => {
+		assert.equal(SCHEDULE_POLL_INTERVAL_MS, 5 * 60 * 1000);
+		assert.match(SCHEDULE_PRIVACY_NOTE, /5 minutes/);
+		assert.match(SCHEDULE_PRIVACY_NOTE, /network/i);
 	});
 
 	it("formats marketer-facing schedule copy", () => {

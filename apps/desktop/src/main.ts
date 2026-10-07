@@ -63,6 +63,8 @@ import {
 	formatWeeklyScheduleLabel,
 	isWeeklyRunDue,
 	isoWeekKey,
+	SCHEDULE_POLL_INTERVAL_MS,
+	SCHEDULE_PRIVACY_NOTE,
 	type WeeklySchedulePrefs,
 } from "./watchSchedule.js";
 
@@ -107,6 +109,7 @@ type AppState = {
 	appVersionLabel: string;
 	scheduleNote: string;
 	weeklySchedule: WeeklySchedulePrefs;
+	schedulePrivacyNote: string;
 };
 
 let win: BrowserWindow | null = null;
@@ -209,6 +212,7 @@ async function snapshot(): Promise<AppState> {
 		appVersionLabel: formatWatchVersionLabel(),
 		scheduleNote: formatWeeklyScheduleLabel(readPrefs().weeklySchedule),
 		weeklySchedule: readPrefs().weeklySchedule,
+		schedulePrivacyNote: SCHEDULE_PRIVACY_NOTE,
 	};
 }
 
@@ -270,7 +274,7 @@ function startScheduleTimer(): void {
 	const tick = () => {
 		void runScheduledBankIfDue();
 	};
-	setInterval(tick, 5 * 60 * 1000);
+	setInterval(tick, SCHEDULE_POLL_INTERVAL_MS);
 	setTimeout(tick, 30_000);
 }
 
