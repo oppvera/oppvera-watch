@@ -7,7 +7,7 @@ import {
 	normalizeWeeklySchedule,
 	SCHEDULE_POLL_INTERVAL_MS,
 	SCHEDULE_PRIVACY_NOTE,
-} from "./watchSchedule.ts";
+} from "./watchSchedule.js";
 
 describe("watchSchedule", () => {
 	it("normalizes weekday and hour bounds", () => {
