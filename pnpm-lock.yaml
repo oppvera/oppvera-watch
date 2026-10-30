@@ -37,8 +37,8 @@ importers:
         specifier: ^17.2.3
         version: 17.3.1
       playwright-core:
-        specifier: ^1.51.1
-        version: 1.58.2
+        specifier: 1.63.0
+        version: 1.63.0
       turndown:
         specifier: ^7.2.2
         version: 7.2.2
@@ -1357,9 +1357,9 @@ packages:
     resolution: {integrity: sha512-Oo/NZcSWccq8KyoG7gLE9fnltgHns+pNCjCAp/WmjsUySi+sX7y4z4Xqu4fVb42CDHzRPl33fjzT15V1wvcyhA==}
     engines: {node: '>=16.0.0'}
 
-  playwright-core@1.58.2:
-    resolution: {integrity: sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg==}
-    engines: {node: '>=18'}
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
     hasBin: true
 
   plist@3.1.0:
@@ -3030,7 +3030,7 @@ snapshots:
       pvutils: 1.2.0
       tslib: 2.8.1
 
-  playwright-core@1.58.2: {}
+  playwright-core@1.63.0: {}
 
   plist@3.1.0:
     dependencies:
