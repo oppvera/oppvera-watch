@@ -16,6 +16,12 @@ import {
 	normalizeWeeklySchedule,
 	type WeeklySchedulePrefs,
 } from "./watchSchedule.js";
+import type { RunItemRecord } from "./runPlan.js";
+
+export type LastRunManifest = {
+	campaign_id: string;
+	items: RunItemRecord[];
+};
 
 export type DeviceRecord = {
 	device_token: string;
@@ -37,6 +43,7 @@ export type WatchPrefs = {
 	maxGroupSize: number;
 	weeklySchedule: WeeklySchedulePrefs;
 	lastRunProviders: Provider[];
+	lastRunManifest: LastRunManifest | null;
 };
 
 export function clampMaxGroupSize(value: unknown): number {
@@ -63,12 +70,37 @@ function writePrivate(path: string, contents: string): void {
 	chmodSync(path, 0o600);
 }
 
+function normalizeLastRunManifest(
+	raw: Partial<LastRunManifest> | null | undefined,
+): LastRunManifest | null {
+	if (!raw || typeof raw.campaign_id !== "string" || !raw.campaign_id.trim()) {
+		return null;
+	}
+	if (!Array.isArray(raw.items) || raw.items.length === 0) return null;
+	const items = raw.items.filter(
+		(row): row is RunItemRecord =>
+			Boolean(row) &&
+			typeof row === "object" &&
+			typeof row.campaign_id === "string" &&
+			typeof row.query_item_id === "string" &&
+			typeof row.provider === "string" &&
+			typeof row.question === "string" &&
+			(row.status === "pending" ||
+				row.status === "running" ||
+				row.status === "captured" ||
+				row.status === "failed"),
+	);
+	if (items.length === 0) return null;
+	return { campaign_id: raw.campaign_id.trim(), items };
+}
+
 function defaultPrefs(): WatchPrefs {
 	return {
 		activeCampaignId: null,
 		maxGroupSize: DEFAULT_MAX_GROUP_SIZE,
 		weeklySchedule: { ...DEFAULT_WEEKLY_SCHEDULE },
 		lastRunProviders: [],
+		lastRunManifest: null,
 	};
 }
 
@@ -84,6 +116,7 @@ function readPrefsFile(): WatchPrefs {
 			lastRunProviders: Array.isArray(raw.lastRunProviders)
 				? raw.lastRunProviders.filter((id): id is Provider => typeof id === "string")
 				: [],
+			lastRunManifest: normalizeLastRunManifest(raw.lastRunManifest),
 		};
 	} catch {
 		return defaultPrefs();
@@ -100,6 +133,7 @@ function writePrefs(prefs: WatchPrefs): void {
 				maxGroupSize: clampMaxGroupSize(prefs.maxGroupSize),
 				weeklySchedule: normalizeWeeklySchedule(prefs.weeklySchedule),
 				lastRunProviders: prefs.lastRunProviders,
+				lastRunManifest: prefs.lastRunManifest,
 			},
 			null,
 			2,
@@ -243,6 +277,13 @@ export function markWeeklyAutoRun(weekKey: string): WatchPrefs {
 export function setLastRunProviders(providers: Provider[]): WatchPrefs {
 	const prefs = readPrefs();
 	const next = { ...prefs, lastRunProviders: providers };
+	writePrefs(next);
+	return next;
+}
+
+export function saveLastRunManifest(manifest: LastRunManifest | null): WatchPrefs {
+	const prefs = readPrefs();
+	const next = { ...prefs, lastRunManifest: manifest };
 	writePrefs(next);
 	return next;
 }

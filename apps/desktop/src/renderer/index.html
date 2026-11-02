@@ -98,8 +98,18 @@
       </section>
       <section id="bank" class="panel">
         <p>Questions come from the campaign query bank. Edit them in Oppvera, not here.</p>
-        <button id="refreshBank" class="ghost">Refresh bank</button>
-        <ul id="queryList"></ul>
+        <p class="hint">
+          Check the questions to include on the next run. Leave all checked for a
+          full bank run.
+        </p>
+        <div class="query-bank-toolbar">
+          <button id="selectAllQueries" class="ghost" type="button">
+            Select all
+          </button>
+          <button id="clearQueries" class="ghost" type="button">Clear</button>
+          <button id="refreshBank" class="ghost" type="button">Refresh bank</button>
+        </div>
+        <ul id="queryList" class="query-list"></ul>
       </section>
       <section id="providers" class="panel">
         <p>
@@ -144,6 +154,9 @@
         </p>
         <div id="runProviders"></div>
         <button id="startRun" class="primary">Run query bank</button>
+        <button id="retryFailedRun" class="ghost" type="button">
+          Retry failed only
+        </button>
         <button id="stopRun" class="ghost" type="button">Stop</button>
         <ul id="runProgress"></ul>
       </section>

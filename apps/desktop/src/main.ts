@@ -45,8 +45,9 @@ import {
 	markWeeklyAutoRun,
 	assertGroupSize,
 	writeCapture,
+	saveLastRunManifest,
 } from "./storage.js";
-import type { CaptureSession, StoredCapture } from "./ingest.js";
+import type { StoredCapture } from "./ingest.js";
 import {
 	handleCaptureStdoutLine,
 	sendCaptureLog,
@@ -67,19 +68,21 @@ import {
 	SCHEDULE_PRIVACY_NOTE,
 	type WeeklySchedulePrefs,
 } from "./watchSchedule.js";
+import {
+	buildItemsForProviders,
+	buildItemsForSlots,
+	countFailedInManifest,
+	failedSlotsFromManifest,
+	filterBankByQueryIds,
+	jobQueriesForProviderSession,
+	resetFailedSlotsInManifest,
+	type RunItemRecord,
+	type RunSlot,
+} from "./runPlan.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-type RunItem = {
-	campaign_id: string;
-	campaign_name: string;
-	provider: Provider;
-	session: CaptureSession;
-	query_item_id: string;
-	question: string;
-	status: "pending" | "running" | "captured" | "failed";
-	error?: string;
-};
+type RunItem = RunItemRecord;
 
 type PublicDevice = Omit<DeviceRecord, "device_token">;
 
@@ -99,6 +102,7 @@ type AppState = {
 	runtimeProviders: Array<{ id: Provider; connected: boolean }>;
 	runItems: RunItem[];
 	running: boolean;
+	retryFailedCount: number;
 	pendingSync: number;
 	lastSyncAt: string | null;
 	lastSyncUploaded: number | null;
@@ -143,6 +147,33 @@ function publicDevice(device: DeviceRecord | null) {
 	if (!device) return null;
 	const { device_token: _token, ...rest } = device;
 	return rest;
+}
+
+function hydrateRunItemsFromPrefs(): void {
+	const device = readDevice();
+	const manifest = readPrefs().lastRunManifest;
+	if (!device || !manifest || manifest.campaign_id !== device.campaign_id) {
+		runItems = [];
+		return;
+	}
+	runItems = structuredClone(manifest.items);
+}
+
+function persistActiveRunManifest(): void {
+	const device = readDevice();
+	if (!device || runItems.length === 0) {
+		saveLastRunManifest(null);
+		return;
+	}
+	const items = runItems.filter((row) => row.campaign_id === device.campaign_id);
+	if (items.length === 0) {
+		saveLastRunManifest(null);
+		return;
+	}
+	saveLastRunManifest({
+		campaign_id: device.campaign_id,
+		items: structuredClone(items),
+	});
 }
 
 async function providerCards() {
@@ -202,6 +233,9 @@ async function snapshot(): Promise<AppState> {
 		})),
 		runItems,
 		running,
+		retryFailedCount: device
+			? countFailedInManifest(runItems, device.campaign_id)
+			: 0,
 		pendingSync: pendingCaptures().length,
 		lastSyncAt,
 		lastSyncUploaded,
@@ -546,6 +580,7 @@ app.whenReady().then(async () => {
 			lastError = error instanceof Error ? error.message : String(error);
 		}
 	}
+	hydrateRunItemsFromPrefs();
 	createWindow();
 	startScheduleTimer();
 });
@@ -605,6 +640,7 @@ ipcMain.handle("watch:setActiveCampaign", async (_event, campaignId: string) => 
 		queries = [];
 		lastError = error instanceof Error ? error.message : String(error);
 	}
+	hydrateRunItemsFromPrefs();
 	return pushState();
 });
 
@@ -729,25 +765,46 @@ async function captureCampaign(input: {
 	bank: QueryBankItem[];
 	providers: Provider[];
 	replaceItems: boolean;
+	slots?: RunSlot[];
+	retryFailed?: boolean;
 }): Promise<void> {
 	const runId = randomUUID();
-	const items: RunItem[] = input.providers.flatMap((provider) =>
-		input.bank.map((query) => ({
-			campaign_id: input.device.campaign_id,
-			campaign_name: input.device.campaign_name,
-			provider,
-			session: "signed-in" as const,
-			query_item_id: query.query_item_id,
-			question: query.text,
-			status: "pending" as const,
-		})),
-	);
-	runItems = input.replaceItems ? items : [...runItems, ...items];
+	const fullBank = input.bank;
+	let activeItems: RunItem[];
+	if (input.slots && input.slots.length > 0) {
+		if (input.retryFailed) {
+			resetFailedSlotsInManifest(
+				runItems,
+				input.slots,
+				input.device.campaign_id,
+			);
+			activeItems = runItems.filter(
+				(row) =>
+					row.campaign_id === input.device.campaign_id &&
+					input.slots!.some(
+						(slot) =>
+							slot.query_item_id === row.query_item_id &&
+							slot.provider === row.provider &&
+							slot.session === row.session,
+					),
+			);
+		} else {
+			activeItems = buildItemsForSlots(input.device, fullBank, input.slots);
+			runItems = input.replaceItems ? activeItems : [...runItems, ...activeItems];
+		}
+	} else {
+		activeItems = buildItemsForProviders(
+			input.device,
+			input.bank,
+			input.providers,
+		);
+		runItems = input.replaceItems ? activeItems : [...runItems, ...activeItems];
+	}
 	await pushState();
 	const dirs = supportEnv();
 	const jobs = [
 		...new Map(
-			items.map((item) => [
+			activeItems.map((item) => [
 				`${item.provider}:${item.session}`,
 				{ provider: item.provider, session: item.session },
 			]),
@@ -755,6 +812,13 @@ async function captureCampaign(input: {
 	];
 	for (const job of jobs) {
 		if (runCancelled) break;
+		const jobQueries = jobQueriesForProviderSession(
+			activeItems,
+			job.provider,
+			job.session,
+			fullBank,
+		);
+		if (jobQueries.length === 0) continue;
 		const jobPath = join(
 			dirs.root,
 			`job-${input.device.campaign_id}-${job.provider}-${job.session}.json`,
@@ -767,10 +831,7 @@ async function captureCampaign(input: {
 				session: job.session,
 				campaign_id: input.device.campaign_id,
 				campaign_name: input.device.campaign_name,
-				queries: input.bank.map((query) => ({
-					query_item_id: query.query_item_id,
-					text: query.text,
-				})),
+				queries: jobQueries,
 				authRoot: dirs.authRoot,
 				pythonBin: process.env.CAMOUFOX_PYTHON_BIN || null,
 			}),
@@ -852,8 +913,10 @@ async function captureCampaign(input: {
 			}
 		}
 		lastError = "Run stopped.";
+		persistActiveRunManifest();
 		return;
 	}
+	persistActiveRunManifest();
 	try {
 		await syncPending(input.device.campaign_id);
 	} catch (error) {
@@ -865,14 +928,25 @@ ipcMain.handle(
 	"watch:startRun",
 	async (
 		_event,
-		payload: { providers: Provider[] } | Provider[],
+		payload:
+			| { providers: Provider[]; queryItemIds?: string[] }
+			| Provider[],
 	) => {
 	const device = readDevice();
 	if (!device) throw new Error("Pair first.");
 	if (queries.length === 0) {
 		throw new Error("The campaign query bank is empty. Add questions in Oppvera.");
 	}
-	const selected = selectedProviders(payload);
+	const body = Array.isArray(payload) ? { providers: payload } : payload;
+	const selected = selectedProviders(body);
+	const bank = filterBankByQueryIds(queries, body.queryItemIds);
+	const slots: RunSlot[] = selected.flatMap((provider) =>
+		bank.map((query) => ({
+			query_item_id: query.query_item_id,
+			provider,
+			session: "signed-in" as const,
+		})),
+	);
 	setLastRunProviders(selected);
 	await refreshPython();
 	if (!python.ok) throw new Error(python.message);
@@ -884,6 +958,7 @@ ipcMain.handle(
 			bank: queries,
 			providers: selected,
 			replaceItems: true,
+			slots,
 		});
 	} finally {
 		activeChild = null;
@@ -893,6 +968,45 @@ ipcMain.handle(
 	}
 	return snapshot();
 });
+
+ipcMain.handle(
+	"watch:retryFailedRun",
+	async (_event, payload: { providers: Provider[] } | Provider[]) => {
+		const device = readDevice();
+		if (!device) throw new Error("Pair first.");
+		if (queries.length === 0) {
+			throw new Error("The campaign query bank is empty. Add questions in Oppvera.");
+		}
+		const selected = selectedProviders(payload);
+		const failed = failedSlotsFromManifest(runItems, device.campaign_id).filter(
+			(slot) => selected.includes(slot.provider),
+		);
+		if (failed.length === 0) {
+			throw new Error("No failed captures to retry for the selected providers.");
+		}
+		setLastRunProviders(selected);
+		await refreshPython();
+		if (!python.ok) throw new Error(python.message);
+		running = true;
+		runCancelled = false;
+		try {
+			await captureCampaign({
+				device,
+				bank: queries,
+				providers: selected,
+				replaceItems: false,
+				slots: failed,
+				retryFailed: true,
+			});
+		} finally {
+			activeChild = null;
+			running = false;
+			runCancelled = false;
+			await pushState();
+		}
+		return snapshot();
+	},
+);
 
 ipcMain.handle(
 	"watch:startGroupRun",

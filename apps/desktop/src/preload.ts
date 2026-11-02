@@ -21,8 +21,10 @@ contextBridge.exposeInMainWorld("watch", {
 		ipcRenderer.invoke("watch:resetProvider", provider),
 	setProviderAccountLabel: (provider: string, accountLabel: string) =>
 		ipcRenderer.invoke("watch:setProviderAccountLabel", provider, accountLabel),
-	startRun: (payload: { providers: string[] }) =>
+	startRun: (payload: { providers: string[]; queryItemIds?: string[] }) =>
 		ipcRenderer.invoke("watch:startRun", payload),
+	retryFailedRun: (payload: { providers: string[] }) =>
+		ipcRenderer.invoke("watch:retryFailedRun", payload),
 	stopRun: () => ipcRenderer.invoke("watch:stopRun"),
 	syncNow: () => ipcRenderer.invoke("watch:syncNow"),
 	setupPython: () => ipcRenderer.invoke("watch:setupPython"),
