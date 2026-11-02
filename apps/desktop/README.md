@@ -63,7 +63,7 @@ If macOS says the app is **damaged** (common after a browser download), clear th
 xattr -cr "/Applications/Oppvera Watch.app"
 ```
 
-Otherwise right-click **Open** the first time if Gatekeeper blocks an unsigned build. See [releasing-macos.md](../../docs/releasing-macos.md) for more detail.
+Otherwise, if Gatekeeper shows an unidentified-developer dialog (not “damaged”), right-click **Open** once. See [releasing-macos.md](../../docs/releasing-macos.md) for more detail.
 
 ## Develop from this repo
 
