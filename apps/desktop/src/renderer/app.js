@@ -5,15 +5,47 @@ let userPickedTab = false;
 let didInitialTab = false;
 /** @type {Set<string>} */
 const querySelection = new Set();
+/** @type {Set<string>} */
+let knownQueryIds = new Set();
+let queryBankBootstrapped = false;
+
+function resetQuerySelectionState() {
+  querySelection.clear();
+  knownQueryIds.clear();
+  queryBankBootstrapped = false;
+}
 
 function syncQuerySelection(queries) {
   const ids = (queries || []).map((query) => query.query_item_id);
+  if (ids.length === 0) {
+    resetQuerySelectionState();
+    return;
+  }
+  const idSet = new Set(ids);
   for (const id of [...querySelection]) {
-    if (!ids.includes(id)) querySelection.delete(id);
+    if (!idSet.has(id)) querySelection.delete(id);
   }
-  for (const id of ids) {
-    if (!querySelection.has(id)) querySelection.add(id);
+  if (!queryBankBootstrapped) {
+    for (const id of ids) querySelection.add(id);
+    queryBankBootstrapped = true;
+    knownQueryIds = idSet;
+    return;
   }
+  const bankChanged =
+    ids.length !== knownQueryIds.size ||
+    ids.some((id) => !knownQueryIds.has(id)) ||
+    [...knownQueryIds].some((id) => !idSet.has(id));
+  if (!bankChanged) return;
+  const sameCampaignBank = ids.some((id) => knownQueryIds.has(id));
+  if (!sameCampaignBank) {
+    querySelection.clear();
+    for (const id of ids) querySelection.add(id);
+  } else {
+    for (const id of ids) {
+      if (!knownQueryIds.has(id)) querySelection.add(id);
+    }
+  }
+  knownQueryIds = idSet;
 }
 
 function selectedQueryItemIds() {
@@ -774,7 +806,6 @@ try {
     selectAllQueries.onclick = () => {
       if (!api || typeof api.getState !== "function") return;
       void api.getState().then((state) => {
-        syncQuerySelection(state.queries);
         for (const query of state.queries || []) {
           querySelection.add(query.query_item_id);
         }

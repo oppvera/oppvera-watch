@@ -14,7 +14,7 @@ When enabled, the main process checks the local clock every **5 minutes** (`SCHE
 
 - One pairing code per campaign (from each campaign’s Visibility page in Oppvera).
 - Tokens live in `devices.json`; the active campaign id and max group size live in `watch.json` under app support.
-- **Query bank** lists buyer questions with checkboxes (select all / clear). **Run → Run query bank** captures the checked questions for the active campaign only.
+- **Query bank** lists buyer questions with checkboxes (**Select all** / **Deselect all**). **Run → Run query bank** captures the checked questions for the active campaign only.
 - After a run, **Retry failed only** re-runs failed provider slots from the last manifest without re-capturing successes.
 
 ## Advanced: sequential group runs
