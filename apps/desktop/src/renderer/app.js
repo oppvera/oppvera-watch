@@ -3,6 +3,54 @@ const api = window.watch;
 let pythonBusy = false;
 let userPickedTab = false;
 let didInitialTab = false;
+/** @type {Set<string>} */
+const querySelection = new Set();
+/** @type {Set<string>} */
+let knownQueryIds = new Set();
+let queryBankBootstrapped = false;
+
+function resetQuerySelectionState() {
+  querySelection.clear();
+  knownQueryIds.clear();
+  queryBankBootstrapped = false;
+}
+
+function syncQuerySelection(queries) {
+  const ids = (queries || []).map((query) => query.query_item_id);
+  if (ids.length === 0) {
+    resetQuerySelectionState();
+    return;
+  }
+  const idSet = new Set(ids);
+  for (const id of [...querySelection]) {
+    if (!idSet.has(id)) querySelection.delete(id);
+  }
+  if (!queryBankBootstrapped) {
+    for (const id of ids) querySelection.add(id);
+    queryBankBootstrapped = true;
+    knownQueryIds = idSet;
+    return;
+  }
+  const bankChanged =
+    ids.length !== knownQueryIds.size ||
+    ids.some((id) => !knownQueryIds.has(id)) ||
+    [...knownQueryIds].some((id) => !idSet.has(id));
+  if (!bankChanged) return;
+  const sameCampaignBank = ids.some((id) => knownQueryIds.has(id));
+  if (!sameCampaignBank) {
+    querySelection.clear();
+    for (const id of ids) querySelection.add(id);
+  } else {
+    for (const id of ids) {
+      if (!knownQueryIds.has(id)) querySelection.add(id);
+    }
+  }
+  knownQueryIds = idSet;
+}
+
+function selectedQueryItemIds() {
+  return [...querySelection];
+}
 
 function showTab(tabId) {
   document.querySelectorAll(".tabs button").forEach((item) => {
@@ -358,6 +406,7 @@ function render(state) {
   }
   const queryList = document.getElementById("queryList");
   if (queryList) {
+    syncQuerySelection(state.queries);
     queryList.innerHTML = "";
     if (!state.queries || !state.queries.length) {
       queryList.innerHTML =
@@ -365,7 +414,19 @@ function render(state) {
     } else {
       for (const query of state.queries) {
         const item = document.createElement("li");
-        item.textContent = query.text;
+        const label = document.createElement("label");
+        label.className = "checkbox-row";
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.value = query.query_item_id;
+        box.checked = querySelection.has(query.query_item_id);
+        box.disabled = state.running;
+        box.onchange = () => {
+          if (box.checked) querySelection.add(query.query_item_id);
+          else querySelection.delete(query.query_item_id);
+        };
+        label.append(box, document.createTextNode(` ${query.text}`));
+        item.appendChild(label);
         queryList.appendChild(item);
       }
     }
@@ -590,6 +651,13 @@ function render(state) {
   renderSync(state);
   const startRun = document.getElementById("startRun");
   if (startRun) startRun.disabled = state.running || !state.paired;
+  const retryFailedRun = document.getElementById("retryFailedRun");
+  if (retryFailedRun) {
+    retryFailedRun.disabled =
+      state.running ||
+      !state.paired ||
+      !(state.retryFailedCount > 0);
+  }
   const stopRun = document.getElementById("stopRun");
   if (stopRun) stopRun.disabled = !state.running;
 }
@@ -733,6 +801,27 @@ try {
     refreshBank.onclick = () =>
       api && api.refreshBank().catch((error) => setError(error.message));
   }
+  const selectAllQueries = document.getElementById("selectAllQueries");
+  if (selectAllQueries) {
+    selectAllQueries.onclick = () => {
+      if (!api || typeof api.getState !== "function") return;
+      void api.getState().then((state) => {
+        for (const query of state.queries || []) {
+          querySelection.add(query.query_item_id);
+        }
+        render(state);
+      });
+    };
+  }
+  const clearQueries = document.getElementById("clearQueries");
+  if (clearQueries) {
+    clearQueries.onclick = () => {
+      querySelection.clear();
+      if (api && typeof api.getState === "function") {
+        void api.getState().then((state) => render(state));
+      }
+    };
+  }
   async function runPythonSetup(button, idleLabel) {
     if (!api || typeof api.setupPython !== "function") return;
     pythonBusy = true;
@@ -802,11 +891,29 @@ try {
       try {
         await api.startRun({
           providers: selected,
+          queryItemIds: selectedQueryItemIds(),
         });
       } catch (error) {
         setError(error.message || String(error));
       } finally {
         setBusy(startRun, false, "Run query bank", "Running…");
+      }
+    };
+  }
+  const retryFailedRun = document.getElementById("retryFailedRun");
+  if (retryFailedRun) {
+    retryFailedRun.onclick = async () => {
+      const selected = [
+        ...document.querySelectorAll("#runProviders input:checked"),
+      ].map((input) => input.value);
+      setError("");
+      setBusy(retryFailedRun, true, "Retry failed only", "Retrying…");
+      try {
+        await api.retryFailedRun({ providers: selected });
+      } catch (error) {
+        setError(error.message || String(error));
+      } finally {
+        setBusy(retryFailedRun, false, "Retry failed only", "Retrying…");
       }
     };
   }

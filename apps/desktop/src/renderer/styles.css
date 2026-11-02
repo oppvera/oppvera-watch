@@ -262,6 +262,23 @@ ul {
   padding-left: 18px;
 }
 
+.query-bank-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.query-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.query-list li {
+  margin-bottom: 8px;
+}
+
 .error {
   color: #b42318;
   min-height: 1.4em;
