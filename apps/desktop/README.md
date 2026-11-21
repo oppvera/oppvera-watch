@@ -63,7 +63,7 @@ If macOS says the app is **damaged** (common after a browser download), clear th
 xattr -cr "/Applications/Oppvera Watch.app"
 ```
 
-Otherwise, if Gatekeeper shows an unidentified-developer dialog (not “damaged”), right-click **Open** once. See [releasing-macos.md](../../docs/releasing-macos.md) for more detail.
+Otherwise, if Gatekeeper shows an unidentified-developer dialog (not “damaged”), right-click **Open** once. See [releasing-macos.md](../../docs/runbooks/releasing-macos.md) for more detail.
 
 ## Develop from this repo
 
@@ -76,7 +76,7 @@ Pair against `https://oppvera.com` or `http://127.0.0.1:8000`. First capture nee
 
 ## Package a dmg
 
-See [docs/releasing-macos.md](../../docs/releasing-macos.md). Short form:
+See [docs/runbooks/releasing-macos.md](../../docs/runbooks/releasing-macos.md). Short form:
 
 ```bash
 pnpm dist:mac

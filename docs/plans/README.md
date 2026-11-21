@@ -40,7 +40,7 @@ Phase A and the core Phase B loop are merged on Oppvera `main` and in this repo.
 | [06](06-query-bank-and-runs.md) | **Done** — v0.91.0 | [PR #270](https://github.com/codetricity/oppvera/pull/270) |
 | [08](08-email-reports-and-nudges.md) | **Done** — v0.94.3 | [PR #276](https://github.com/codetricity/oppvera/pull/276) (PRs #273–#276) |
 | [03](03-oppvera-probe-ingest-api.md) | **Done** — v0.95.0 | [PR #277](https://github.com/codetricity/oppvera/pull/277) |
-| [02](02-watch-desktop-electron.md) | Watch repo | **Shipped** — `apps/desktop` **0.5.1-alpha** (arm64 `.dmg`). See [releasing-macos.md](../releasing-macos.md) |
+| [02](02-watch-desktop-electron.md) | Watch repo | **Shipped** — `apps/desktop` **0.7.1** (notarized arm64 `.dmg`). See [releasing-macos.md](../runbooks/releasing-macos.md) |
 | [05](05-unified-analytics.md) compare + filters | Oppvera | **Done in code** — board filters; detail compare when Watch + Probe share a `query_item_id`; tests for hidden compare when Probe-only |
 | [05](05-unified-analytics.md) + [01](01-product-split.md) lab beside capture (objective 9) | Oppvera | **Done** — v0.110.0 inline panel on capture detail + eval row anchors |
 
@@ -51,7 +51,7 @@ Update this table when each spec lands on [codetricity/oppvera](https://github.c
 Core split is implemented. Follow-ups:
 
 1. **Production validation** — Pair Watch, run a query-bank capture, confirm visibility board filters and the UI-vs-API compare panel on `/workspace/campaigns/{id}/visibility/{capture_id}` for shared bank ids.
-2. **macOS distribution** — Ad-hoc signed `.dmg` today; optional Apple Developer ID notarization ([releasing-macos.md](../releasing-macos.md)).
+2. **macOS distribution** — **Done** — Developer ID + notarization ([releasing-macos.md](../runbooks/releasing-macos.md), v0.7.1). Optional: GitHub Actions release workflow.
 3. **Windows desktop v2** — [02](02-watch-desktop-electron.md); not started.
 4. **Optional hosted** — Scheduled Probe runs on the frozen query bank (plan “optional later”; not in Oppvera code yet).
 5. **Objective 9 polish** — Optional: lab highlights in monthly email ([08](08-email-reports-and-nudges.md)); richer Contrast/Showdown widgets on visibility detail.

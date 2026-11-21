@@ -19,7 +19,7 @@ pnpm install
 pnpm dev:desktop
 ```
 
-Packaging a downloadable app is [docs/releasing-macos.md](docs/releasing-macos.md).
+Packaging a downloadable app is [docs/runbooks/releasing-macos.md](docs/runbooks/releasing-macos.md).
 
 ## Project layout
 

@@ -14,7 +14,7 @@ The capture engine started as a fork of [OneGlanse](https://github.com/aryamanto
 
 1. On the campaign **Visibility** page in Oppvera, choose **Download Oppvera Watch** (macOS, Apple silicon). The file is also attached to [GitHub Releases](https://github.com/oppvera/oppvera-watch/releases/latest).
 2. Open the `.dmg` and drag **Oppvera Watch** to Applications.
-3. The build is ad-hoc signed. After a browser download, macOS may say the app is **damaged** — run `xattr -cr "/Applications/Oppvera Watch.app"` in Terminal, then open normally. See [releasing-macos.md](docs/releasing-macos.md).
+3. Current releases are **notarized** (open normally after install). Older unsigned builds may need `xattr`; see [releasing-macos.md](docs/runbooks/releasing-macos.md).
 4. Install [Python 3.12](https://www.python.org/downloads/) if the app asks, then use **Set up Camoufox Python** once.
 5. Paste a pairing code from that campaign’s Visibility page. Repeat for each campaign you want on this Mac (one code per campaign).
 
@@ -80,7 +80,7 @@ pnpm install
 pnpm dev:desktop
 ```
 
-To build a `.dmg` and publish it, see [docs/releasing-macos.md](docs/releasing-macos.md).
+To build a `.dmg` and publish it, see [docs/runbooks/releasing-macos.md](docs/runbooks/releasing-macos.md).
 
 ## Data that stays on the Mac
 
@@ -97,7 +97,7 @@ Watch uploads question text, answer markdown, citations, provider labels, and id
 ## Documentation
 
 - [apps/desktop/README.md](apps/desktop/README.md) — desktop develop notes
-- [docs/releasing-macos.md](docs/releasing-macos.md) — produce a `.dmg` and publish it
+- [docs/runbooks/releasing-macos.md](docs/runbooks/releasing-macos.md) — produce a `.dmg` and publish it
 - [docs/plans/README.md](docs/plans/README.md) — Watch / Probe specs (not a consumer install guide)
 
 ## License
