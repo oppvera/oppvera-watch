@@ -98,6 +98,7 @@ Watch uploads question text, answer markdown, citations, provider labels, and id
 
 - [apps/desktop/README.md](apps/desktop/README.md) — desktop develop notes
 - [docs/runbooks/releasing-macos.md](docs/runbooks/releasing-macos.md) — produce a `.dmg` and publish it
+- [docs/runbooks/releasing-windows.md](docs/runbooks/releasing-windows.md) — produce a Windows installer (maintainers; desktop v2)
 - [docs/plans/README.md](docs/plans/README.md) — Watch / Probe specs (not a consumer install guide)
 
 ## License
