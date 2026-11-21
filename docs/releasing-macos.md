@@ -2,7 +2,7 @@
 
 Build on an Apple silicon Mac that has this repository, Node.js 20+, and pnpm 10. Partners do not need that checkout.
 
-The `.dmg` is ad-hoc signed (`identity: "-"` in electron-builder). Release notes must tell users how to open an unsigned build (see below).
+Release builds are **Developer ID–signed and notarized** when you run `pnpm dist:mac` on a Mac with signing credentials (Keychain cert + Apple notarization env vars). Older releases may still be ad-hoc signed; see [If macOS says the app is damaged](#if-macos-says-the-app-is-damaged).
 
 ## If macOS says the app is damaged
 
@@ -74,19 +74,27 @@ On a **Mac that will run `pnpm dist:mac`** (or that exports certs into CI):
 
 ### Phase C — Wire the repo (one-time engineering)
 
-Track these in a secure password manager or GitHub Actions secrets — not in git.
+Shipped in this repo:
 
-- [ ] Replace `"identity": "-"` in [apps/desktop/package.json](../apps/desktop/package.json) `build.mac` with your **Developer ID Application** identity (exact name from Keychain or certificate SHA-1 hash).
-- [ ] Enable **hardened runtime** and correct **entitlements** for Electron (electron-builder docs: `hardenedRuntime`, `entitlements`, `entitlementsInherit`). Oppvera Watch spawns Node/Camoufox children; notarization may fail until entitlements match what the app actually does.
-- [ ] Configure electron-builder **notarization** (`afterSign` / `notarize` options for v26) so the DMG or `.app` is submitted to Apple and **stapled** after sign.
-- [ ] Document required env vars for release machines, for example:
-  - `CSC_LINK` / `CSC_KEY_PASSWORD` (exported `.p12` if using CI), or keychain signing on a local Mac
-  - `APPLE_TEAM_ID`
-  - For API key: `APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`
-  - Or for app-specific password: `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`
+- [apps/desktop/package.json](../apps/desktop/package.json) — `build.mac.identity`, `hardenedRuntime`, `entitlements`, `entitlementsInherit`
+- [apps/desktop/build/entitlements.mac.plist](../apps/desktop/build/entitlements.mac.plist) — Electron + child Node/Camoufox helpers
+
+**Notarization** uses electron-builder’s built-in `@electron/notarize` integration when env vars are set (do **not** set `"notarize": false`). On your Mac, load credentials before `pnpm dist:mac` (example private file, not in git):
+
+```bash
+export APPLE_TEAM_ID="Y35F65RDZS"
+export APPLE_API_ISSUER="<issuer-id-from-app-store-connect>"
+export APPLE_API_KEY_ID="<10-char-key-id>"
+export APPLE_API_KEY="$HOME/.private/asc-api/AuthKey_<KEY_ID>.p8"
+```
+
+Or Apple ID + app-specific password: `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`.
+
+For **CI** later: same Apple API env vars plus `CSC_LINK` / `CSC_KEY_PASSWORD` (`.p12` export) because the runner has no Keychain cert.
+
+**Local ad-hoc fallback** (no Apple account): temporarily set `"identity": "-"` in `package.json` and unset the `APPLE_*` vars — only for internal debugging; do not ship those DMGs to partners.
+
 - [ ] Optional: GitHub Actions workflow on tag that runs `pnpm dist:mac` on `macos-latest` with secrets above (Apple requires macOS for signing).
-
-This repo does **not** yet ship Phase C config; releases today follow [Produce a DMG](#produce-a-dmg) with ad-hoc signing.
 
 ### Phase D — Every release (after Phase C is done)
 
@@ -104,7 +112,7 @@ Update Oppvera Visibility download copy: remove “damaged / xattr” as the pri
 ## Produce a DMG
 
 1. Bump `"version"` in [apps/desktop/package.json](../apps/desktop/package.json). The footer and About panel show that number.
-2. From the repo root:
+2. From the repo root (Terminal with Developer ID in Keychain and notarization env vars loaded):
 
 ```bash
 pnpm install
@@ -129,7 +137,7 @@ cp "apps/desktop/release/Oppvera Watch-0.3.0-arm64.dmg" /tmp/OppveraWatch-arm64.
 gh release create v0.3.0 \
   --repo oppvera/oppvera-watch \
   --title "Oppvera Watch 0.3.0" \
-  --notes "Unsigned arm64. After install, run: xattr -cr \"/Applications/Oppvera Watch.app\" (see releasing-macos.md). Pair from the Oppvera Visibility page. Python 3.10+ from python.org is required once." \
+  --notes "Notarized arm64 build. Pair from the Oppvera Visibility page. Python 3.10+ from python.org is required once." \
   /tmp/OppveraWatch-arm64.dmg
 ```
 

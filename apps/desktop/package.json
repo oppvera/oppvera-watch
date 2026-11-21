@@ -1,6 +1,6 @@
 {
 	"name": "@oppvera/watch-desktop",
-	"version": "0.7.0-alpha",
+	"version": "0.7.1",
 	"private": true,
 	"type": "module",
 	"description": "Oppvera Watch macOS capture client",
@@ -48,7 +48,10 @@
 		"mac": {
 			"category": "public.app-category.productivity",
 			"icon": "build/icon.icns",
-			"identity": "-",
+			"identity": "Oppkey, Inc. (Y35F65RDZS)",
+			"hardenedRuntime": true,
+			"entitlements": "build/entitlements.mac.plist",
+			"entitlementsInherit": "build/entitlements.mac.plist",
 			"target": [
 				{
 					"target": "dmg",
