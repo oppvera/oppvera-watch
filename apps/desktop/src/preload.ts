@@ -28,6 +28,11 @@ contextBridge.exposeInMainWorld("watch", {
 	stopRun: () => ipcRenderer.invoke("watch:stopRun"),
 	syncNow: () => ipcRenderer.invoke("watch:syncNow"),
 	setupPython: () => ipcRenderer.invoke("watch:setupPython"),
+	onPythonProgress: (handler: (progress: unknown) => void) => {
+		const listener = (_event: unknown, progress: unknown) => handler(progress);
+		ipcRenderer.on("watch:pythonProgress", listener);
+		return () => ipcRenderer.removeListener("watch:pythonProgress", listener);
+	},
 	onState: (handler: (state: unknown) => void) => {
 		const listener = (_event: unknown, state: unknown) => handler(state);
 		ipcRenderer.on("watch:state", listener);

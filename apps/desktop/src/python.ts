@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -6,14 +6,39 @@ import { promisify } from "node:util";
 import { ensureSupportDirs } from "./paths.js";
 
 const execFileAsync = promisify(execFile);
-const PYTHON_NAMES = ["python3.12", "python3.11", "python3.10", "python3"];
+const UNIX_PYTHON_NAMES = ["python3.12", "python3.11", "python3.10", "python3"];
 const FRAMEWORK_VERSIONS = ["3.12", "3.11", "3.10"];
+const WINDOWS_PY_VERSIONS = ["3.14", "3.13", "3.12", "3.11", "3.10"];
+const WINDOWS_FOLDER_VERSIONS = ["314", "313", "312", "311", "310"];
+const WINDOWS_PYTHON_NAMES = [
+	"python3.14",
+	"python3.13",
+	"python3.12",
+	"python3.11",
+	"python3.10",
+	"python3",
+	"python",
+];
+
+type PythonProbe = {
+	bin: string;
+	prefix: string[];
+};
 
 export type PythonStatus = {
 	ok: boolean;
 	pythonBin: string | null;
 	message: string;
 };
+
+export type PythonSetupProgress = {
+	step: number;
+	total: number;
+	label: string;
+	detail?: string;
+};
+
+const SETUP_STEP_TOTAL = 4;
 
 function absoluteCandidates(): string[] {
 	const home = homedir();
@@ -23,40 +48,101 @@ function absoluteCandidates(): string[] {
 			`/Library/Frameworks/Python.framework/Versions/${version}/bin/python3`,
 		);
 	}
-	for (const name of PYTHON_NAMES) {
+	for (const name of UNIX_PYTHON_NAMES) {
 		paths.push(`/usr/local/bin/${name}`, `/opt/homebrew/bin/${name}`);
 	}
 	paths.push(join(home, ".local/bin/python3"));
 	return paths;
 }
 
-async function canUse(candidate: string): Promise<boolean> {
+function windowsCandidates(): PythonProbe[] {
+	const local =
+		process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
+	const programFiles = process.env.ProgramFiles || "C:\\Program Files";
+	const programFilesX86 =
+		process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
+	const probes: PythonProbe[] = [];
+	for (const version of WINDOWS_PY_VERSIONS) {
+		probes.push({ bin: "py", prefix: [`-${version}`] });
+	}
+	for (const version of WINDOWS_FOLDER_VERSIONS) {
+		const folder = `Python${version}`;
+		probes.push(
+			{
+				bin: join(local, "Programs", "Python", folder, "python.exe"),
+				prefix: [],
+			},
+			{ bin: join(programFiles, folder, "python.exe"), prefix: [] },
+			{ bin: join(programFilesX86, folder, "python.exe"), prefix: [] },
+		);
+	}
+	for (const name of WINDOWS_PYTHON_NAMES) {
+		probes.push({ bin: name, prefix: [] });
+	}
+	return probes;
+}
+
+function versionIsSupported(stdout: string): boolean {
+	const match = stdout.match(/(\d+)[,\s]+(\d+)/);
+	if (!match) return false;
+	const major = Number(match[1]);
+	const minor = Number(match[2]);
+	return major > 3 || (major === 3 && minor >= 10);
+}
+
+async function probePython(probe: PythonProbe): Promise<string | null> {
 	try {
 		const { stdout } = await execFileAsync(
-			candidate,
-			["-c", "import sys; print(sys.version_info[:2])"],
-			{ timeout: 5_000 },
+			probe.bin,
+			[
+				...probe.prefix,
+				"-c",
+				"import sys; print(sys.version_info[:2]); print(sys.executable)",
+			],
+			{ timeout: 5_000, windowsHide: true },
 		);
-		const match = stdout.match(/(\d+),\s*(\d+)/);
-		if (!match) return false;
-		const major = Number(match[1]);
-		const minor = Number(match[2]);
-		return major > 3 || (major === 3 && minor >= 10);
+		if (!versionIsSupported(stdout)) return null;
+		if (probe.prefix.length === 0) return probe.bin;
+		const executable = stdout.trim().split(/\r?\n/).pop()?.trim() ?? "";
+		return executable && existsSync(executable) ? executable : null;
 	} catch {
-		return false;
+		return null;
 	}
 }
 
+async function canUse(candidate: string): Promise<boolean> {
+	return (await probePython({ bin: candidate, prefix: [] })) !== null;
+}
+
 export async function findSystemPython(): Promise<string | null> {
-	for (const candidate of [...absoluteCandidates(), ...PYTHON_NAMES]) {
-		if (await canUse(candidate)) return candidate;
+	const candidates =
+		process.platform === "win32"
+			? windowsCandidates()
+			: [
+					...absoluteCandidates().map((bin) => ({ bin, prefix: [] })),
+					...UNIX_PYTHON_NAMES.map((bin) => ({ bin, prefix: [] })),
+				];
+	for (const candidate of candidates) {
+		const resolved = await probePython(candidate);
+		if (resolved) return resolved;
 	}
 	return null;
 }
 
+/** Venv interpreter: `Scripts/python.exe` on Windows, `bin/python` on macOS and Linux. */
+export function venvInterpreterPath(
+	pythonVenv: string,
+	platform: NodeJS.Platform = process.platform,
+): string {
+	if (platform === "win32") {
+		return join(pythonVenv, "Scripts", "python.exe");
+	}
+	return join(pythonVenv, "bin", "python");
+}
+
 export function venvPython(): string {
 	const { pythonVenv } = ensureSupportDirs();
-	return join(pythonVenv, "bin", "python");
+	return venvInterpreterPath(pythonVenv);
 }
 
 async function camoufoxBrowserReady(pythonBin: string): Promise<boolean> {
@@ -67,7 +153,7 @@ async function camoufoxBrowserReady(pythonBin: string): Promise<boolean> {
 				"-c",
 				"from camoufox.pkgman import camoufox_path; print(camoufox_path(download_if_missing=False))",
 			],
-			{ timeout: 20_000 },
+			{ timeout: 20_000, windowsHide: true },
 		);
 		const path = stdout.trim().split("\n").pop()?.trim() ?? "";
 		return path.length > 0 && existsSync(path);
@@ -106,35 +192,145 @@ export async function pythonStatus(): Promise<PythonStatus> {
 	};
 }
 
-async function runStep(
+/** Keep a short readable line from pip or camoufox. Progress bars with no words are dropped. */
+export function pythonActivityLine(line: string): string | null {
+	const clean = line
+		.replace(/\u001b\[[0-9;]*m/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+	if (!clean || !/[A-Za-z]/.test(clean)) return null;
+	return clean.slice(0, 180);
+}
+
+function runStep(
 	bin: string,
 	args: string[],
 	timeout: number,
+	onLine?: (line: string) => void,
 ): Promise<void> {
-	try {
-		await execFileAsync(bin, args, { timeout });
-	} catch (error) {
-		const stderr =
-			error && typeof error === "object" && "stderr" in error
-				? String((error as { stderr?: unknown }).stderr ?? "")
-				: "";
-		const message = error instanceof Error ? error.message : String(error);
-		throw new Error(
-			[message, stderr.trim()].filter(Boolean).join("\n").slice(0, 2000),
-		);
-	}
+	return new Promise((resolve, reject) => {
+		const child = spawn(bin, args, { windowsHide: true });
+		let stderr = "";
+		let buffer = "";
+		let settled = false;
+		let timedOut = false;
+		const finish = (error?: Error) => {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			if (error) reject(error);
+			else resolve();
+		};
+		const timer = setTimeout(() => {
+			timedOut = true;
+			child.kill();
+		}, timeout);
+		const consume = (chunk: Buffer | string, isErr: boolean) => {
+			const text = String(chunk);
+			if (isErr) stderr = (stderr + text).slice(-4000);
+			buffer += text;
+			const parts = buffer.split(/\r?\n|\r/);
+			buffer = parts.pop() ?? "";
+			for (const part of parts) onLine?.(part);
+		};
+		child.stdout?.on("data", (chunk) => consume(chunk, false));
+		child.stderr?.on("data", (chunk) => consume(chunk, true));
+		child.on("error", (error) => finish(error));
+		child.on("close", (code) => {
+			if (buffer.trim()) onLine?.(buffer);
+			if (timedOut) {
+				finish(
+					new Error(`Timed out after ${Math.round(timeout / 1000)} seconds`),
+				);
+				return;
+			}
+			if (code === 0) {
+				finish();
+				return;
+			}
+			finish(
+				new Error(
+					[`exit ${code ?? "unknown"}`, stderr.trim()]
+						.filter(Boolean)
+						.join("\n")
+						.slice(0, 2000),
+				),
+			);
+		});
+	});
 }
 
-export async function setupCamoufoxEnv(): Promise<PythonStatus> {
+export async function setupCamoufoxEnv(
+	onProgress?: (progress: PythonSetupProgress) => void,
+): Promise<PythonStatus> {
+	onProgress?.({
+		step: 0,
+		total: SETUP_STEP_TOTAL,
+		label: "Looking for Python",
+	});
 	const system = await findSystemPython();
 	if (!system) {
 		return pythonStatus();
 	}
 	const { pythonVenv } = ensureSupportDirs();
-	await runStep(system, ["-m", "venv", pythonVenv], 60_000);
-	const python = venvPython();
-	await runStep(python, ["-m", "pip", "install", "--upgrade", "pip"], 120_000);
-	await runStep(python, ["-m", "pip", "install", "camoufox"], 180_000);
-	await runStep(python, ["-m", "camoufox", "fetch"], 300_000);
+	let lastDetail = "";
+	let lastDetailAt = 0;
+	const report = (step: number, label: string, detail?: string) => {
+		onProgress?.({
+			step,
+			total: SETUP_STEP_TOTAL,
+			label,
+			detail,
+		});
+	};
+	const steps: Array<{
+		label: string;
+		timeout: number;
+		bin: string;
+		args: string[];
+	}> = [
+		{
+			label: "Creating the Python environment",
+			timeout: 60_000,
+			bin: system,
+			args: ["-m", "venv", pythonVenv],
+		},
+		{
+			label: "Updating pip",
+			timeout: 120_000,
+			bin: "",
+			args: ["-m", "pip", "install", "--upgrade", "pip"],
+		},
+		{
+			label: "Installing Camoufox",
+			timeout: 180_000,
+			bin: "",
+			args: ["-m", "pip", "install", "camoufox"],
+		},
+		{
+			label: "Downloading the Camoufox browser",
+			timeout: 300_000,
+			bin: "",
+			args: ["-m", "camoufox", "fetch"],
+		},
+	];
+	for (let index = 0; index < steps.length; index += 1) {
+		const step = steps[index];
+		if (!step) continue;
+		const stepNumber = index + 1;
+		const bin = step.bin || venvPython();
+		lastDetail = "";
+		lastDetailAt = 0;
+		report(stepNumber, step.label);
+		await runStep(bin, step.args, step.timeout, (line) => {
+			const detail = pythonActivityLine(line);
+			if (!detail || detail === lastDetail) return;
+			const now = Date.now();
+			if (now - lastDetailAt < 300) return;
+			lastDetail = detail;
+			lastDetailAt = now;
+			report(stepNumber, step.label, detail);
+		});
+	}
 	return pythonStatus();
 }
