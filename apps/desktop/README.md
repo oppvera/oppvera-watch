@@ -1,6 +1,6 @@
 # Oppvera Watch desktop
 
-macOS capture client for hosted Oppvera. Current version is **0.7.2** (`version` in `package.json`). The footer and About panel read that value.
+Desktop capture client for hosted Oppvera, on macOS and Windows. Current version is **0.7.2** (`version` in `package.json`). The footer and About panel read that value.
 
 Pair once per campaign from that campaign’s Visibility page. **Settings** lists every paired campaign, lets you add or remove campaigns, and chooses the **active** one used by the query bank and the **Run** tab. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
 
@@ -34,7 +34,7 @@ Capture logs print in Chromium DevTools (the **Console** tab).
 
 - Alpha builds open DevTools at the bottom of the window on launch.
 - Menu: **View → Toggle Developer Tools**.
-- Keyboard: Option-Command-I (⌥⌘I).
+- Keyboard: Option-Command-I (⌥⌘I) on a Mac, or Ctrl+Shift+I on Windows.
 - **What we have tested** in the header also describes this.
 
 **Environment overrides**

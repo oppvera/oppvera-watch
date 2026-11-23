@@ -1,6 +1,6 @@
 # Contributing to Oppvera Watch
 
-Oppvera Watch is a macOS capture client for hosted Oppvera. It is MIT-licensed. The capture engine began as [OneGlanse](https://github.com/aryamantodkar/oneglanse). That upstream repo is the archive of the old dashboard and Docker stack. Do not add those back here.
+Oppvera Watch is a desktop capture client for hosted Oppvera, on macOS and Windows. It is MIT-licensed. The capture engine began as [OneGlanse](https://github.com/aryamantodkar/oneglanse). That upstream repo is the archive of the old dashboard and Docker stack. Do not add those back here.
 
 ## Git history
 
@@ -10,7 +10,7 @@ Oppvera Watch is a macOS capture client for hosted Oppvera. It is MIT-licensed. 
 
 Root `package.json` sets `"private": true` so this monorepo is not published to npm. It does not affect GitHub visibility.
 
-Requirements: Apple silicon or any Mac for `pnpm dev:desktop`, Node.js 20+, pnpm 10+, Git. Python 3.10+ is needed only when you connect a provider.
+Requirements: macOS or Windows for `pnpm dev:desktop`, Node.js 20+, pnpm 10+, Git. Python 3.10+ is needed only when you connect a provider.
 
 ```bash
 git clone https://github.com/oppvera/oppvera-watch.git

@@ -3,7 +3,7 @@
 	"version": "0.7.2",
 	"private": true,
 	"type": "module",
-	"description": "Oppvera Watch macOS capture client",
+	"description": "Oppvera Watch desktop capture client",
 	"main": "dist/main.js",
 	"scripts": {
 		"build:deps": "pnpm --filter @oneglanse/types --filter @oneglanse/errors --filter @oneglanse/utils --filter @oneglanse/agent build",

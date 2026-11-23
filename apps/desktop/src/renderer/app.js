@@ -304,7 +304,7 @@ function renderSync(state) {
 
   if (pending > 0) {
     card.classList.add("sync-card--pending");
-    headline.textContent = `${pending} ${captureWord(pending)} waiting on this Mac`;
+    headline.textContent = `${pending} ${captureWord(pending)} waiting on this computer`;
     detail.textContent =
       "Sync sends answer text to Oppvera for scoring. You can sync now or after a run finishes.";
     return;
@@ -456,7 +456,7 @@ function render(state) {
     if (apiBase && state.device.api_base) apiBase.value = state.device.api_base;
     if (pairBtn) pairBtn.textContent = "Add campaign";
   } else {
-    text("campaignHint", "Pair this Mac to a campaign to start.");
+    text("campaignHint", "Pair this computer to a campaign to start.");
     if (pairStatus) pairStatus.textContent = "Not paired.";
     if (pairBtn) pairBtn.textContent = "Add campaign";
   }

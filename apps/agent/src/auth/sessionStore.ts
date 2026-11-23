@@ -888,7 +888,7 @@ export async function uploadAuthSession(
 	_provider: AuthProvider,
 	_state?: StorageState,
 ): Promise<void> {
-	// Sessions stay on this Mac. Watch never uploads cookies or storageState.
+	// Sessions stay on this computer. Watch never uploads cookies or storageState.
 }
 
 export async function readProviderAuthStatuses(): Promise<

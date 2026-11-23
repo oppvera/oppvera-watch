@@ -20,7 +20,7 @@ export type WatchSchedulePrefs = {
 export const SCHEDULE_POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 export const SCHEDULE_PRIVACY_NOTE =
-	"While weekly check is on, Watch only reads the clock on this Mac every 5 minutes. " +
+	"While weekly check is on, Watch only reads the clock on this computer every 5 minutes. " +
 	"Those checks do not use the network. Oppvera receives data only when you capture answers and sync.";
 
 export const DEFAULT_WEEKLY_SCHEDULE: WeeklySchedulePrefs = {
