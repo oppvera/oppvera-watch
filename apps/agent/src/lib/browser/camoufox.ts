@@ -28,7 +28,10 @@ import sys
 
 try:
     from camoufox.addons import DefaultAddons
-    from browserforge.fingerprints import Screen
+    try:
+        from camoufox.fingerprints import Screen
+    except ImportError:
+        from browserforge.fingerprints import Screen
     from camoufox.pkgman import OS_NAME
     from camoufox.utils import launch_options
 except Exception as exc:

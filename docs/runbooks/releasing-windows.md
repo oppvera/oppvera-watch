@@ -83,7 +83,7 @@ Complete these on a branch, merge to `main`, then follow [Produce an installer](
   %APPDATA%\Oppvera Watch\python-venv\Scripts\python.exe
   ```
 
-- Keep the same UX: first-run message points to python.org; **Set up Camoufox Python** runs `venv` → `pip install camoufox` → `camoufox fetch` (same as macOS, longer on first run).
+- Keep the same UX: first-run message points to python.org; **Set up Camoufox Python** runs `venv` → pinned `pip install` (`CAMOUFOX_PIP_SPEC` in `python.ts`) → `camoufox fetch` for that wheel’s stamped browser build (same as macOS, longer on first run).
 
 ### 2. Child process environment (`apps/desktop/src/main.ts`)
 

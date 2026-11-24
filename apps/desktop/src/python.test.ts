@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { pythonActivityLine, venvInterpreterPath } from "./python.ts";
+import {
+	CAMOUFOX_PIP_SPEC,
+	pythonActivityLine,
+	venvInterpreterPath,
+} from "./python.ts";
 
 describe("venvInterpreterPath", () => {
 	it("uses Scripts/python.exe on Windows", () => {
@@ -22,6 +26,12 @@ describe("venvInterpreterPath", () => {
 			venvInterpreterPath(root, "linux"),
 			join(root, "bin", "python"),
 		);
+	});
+});
+
+describe("CAMOUFOX_PIP_SPEC", () => {
+	it("pins an exact camoufox release", () => {
+		assert.match(CAMOUFOX_PIP_SPEC, /^camoufox==\d+\.\d+\.\d+$/);
 	});
 });
 

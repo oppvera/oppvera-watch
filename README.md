@@ -82,6 +82,8 @@ pnpm dev:desktop
 
 To build a `.dmg` and publish it, see [docs/runbooks/releasing-macos.md](docs/runbooks/releasing-macos.md).
 
+Camoufox is pinned in `apps/desktop/src/python.ts` (`CAMOUFOX_PIP_SPEC`). It does not track the newest PyPI release on its own. Before a release, compare that pin with [camoufox on PyPI](https://pypi.org/project/camoufox/) and follow [apps/desktop/README.md](apps/desktop/README.md#camoufox-package-pin).
+
 ## Data that stays on the Mac
 
 Under `~/Library/Application Support/Oppvera Watch/`:

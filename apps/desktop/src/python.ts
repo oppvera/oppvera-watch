@@ -40,6 +40,9 @@ export type PythonSetupProgress = {
 
 const SETUP_STEP_TOTAL = 4;
 
+/** PyPI release we test against; pairs with a specific Firefox build via browser-pin.json. */
+export const CAMOUFOX_PIP_SPEC = "camoufox==0.5.9";
+
 function absoluteCandidates(): string[] {
 	const home = homedir();
 	const paths: string[] = [];
@@ -143,6 +146,30 @@ export function venvInterpreterPath(
 export function venvPython(): string {
 	const { pythonVenv } = ensureSupportDirs();
 	return venvInterpreterPath(pythonVenv);
+}
+
+/** Fetch the Firefox build stamped for this installed camoufox wheel (ignores shared cache channel). */
+async function camoufoxPackageFetchSpecifier(
+	pythonBin: string,
+): Promise<string | null> {
+	try {
+		const { stdout } = await execFileAsync(
+			pythonBin,
+			[
+				"-c",
+				`from camoufox.browser_pin import load_pin
+pin = load_pin()
+if pin is None:
+    raise SystemExit(1)
+print(f"{pin.repo_name.lower()}/{pin.spec}")`,
+			],
+			{ timeout: 15_000, windowsHide: true },
+		);
+		const spec = stdout.trim().split("\n").pop()?.trim() ?? "";
+		return spec.includes("/") ? spec : null;
+	} catch {
+		return null;
+	}
 }
 
 async function camoufoxBrowserReady(pythonBin: string): Promise<boolean> {
@@ -305,7 +332,7 @@ export async function setupCamoufoxEnv(
 			label: "Installing Camoufox",
 			timeout: 180_000,
 			bin: "",
-			args: ["-m", "pip", "install", "camoufox"],
+			args: ["-m", "pip", "install", CAMOUFOX_PIP_SPEC],
 		},
 		{
 			label: "Downloading the Camoufox browser",
@@ -319,10 +346,17 @@ export async function setupCamoufoxEnv(
 		if (!step) continue;
 		const stepNumber = index + 1;
 		const bin = step.bin || venvPython();
+		let args = step.args;
+		if (step.label === "Downloading the Camoufox browser") {
+			const specifier = await camoufoxPackageFetchSpecifier(bin);
+			args = specifier
+				? ["-m", "camoufox", "fetch", specifier]
+				: ["-m", "camoufox", "fetch"];
+		}
 		lastDetail = "";
 		lastDetailAt = 0;
 		report(stepNumber, step.label);
-		await runStep(bin, step.args, step.timeout, (line) => {
+		await runStep(bin, args, step.timeout, (line) => {
 			const detail = pythonActivityLine(line);
 			if (!detail || detail === lastDetail) return;
 			const now = Date.now();
