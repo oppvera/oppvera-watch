@@ -102,7 +102,8 @@ Partner installs use [GitHub Releases → Latest](https://github.com/oppvera/opp
 
 | Release | Status |
 | --- | --- |
-| [v0.7.3-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.3-preview) | **Current** staff preview (macOS DMG; Windows installer when posted). Tracks [PR #34](https://github.com/oppvera/oppvera-watch/pull/34). |
+| [v0.7.4-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.4-preview) | **Current** staff preview (macOS DMG; Windows installer when posted). Tracks [PR #34](https://github.com/oppvera/oppvera-watch/pull/34). |
+| [v0.7.3-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.3-preview) | **Deprecated** — superseded by 0.7.4; **assets removed**. Do not install. |
 | [v0.7.2-windows-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.2-windows-preview) | **Deprecated** — broken query-bank capture; **assets removed**. Do not install. |
 
 ## Documentation
