@@ -1,6 +1,7 @@
 (() => {
 const api = window.watch;
 let pythonBusy = false;
+let setupCalloutDismissed = false;
 let userPickedTab = false;
 let didInitialTab = false;
 /** @type {Set<string>} */
@@ -102,6 +103,29 @@ function showPythonProgress(progress) {
   if (status && pythonBusy) status.textContent = headline;
   const setup = document.getElementById("setupPython");
   if (setup && setup.classList.contains("busy")) setup.textContent = label;
+}
+
+function renderSetupPythonCallout(pythonReady, busy) {
+  const callout = document.getElementById("setupPythonCallout");
+  const setupPython = document.getElementById("setupPython");
+  const retryPython = document.getElementById("retryPython");
+  const providersTab = document.querySelector('.tabs button[data-tab="providers"]');
+  if (pythonReady) {
+    setupCalloutDismissed = false;
+  }
+  const showSetup = !pythonReady && !busy;
+  if (callout) {
+    callout.hidden = !showSetup;
+    callout.classList.toggle("is-dismissed", setupCalloutDismissed);
+  }
+  if (retryPython) retryPython.hidden = !pythonReady || busy;
+  if (setupPython && showSetup) {
+    setupPython.hidden = false;
+    setupPython.classList.toggle("setup-python-cta", !setupCalloutDismissed);
+  }
+  if (providersTab) {
+    providersTab.classList.toggle("needs-setup-attention", showSetup);
+  }
 }
 
 function renderPythonStatus(state) {
@@ -386,10 +410,7 @@ function render(state) {
     setPythonProgressDetail("");
   }
   const pythonReady = Boolean(state.python && state.python.ok);
-  const setupPython = document.getElementById("setupPython");
-  const retryPython = document.getElementById("retryPython");
-  if (setupPython) setupPython.hidden = pythonReady || pythonBusy;
-  if (retryPython) retryPython.hidden = !pythonReady || pythonBusy;
+  renderSetupPythonCallout(pythonReady, pythonBusy);
   text("pairError", state.lastError || "");
   setError(state.lastError || "");
   const pairBtn = document.getElementById("pairBtn");
@@ -504,7 +525,7 @@ function render(state) {
       row.className = "row";
       const label = AUTH_DISPLAY[provider.id] || provider.id;
       if (provider.connecting) {
-        row.innerHTML = `<span>${label} · <strong>Connecting</strong> — finish sign-in in Firefox, then <strong>close that window</strong> to complete.</span>`;
+        row.innerHTML = `<span>${label} · <strong>Connecting</strong> — finish sign-in in the Camoufox window, then <strong>close that window</strong> to complete.</span>`;
         target.appendChild(row);
         return;
       }
@@ -569,7 +590,7 @@ function render(state) {
             action,
             true,
             "Connect",
-            "Finish in Firefox, then close the window…",
+            "Finish in Camoufox, then close the window…",
           );
           try {
             await api.connectProvider(provider.id);
@@ -580,7 +601,7 @@ function render(state) {
               action,
               false,
               "Connect",
-              "Finish in Firefox, then close the window…",
+              "Finish in Camoufox, then close the window…",
             );
           }
         };
@@ -725,8 +746,9 @@ try {
       if (dialog && typeof dialog.close === "function") dialog.close();
       userPickedTab = true;
       showTab("providers");
+      const callout = document.getElementById("setupPythonCallout");
       const setupPython = document.getElementById("setupPython");
-      if (setupPython && !setupPython.hidden) setupPython.focus();
+      if (callout && !callout.hidden && setupPython) setupPython.focus();
     });
   }
 
@@ -888,11 +910,12 @@ try {
       total: 4,
       label: "Starting Camoufox setup",
     });
-    const setupPython = document.getElementById("setupPython");
+    const callout = document.getElementById("setupPythonCallout");
     const retryPython = document.getElementById("retryPython");
-    if (setupPython) setupPython.hidden = true;
+    if (callout) callout.hidden = true;
     if (retryPython) retryPython.hidden = true;
     if (button && button.id === "setupPython") {
+      setupCalloutDismissed = true;
       button.hidden = false;
       setBusy(button, true, idleLabel, "Setting up…");
     }
@@ -901,16 +924,21 @@ try {
       pythonBusy = false;
       render(state);
       if (state && state.python && !state.python.ok) {
+        setupCalloutDismissed = false;
         text(
           "pythonHelp",
           state.python.message || "Camoufox setup did not finish.",
         );
       }
     } catch (error) {
+      setupCalloutDismissed = false;
       const message = error.message || String(error);
       setError(message);
       text("pythonHelp", message);
       setPythonProgressDetail("");
+      if (api && typeof api.getState === "function") {
+        void api.getState().then((state) => render(state));
+      }
     } finally {
       pythonBusy = false;
       if (button && button.id === "setupPython") {

@@ -804,7 +804,7 @@ async function waitForAuthSessionComplete(
 		]);
 		if (result?.kind === "signed-in" && result.url) {
 			logger.log(
-				`[auth:${provider}] signed-in detected (${result.url}); close the Firefox window when you are finished.`,
+				`[auth:${provider}] signed-in detected (${result.url}); close the Camoufox window when you are finished.`,
 			);
 			try {
 				domLabel = await accountLabelFromBrowserContext(provider, context);

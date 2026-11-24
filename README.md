@@ -25,7 +25,7 @@ You do not need Node.js, Git, or this repository to use the Mac installer. On Wi
 1. Pair with `https://oppvera.com` (or `http://127.0.0.1:8000` for a local Oppvera). Use **Settings** to add more campaigns; pick the **active** campaign for the query bank and **Run** tab.
 2. Connect the consumer accounts you already pay for. Logins stay on this computer and are shared across paired campaigns.
 3. The query bank is read-only. Edit questions in Oppvera.
-4. Run connected providers one at a time for the active campaign. Stop ends the capture, including Firefox.
+4. Run connected providers one at a time for the active campaign. Stop ends the capture, including the Camoufox browser window.
 5. Sync uploads pending captures (each row uses the token for the campaign it was captured under). Oppvera scores them. Watch never asks for an analysis key.
 
 ### Weekly check (local schedule)
@@ -92,7 +92,7 @@ Under `~/Library/Application Support/Oppvera Watch/`:
 - Device pairing tokens (one per paired campaign)
 - Unsynced capture files
 
-Camoufox’s Firefox build is cached at `~/Library/Caches/camoufox` (the Camoufox installer has no custom directory flag).
+The Camoufox browser downloaded by Watch is cached at `~/Library/Caches/camoufox` (the Camoufox installer has no custom directory flag).
 
 Watch uploads question text, answer markdown, citations, provider labels, and ids. It never uploads cookies, `storageState`, passwords, or localStorage.
 

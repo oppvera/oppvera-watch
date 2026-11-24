@@ -116,9 +116,10 @@
       <section id="providers" class="panel">
         <p>
           Set up a work account for each AI application (example: ChatGPT).
-          Camoufox opens
-          a visible Firefox window. Finish sign-in there, then
-          <strong>close that Firefox window</strong>—Watch saves the session and
+          Camoufox opens a visible browser window (Firefox-based automation
+          installed by Watch—not Mozilla Firefox you may already have). Finish
+          sign-in there, then
+          <strong>close that Camoufox window</strong>—Watch saves the session and
           shows <strong>connected</strong> here. Use <strong>Label account</strong>
           if the app cannot read your email (common for ChatGPT and Claude).
           Disconnect removes the saved login from this computer.
@@ -144,7 +145,19 @@
           </div>
           <p id="pythonProgressDetail" class="hint" hidden></p>
         </div>
-        <button id="setupPython" class="ghost" type="button">Set up Camoufox Python</button>
+        <div id="setupPythonCallout" class="setup-python-callout" hidden>
+          <p class="setup-python-callout-hint">
+            <span class="setup-python-callout-arrow" aria-hidden="true">↓</span>
+            Start here before you connect a provider
+          </p>
+          <button
+            id="setupPython"
+            class="primary setup-python-cta"
+            type="button"
+          >
+            Set up Camoufox Python
+          </button>
+        </div>
         <div id="providerList"></div>
       </section>
       <section id="run" class="panel">
@@ -211,9 +224,11 @@
       <form method="dialog">
         <h2>Set up Camoufox</h2>
         <p class="hint">
-          Camoufox is the Firefox window Watch uses to sign in to ChatGPT,
-          Claude, and the other providers. Python is installed once on this
-          computer. Watch does not include it.
+          Camoufox is a Firefox-based browser with automation. Watch installs
+          its own copy on this computer so you can sign in to ChatGPT, Claude,
+          and the other providers. It is separate from Mozilla Firefox you may
+          already use. Python is installed once on this computer. Watch does not
+          include it.
         </p>
         <ol class="help-steps">
           <li>
@@ -240,7 +255,8 @@
           <li>
             Open the <strong>Providers</strong> tab and click
             <strong>Set up Camoufox Python</strong>. The first run installs
-            Camoufox and downloads its browser. It needs a network connection
+            Camoufox and downloads the Camoufox browser. It needs a network
+            connection
             and can take several minutes.
           </li>
         </ol>
