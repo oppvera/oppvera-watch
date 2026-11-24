@@ -6,7 +6,7 @@
 
 GEO scores, dashboards, and query-bank editing live on **hosted Oppvera**. This app does not score, chart, or store analytics locally.
 
-**Status (October 2026):** macOS client **0.6.0-alpha** pairs to Oppvera, runs the campaign query bank, queues captures offline (including failed checks), and syncs to the shared visibility store. Failed checks upload as outcomes so Oppvera does not treat them as “brand absent.” A weekly reminder stays local; hosted email does not start a capture. Hosted Oppvera scores rows, filters Watch vs Probe on the campaign visibility page, and shows a UI-vs-API compare panel when both sources exist for the same bank question. Engineering detail: [docs/plans/README.md](docs/plans/README.md).
+**Status (October 2026):** macOS client **0.6.0-alpha** pairs to Oppvera, runs the campaign query bank, queues captures offline (including failed checks), and syncs to the shared visibility store. Failed checks upload as outcomes so Oppvera does not treat them as “brand absent.” Schedules stay on this computer; hosted email does not start a capture. Hosted Oppvera scores rows, filters Watch vs Probe on the campaign visibility page, and shows a UI-vs-API compare panel when both sources exist for the same bank question. Engineering detail: [docs/plans/README.md](docs/plans/README.md).
 
 The capture engine started as a fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). This repository is the desktop client. Original OneGlanse features (dashboard, Docker, analysis keys) live on that upstream repo if you need to look them up. Do not merge `oneglanse/main`.
 
@@ -22,36 +22,43 @@ You do not need Node.js, Git, or this repository to use the Mac installer. On Wi
 
 ## How it works
 
-1. Pair with `https://oppvera.com` (or `http://127.0.0.1:8000` for a local Oppvera). Use **Settings** to add more campaigns; pick the **active** campaign for the query bank and **Run** tab.
+1. Pair with `https://oppvera.com` (or `http://127.0.0.1:8000` for a local Oppvera). **Settings** stores every paired campaign under its company. Select one. **Query bank** and **Run** use only that campaign.
 2. Connect the consumer accounts you already pay for. Logins stay on this computer and are shared across paired campaigns.
 3. The query bank is read-only. Edit questions in Oppvera.
-4. Run connected providers one at a time for the active campaign. Stop ends the capture, including the Camoufox browser window.
+4. Run connected providers one at a time for the selected campaign. Stop ends the capture, including the Camoufox browser window.
 5. Sync uploads pending captures (each row uses the token for the campaign it was captured under). Oppvera scores them. Watch never asks for an analysis key.
 
-### Weekly check (local schedule)
+### One campaign at a time (Settings)
 
-In **Settings**, you can turn on a **weekly check**: run the active campaign’s query bank on a day and hour you choose.
+Settings is the simple path. Paste a pairing code for each campaign you want on this computer. The list shows those campaigns under their company. The radio selects **one**. Query bank and Run follow that selection, even if six campaigns are stored.
 
-| What it does | What it does not do |
+To add another campaign, paste another code on Settings.
+
+### Several campaigns (Advanced settings)
+
+Open **Advanced settings** with the button on **Settings**. Clicking the version label in the footer does not open it.
+
+Advanced settings is for running more than the one selected campaign:
+
+- Each company has one weekday and local hour. Every paired campaign under that company runs then, including campaigns you pair later.
+- **Custom schedule** runs several companies together on one day and hour. You can save more than one custom row, so Tuesday and Thursday can each have their own mix.
+- **Run now** under a company, or under a custom row, runs those campaigns one after another. There is no cap on how many campaigns are included.
+- If two schedules are due at the same time, each campaign still runs once, in order.
+- Runs are not parallel. Providers stay the last ones you used on **Run**, or ChatGPT and Claude if you have not run yet.
+
+Settings shows a short summary of the days that are turned on.
+
+| What a schedule does | What it does not do |
 | --- | --- |
 | Runs while Oppvera Watch is **open** (minimized is OK) | Run after you **quit** the app |
 | Uses your last **Run** providers (or ChatGPT + Claude by default) | Start captures from hosted Oppvera or email reports |
-| At most **once per calendar week** per computer | Phone home on a timer — see below |
+| At most **once per calendar week** for each saved schedule | Phone home on a timer — see below |
 
-**Trust and network behavior:** With weekly check enabled, the app looks at the **local clock every 5 minutes** to see whether it is time to start a run. Those checks are **on-device only** (no Oppvera API calls, no telemetry ping). Data leaves this computer only when you **capture** answers and **sync** them, same as a manual run.
+**Trust and network behavior:** While a schedule is on, the app looks at the **local clock every 5 minutes** to see whether it is time to start a run. Those checks are **on-device only** (no Oppvera API calls, no telemetry ping). Data leaves this computer only when you **capture** answers and **sync** them, same as a manual run.
 
 Hosted Oppvera can send **visibility report emails** on its own schedule; that email does **not** open ChatGPT or start Watch.
 
-### Multiple campaigns and group runs
-
-One computer can hold several paired campaigns. Only the **active** campaign drives **Query bank** and **Run → Run query bank**.
-
-To run **2–4 campaigns in one session** (sequential: each campaign’s full query bank, then the next, same provider logins), open **Advanced**:
-
-- **Option-click** (⌥-click) the version label in the footer, or
-- **Click the version label seven times** within about two seconds.
-
-Choose campaigns and providers, then **Run selected campaigns**. Runs are not parallel. Details: [apps/desktop/README.md](apps/desktop/README.md).
+Details: [apps/desktop/README.md](apps/desktop/README.md).
 
 ## Developer console
 

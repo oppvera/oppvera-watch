@@ -2,7 +2,7 @@
 
 ## Status
 
-**Shipped** in this repo as `apps/desktop` **0.5.1-alpha** (arm64 `.dmg`). Pairing stores one Oppvera device token per campaign. The desktop app can hold several campaigns and switches the active one; tokens stay single-campaign. Grouped runs are sequential and hidden in an advanced dialog. How to build and publish: [releasing-macos.md](../runbooks/releasing-macos.md). Hosted ingest is Oppvera v0.95.0. The Visibility page **Download Oppvera Watch** button links the GitHub Release asset (`visibility_watch_pairing.html`).
+**Shipped** in this repo as `apps/desktop`. Pairing stores one Oppvera device token per campaign. Settings can hold several campaigns and you select one for Query bank and Run. Running several campaigns together is **Advanced settings**, opened from the button on Settings (not from the footer version label). How to build and publish: [releasing-macos.md](../runbooks/releasing-macos.md). Hosted ingest is Oppvera. The Visibility page **Download Oppvera Watch** button links the GitHub Release asset (`visibility_watch_pairing.html`).
 
 ## Recommendation
 
@@ -53,7 +53,7 @@ The desktop app is a capture client. It is not the current Next.js product.
 4. **Run** — user picks which connected providers to run, then starts. Sequential, one provider at a time (today's worker concurrency is already 1). Progress per prompt: pending, running, captured, failed.
 5. **Sync** — uploads unsynced captures. Shows last success, retry, and a count waiting offline.
 
-**Oppvera Visibility copy (hosted app):** pairing is one code per campaign. Tell operators they can pair the same Mac on every campaign; Watch keeps a token per campaign and they pick the active one in Settings. Do not imply one token covers the workspace.
+**Oppvera Visibility copy (hosted app):** pairing is one code per campaign. Tell operators they can pair the same Mac on every campaign. Watch keeps a token per campaign. In Settings they select one campaign for Query bank and Run. Running several campaigns on a schedule is the **Advanced settings** button on Settings. Do not imply one token covers the workspace, and do not tell them to open Advanced settings by clicking the version label.
 
 No dashboard, no scores, no workspace admin, no email/password account local to Watch.
 
@@ -79,7 +79,7 @@ Session files stay on the Mac under an app support directory, replacing `.onegla
   device.json   (legacy; migrated then removed)
 ```
 
-Each Oppvera token is still one campaign. `devices.json` can list several tokens; `watch.json` stores the active campaign and max group size (2–4). Provider logins under `auth/` are shared. Group runs are sequential and live only in a hidden Advanced dialog (seven clicks or Option-click on the footer version).
+Each Oppvera token is still one campaign. `devices.json` can list several tokens. `watch.json` stores the selected campaign id and any company or custom schedules. Provider logins under `auth/` are shared. A scheduled or **Run now** pass runs campaigns one after another. There is no 2–4 campaign cap. Advanced settings opens from the Settings button only.
 
 `storageState` JSON is a secret. Do not log it, do not upload it, do not put it in the pairing token file.
 

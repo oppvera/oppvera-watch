@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
@@ -11,6 +11,7 @@ import {
 	readDevice,
 	readPrefs,
 	saveDevice,
+	saveRunSchedule,
 	setActiveCampaign,
 	setMaxGroupSize,
 	listCaptures,
@@ -39,10 +40,10 @@ describe("group size", () => {
 		assert.equal(clampMaxGroupSize("nope"), 2);
 	});
 
-	it("rejects empty or oversized group runs", () => {
-		assert.throws(() => assertGroupSize(0, 2), /at least one/);
-		assert.throws(() => assertGroupSize(3, 2), /at most 2/);
-		assert.doesNotThrow(() => assertGroupSize(2, 2));
+	it("rejects an empty run and allows any larger count", () => {
+		assert.throws(() => assertGroupSize(0), /at least one/);
+		assert.doesNotThrow(() => assertGroupSize(2));
+		assert.doesNotThrow(() => assertGroupSize(9, 2));
 	});
 });
 
@@ -105,5 +106,58 @@ describe("device store", () => {
 		clearDevice();
 		assert.equal(listDevices().length, 0);
 		assert.equal(readDevice(), null);
+	});
+
+	it("migrates an enabled weekly check into a company schedule", () => {
+		saveDevice(sampleDevice("camp-a", "Alpha"));
+		const prefsPath = join(root, "watch.json");
+		const raw = JSON.parse(readFileSync(prefsPath, "utf8")) as {
+			schedules?: unknown;
+			weeklySchedule?: unknown;
+		};
+		delete raw.schedules;
+		raw.weeklySchedule = {
+			enabled: true,
+			weekday: 2,
+			hour: 15,
+			lastAutoRunWeek: "2026-W40",
+		};
+		writeFileSync(prefsPath, `${JSON.stringify(raw)}\n`);
+		const prefs = readPrefs();
+		assert.equal(prefs.schedules.length, 1);
+		assert.equal(prefs.schedules[0]?.kind, "company");
+		assert.equal(prefs.schedules[0]?.companyIds[0], "co-1");
+		assert.equal(prefs.schedules[0]?.weekday, 2);
+		assert.equal(prefs.schedules[0]?.hour, 15);
+		assert.equal(prefs.schedules[0]?.lastAutoRunWeek, "2026-W40");
+		assert.equal(readPrefs().schedules.length, 1);
+	});
+
+	it("clears the week mark when a company schedule changes hour", () => {
+		saveDevice(sampleDevice("camp-a", "Alpha"));
+		saveRunSchedule({
+			kind: "company",
+			enabled: true,
+			weekday: 2,
+			hour: 9,
+			companyIds: ["co-1"],
+		});
+		const saved = readPrefs().schedules[0];
+		assert.ok(saved);
+		const prefsPath = join(root, "watch.json");
+		const raw = JSON.parse(readFileSync(prefsPath, "utf8")) as {
+			schedules: { lastAutoRunWeek: string | null }[];
+		};
+		raw.schedules[0]!.lastAutoRunWeek = "2026-W40";
+		writeFileSync(prefsPath, `${JSON.stringify(raw)}\n`);
+		saveRunSchedule({
+			kind: "company",
+			enabled: true,
+			weekday: 2,
+			hour: 11,
+			companyIds: ["co-1"],
+		});
+		assert.equal(readPrefs().schedules[0]?.lastAutoRunWeek, null);
+		assert.equal(readPrefs().schedules[0]?.hour, 11);
 	});
 });

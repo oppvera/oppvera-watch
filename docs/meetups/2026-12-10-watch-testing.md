@@ -30,8 +30,10 @@ On a typical Mac:
 2. Install **Python 3.12** from [python.org](https://www.python.org/downloads/macos/) if the app says Python is missing (**admin password** for the installer).
 3. **Quit and reopen** Oppvera Watch.
 4. In the app: **Set up Camoufox Python** (downloads deps + browser; **several minutes**, needs Wi‑Fi).
-5. Pair from Oppvera **Visibility** (pairing code).
+5. Pair from Oppvera **Visibility** (pairing code) on **Settings**. If several campaigns are paired, select **one**. Query bank and Run use that campaign.
 6. Run a query-bank capture and confirm it appears in Oppvera.
+
+**Several campaigns:** stay on Settings to store them and pick one to run. Use the **Advanced settings** button on Settings only when someone should run more than one campaign on a schedule. Clicking the version label at the bottom of the window does not open Advanced settings.
 
 Steps 2–4 are the friction point for non-developers. Plan **15–20 minutes** of setup before the “real” test.
 

@@ -32,13 +32,12 @@
     </nav>
     <main>
       <section id="pair" class="panel active">
+        <p id="pairIntro">
+          This computer can store more than one campaign. Select one to run.
+          Query bank and Run use that campaign. Scores stay on Oppvera.
+        </p>
         <div id="campaignList"></div>
         <div id="pairSetup">
-          <p id="pairIntro">
-            Paste a pairing code from each campaign Visibility page. This computer can
-            hold more than one campaign. Scores stay on Oppvera. Provider logins
-            are shared across campaigns.
-          </p>
           <form id="pairForm">
             <label>Oppvera base URL
               <input id="apiBase" value="https://oppvera.com" />
@@ -49,52 +48,16 @@
             <label>This computer
               <input id="label" placeholder="Craig's computer" />
             </label>
-            <button id="pairBtn" class="primary" type="submit">Add campaign</button>
+            <button id="pairBtn" class="primary" type="submit">Pair campaign</button>
           </form>
         </div>
-        <p class="status">
-          Sync pending captures for a campaign before you remove it. Removing a
-          campaign does not delete ChatGPT or Claude logins.
+        <p id="advancedHint">
+          To run several campaigns on a schedule, open Advanced settings.
         </p>
+        <button id="openAdvancedBtn" class="ghost" type="button">Advanced settings</button>
+        <div id="scheduleSummary"></div>
         <p id="pairStatus" class="status">Ready to pair.</p>
         <p id="pairError" class="error"></p>
-        <div class="schedule-card">
-          <h2>Weekly check (this computer)</h2>
-          <p class="hint">
-            Runs the query bank while Oppvera Watch is open (minimized is fine).
-            Quitting the app stops the schedule. Capture does not run when Watch
-            is fully closed.
-          </p>
-          <p class="hint" id="weeklySchedulePrivacy">
-            While weekly check is on, Watch only reads the clock on this computer every
-            5 minutes. Those checks do not use the network. Oppvera receives data
-            only when you capture answers and sync.
-          </p>
-          <form id="weeklyScheduleForm">
-            <label class="checkbox-row">
-              <input id="weeklyEnabled" type="checkbox" />
-              Enable weekly check
-            </label>
-            <label>Day
-              <select id="weeklyWeekday">
-                <option value="0">Sunday</option>
-                <option value="1">Monday</option>
-                <option value="2">Tuesday</option>
-                <option value="3">Wednesday</option>
-                <option value="4">Thursday</option>
-                <option value="5">Friday</option>
-                <option value="6">Saturday</option>
-              </select>
-            </label>
-            <label>Hour (local, 24h)
-              <input id="weeklyHour" type="number" min="0" max="23" value="9" />
-            </label>
-            <button id="saveWeeklySchedule" class="ghost" type="submit">
-              Save schedule
-            </button>
-          </form>
-          <p id="weeklyScheduleNote" class="status"></p>
-        </div>
       </section>
       <section id="bank" class="panel">
         <p>Questions come from the campaign query bank. Edit them in Oppvera, not here.</p>
@@ -332,29 +295,22 @@
     </dialog>
     <dialog id="advancedDialog" class="coverage-dialog">
       <form method="dialog" id="advancedForm">
-        <h2>Advanced</h2>
+        <h2>Advanced settings</h2>
+        <p class="hint" id="advancedPrivacy"></p>
         <p class="hint">
-          Group runs are sequential: one campaign’s query bank, then the next,
-          using the same provider logins. The Run tab always uses the active
-          campaign only.
+          Watch runs one campaign’s query bank, then the next, using the same
+          provider logins. The Run tab uses the campaign selected in Settings.
+          Oppvera Watch must stay open for a scheduled run.
         </p>
-        <label>Max campaigns in a group
-          <select id="maxGroupSize">
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </select>
-        </label>
-        <label>Campaigns in this group
-          <div id="groupCampaigns"></div>
-        </label>
-        <p class="hint">Providers</p>
-        <div id="groupProviders"></div>
+        <div id="companyScheduleList"></div>
+        <h3>Custom schedule</h3>
+        <p class="hint">
+          Choose several companies to run together on one day and hour.
+        </p>
+        <div id="customScheduleList"></div>
+        <button id="addCustomSchedule" class="ghost" type="button">Custom schedule</button>
         <p id="groupStatus" class="status"></p>
         <ul id="groupProgress"></ul>
-        <button id="startGroupRun" class="primary" type="button" value="">
-          Run selected campaigns
-        </button>
         <button class="ghost" value="close">Close</button>
       </form>
     </dialog>
@@ -373,7 +329,7 @@
           if (status) status.textContent = "Pairing…";
           if (error) error.textContent = "";
           if (typeof window.setWatchBusy === "function") {
-            window.setWatchBusy(btn, true, "Add campaign", "Pairing…");
+            window.setWatchBusy(btn, true, "Pair campaign", "Pairing…");
           } else if (btn) {
             btn.disabled = true;
             btn.classList.add("busy");
@@ -386,11 +342,11 @@
             if (status) status.textContent = msg;
             if (error) error.textContent = msg;
             if (typeof window.setWatchBusy === "function") {
-              window.setWatchBusy(btn, false, "Add campaign", "Pairing…");
+              window.setWatchBusy(btn, false, "Pair campaign", "Pairing…");
             } else if (btn) {
               btn.disabled = false;
               btn.classList.remove("busy");
-              btn.textContent = "Add campaign";
+              btn.textContent = "Pair campaign";
             }
             return;
           }
@@ -418,11 +374,11 @@
             if (error) error.textContent = message;
           } finally {
             if (typeof window.setWatchBusy === "function") {
-              window.setWatchBusy(btn, false, "Add campaign", "Pairing…");
+              window.setWatchBusy(btn, false, "Pair campaign", "Pairing…");
             } else if (btn) {
               btn.disabled = false;
               btn.classList.remove("busy");
-              btn.textContent = "Add campaign";
+              btn.textContent = "Pair campaign";
             }
           }
         }
