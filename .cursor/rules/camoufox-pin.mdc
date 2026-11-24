@@ -1,0 +1,20 @@
+---
+description: Camoufox Python pin is manual; check PyPI before releases
+globs: apps/desktop/src/python.ts,apps/agent/src/lib/browser/camoufox.ts
+alwaysApply: false
+---
+
+# Camoufox version pin
+
+Desktop setup installs a pinned wheel, `CAMOUFOX_PIP_SPEC` in `apps/desktop/src/python.ts`. The Firefox build comes from that wheel’s `browser-pin.json` (`camoufox fetch <repo>/<build>`). Version strings often include `beta`; that is the build the library was released with.
+
+Nothing in CI or the app bumps this pin. An existing venv stays on whatever setup last installed until **Set up Camoufox Python** runs again.
+
+When changing Camoufox launch or setup, or before a desktop release:
+
+1. Compare `CAMOUFOX_PIP_SPEC` with the latest `camoufox` release on PyPI.
+2. On a machine with the Watch venv, run `python -m camoufox version` and note the Python package and the active browser.
+3. If PyPI is ahead, bump `CAMOUFOX_PIP_SPEC`, run setup again, then smoke-test provider connect and one capture. Keep the `Screen` import fallback in `camoufox.ts` working for that wheel.
+4. Do not drop the pin or switch setup to `camoufox set official/stable`. That channel can install a browser the installed library was not released with.
+
+Tell the user when the pin is behind PyPI and you are not bumping it in the current change.

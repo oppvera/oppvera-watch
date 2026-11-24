@@ -1,6 +1,6 @@
 # Oppvera Watch desktop
 
-macOS capture client for hosted Oppvera. Current version is **0.7.1** (`version` in `package.json`). The footer and About panel read that value.
+Desktop capture client for hosted Oppvera, on macOS and Windows. Current version is **0.7.4** (`version` in `package.json`). The footer and About panel read that value.
 
 Pair once per campaign from that campaign’s Visibility page. **Settings** lists every paired campaign, lets you add or remove campaigns, and chooses the **active** one used by the query bank and the **Run** tab. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
 
@@ -34,7 +34,7 @@ Capture logs print in Chromium DevTools (the **Console** tab).
 
 - Alpha builds open DevTools at the bottom of the window on launch.
 - Menu: **View → Toggle Developer Tools**.
-- Keyboard: Option-Command-I (⌥⌘I).
+- Keyboard: Option-Command-I (⌥⌘I) on a Mac, or Ctrl+Shift+I on Windows.
 - **What we have tested** in the header also describes this.
 
 **Environment overrides**
@@ -73,6 +73,12 @@ pnpm dev:desktop
 ```
 
 Pair against `https://oppvera.com` or `http://127.0.0.1:8000`. First capture needs Python 3.10+ from python.org, then **Set up Camoufox Python**.
+
+## Camoufox package pin
+
+**Set up Camoufox Python** installs the exact wheel in `CAMOUFOX_PIP_SPEC` (`apps/desktop/src/python.ts`), then downloads the Firefox build stamped in that wheel (`browser-pin.json`). Those Firefox versions often end in `beta`; that label is the paired build, not a floating prerelease channel.
+
+The pin does not update by itself. Before a desktop release, compare it with the latest [`camoufox` release on PyPI](https://pypi.org/project/camoufox/). In the Watch venv, `python -m camoufox version` shows the installed package and the browser on disk. If PyPI is newer, bump `CAMOUFOX_PIP_SPEC`, run setup again, and connect one provider. Leave the pin in place; do not switch setup to `official/stable`.
 
 ## Package a dmg
 

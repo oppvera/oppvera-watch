@@ -35,7 +35,7 @@
         <div id="campaignList"></div>
         <div id="pairSetup">
           <p id="pairIntro">
-            Paste a pairing code from each campaign Visibility page. This Mac can
+            Paste a pairing code from each campaign Visibility page. This computer can
             hold more than one campaign. Scores stay on Oppvera. Provider logins
             are shared across campaigns.
           </p>
@@ -46,8 +46,8 @@
             <label>Pairing code
               <input id="code" placeholder="K7QM-2P9L" autocomplete="off" />
             </label>
-            <label>This Mac
-              <input id="label" placeholder="Craig's Mac" />
+            <label>This computer
+              <input id="label" placeholder="Craig's computer" />
             </label>
             <button id="pairBtn" class="primary" type="submit">Add campaign</button>
           </form>
@@ -59,14 +59,14 @@
         <p id="pairStatus" class="status">Ready to pair.</p>
         <p id="pairError" class="error"></p>
         <div class="schedule-card">
-          <h2>Weekly check (this Mac)</h2>
+          <h2>Weekly check (this computer)</h2>
           <p class="hint">
             Runs the query bank while Oppvera Watch is open (minimized is fine).
             Quitting the app stops the schedule. Capture does not run when Watch
             is fully closed.
           </p>
           <p class="hint" id="weeklySchedulePrivacy">
-            While weekly check is on, Watch only reads the clock on this Mac every
+            While weekly check is on, Watch only reads the clock on this computer every
             5 minutes. Those checks do not use the network. Oppvera receives data
             only when you capture answers and sync.
           </p>
@@ -121,9 +121,10 @@
           <strong>close that Firefox window</strong>—Watch saves the session and
           shows <strong>connected</strong> here. Use <strong>Label account</strong>
           if the app cannot read your email (common for ChatGPT and Claude).
-          Disconnect removes the saved login from this Mac.
+          Disconnect removes the saved login from this computer.
         </p>
-        <div class="python-row">
+        <div class="python-setup">
+          <div class="python-row">
           <p id="pythonHelp" class="status"></p>
           <button
             id="retryPython"
@@ -140,6 +141,8 @@
               />
             </svg>
           </button>
+          </div>
+          <p id="pythonProgressDetail" class="hint" hidden></p>
         </div>
         <button id="setupPython" class="ghost" type="button">Set up Camoufox Python</button>
         <div id="providerList"></div>
@@ -164,7 +167,7 @@
       </section>
       <section id="sync" class="panel">
         <p class="hint">
-          Offline captures stay on this Mac until Oppvera is reachable. Retrying
+          Offline captures stay on this computer until Oppvera is reachable. Retrying
           does not duplicate rows.
         </p>
         <div id="syncCard" class="sync-card" hidden>
@@ -201,6 +204,51 @@
             Cancel
           </button>
           <button type="submit" class="primary">Save label</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="camoufoxHelpDialog" class="coverage-dialog">
+      <form method="dialog">
+        <h2>Set up Camoufox</h2>
+        <p class="hint">
+          Camoufox is the Firefox window Watch uses to sign in to ChatGPT,
+          Claude, and the other providers. Python is installed once on this
+          computer. Watch does not include it.
+        </p>
+        <ol class="help-steps">
+          <li>
+            If the status says Python is missing, install Python 3.12 from
+            <a
+              id="pythonDownloadLink"
+              href="https://www.python.org/downloads/"
+              target="_blank"
+              rel="noreferrer"
+              >python.org</a
+            >, then quit and reopen Oppvera Watch.
+            <span id="pythonMacNote">
+              On a Mac, use the macOS installer. The installer asks for an
+              admin password.
+            </span>
+            <span id="pythonWindowsNote" hidden>
+              On Windows, check <strong>Add python.exe to PATH</strong> in the
+              installer. If <strong>python</strong> opens the Microsoft Store,
+              turn off the <strong>python.exe</strong> and
+              <strong>python3.exe</strong> app execution aliases under
+              Settings → Apps → Advanced app settings → App execution aliases.
+            </span>
+          </li>
+          <li>
+            Open the <strong>Providers</strong> tab and click
+            <strong>Set up Camoufox Python</strong>. The first run installs
+            Camoufox and downloads its browser. It needs a network connection
+            and can take several minutes.
+          </li>
+        </ol>
+        <div class="dialog-actions">
+          <button class="ghost" value="close">Close</button>
+          <button class="primary" id="camoufoxHelpGo" type="button">
+            Go to Providers
+          </button>
         </div>
       </form>
     </dialog>
@@ -252,7 +300,8 @@
           Capture logs print in Chromium DevTools. Alpha builds open that panel
           at the bottom when the app starts. To open it yourself, choose
           <strong>View → Toggle Developer Tools</strong>, or press
-          Option-Command-I (⌥⌘I). Use the Console tab.
+          Option-Command-I (⌥⌘I) on a Mac, or Ctrl+Shift+I on Windows. Use the
+          Console tab.
         </p>
         <p class="hint">
           Report problems or extra testing:

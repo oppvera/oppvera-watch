@@ -546,7 +546,10 @@ const createWindow = () => {
 		win.webContents.openDevTools({ mode: "bottom" });
 	}
 	win.webContents.setWindowOpenHandler(({ url }) => {
-		if (url.startsWith("https://github.com/oppvera/oppvera-watch")) {
+		if (
+			url.startsWith("https://github.com/oppvera/oppvera-watch") ||
+			url.startsWith("https://www.python.org/")
+		) {
 			void shell.openExternal(url);
 		}
 		return { action: "deny" };
@@ -725,8 +728,12 @@ ipcMain.handle(
 	},
 );
 
-ipcMain.handle("watch:setupPython", async () => {
-	python = await setupCamoufoxEnv();
+ipcMain.handle("watch:setupPython", async (event) => {
+	python = await setupCamoufoxEnv((progress) => {
+		if (!event.sender.isDestroyed()) {
+			event.sender.send("watch:pythonProgress", progress);
+		}
+	});
 	if (python.pythonBin) process.env.CAMOUFOX_PYTHON_BIN = python.pythonBin;
 	return pushState();
 });

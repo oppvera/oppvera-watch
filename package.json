@@ -1,6 +1,6 @@
 {
 	"name": "oppvera-watch",
-	"description": "Oppvera Watch — macOS capture client for hosted Oppvera",
+	"description": "Oppvera Watch — desktop capture client for hosted Oppvera",
 	"license": "MIT",
 	"homepage": "https://github.com/oppvera/oppvera-watch",
 	"repository": {

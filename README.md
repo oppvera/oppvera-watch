@@ -2,13 +2,13 @@
 
 # Oppvera Watch
 
-**Oppvera Watch** is a **macOS capture client** for [Oppvera](https://oppvera.com). It opens real consumer AI product UIs (ChatGPT, Claude, Gemini, Perplexity, Google AI Overview), records what those pages render, and uploads **answer text and citations** to a paired campaign.
+**Oppvera Watch** is a **desktop capture client** for [Oppvera](https://oppvera.com), on macOS and Windows. It opens real consumer AI product UIs (ChatGPT, Claude, Gemini, Perplexity, Google AI Overview), records what those pages render, and uploads **answer text and citations** to a paired campaign.
 
 GEO scores, dashboards, and query-bank editing live on **hosted Oppvera**. This app does not score, chart, or store analytics locally.
 
 **Status (October 2026):** macOS client **0.6.0-alpha** pairs to Oppvera, runs the campaign query bank, queues captures offline (including failed checks), and syncs to the shared visibility store. Failed checks upload as outcomes so Oppvera does not treat them as “brand absent.” A weekly reminder stays local; hosted email does not start a capture. Hosted Oppvera scores rows, filters Watch vs Probe on the campaign visibility page, and shows a UI-vs-API compare panel when both sources exist for the same bank question. Engineering detail: [docs/plans/README.md](docs/plans/README.md).
 
-The capture engine started as a fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). This repository is only the Mac client. Original OneGlanse features (dashboard, Docker, analysis keys) live on that upstream repo if you need to look them up. Do not merge `oneglanse/main`.
+The capture engine started as a fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). This repository is the desktop client. Original OneGlanse features (dashboard, Docker, analysis keys) live on that upstream repo if you need to look them up. Do not merge `oneglanse/main`.
 
 ## Install
 
@@ -16,14 +16,14 @@ The capture engine started as a fork of [OneGlanse](https://github.com/aryamanto
 2. Open the `.dmg` and drag **Oppvera Watch** to Applications.
 3. Current releases are **notarized** (open normally after install). Older unsigned builds may need `xattr`; see [releasing-macos.md](docs/runbooks/releasing-macos.md).
 4. Install [Python 3.12](https://www.python.org/downloads/) if the app asks, then use **Set up Camoufox Python** once.
-5. Paste a pairing code from that campaign’s Visibility page. Repeat for each campaign you want on this Mac (one code per campaign).
+5. Paste a pairing code from that campaign’s Visibility page. Repeat for each campaign you want on this computer (one code per campaign).
 
-You do not need Node.js, Git, or this repository to use the app.
+You do not need Node.js, Git, or this repository to use the Mac installer. On Windows, run Oppvera Watch from this repository with `pnpm dev:desktop`.
 
 ## How it works
 
 1. Pair with `https://oppvera.com` (or `http://127.0.0.1:8000` for a local Oppvera). Use **Settings** to add more campaigns; pick the **active** campaign for the query bank and **Run** tab.
-2. Connect the consumer accounts you already pay for. Logins stay on this Mac and are shared across paired campaigns.
+2. Connect the consumer accounts you already pay for. Logins stay on this computer and are shared across paired campaigns.
 3. The query bank is read-only. Edit questions in Oppvera.
 4. Run connected providers one at a time for the active campaign. Stop ends the capture, including Firefox.
 5. Sync uploads pending captures (each row uses the token for the campaign it was captured under). Oppvera scores them. Watch never asks for an analysis key.
@@ -36,15 +36,15 @@ In **Settings**, you can turn on a **weekly check**: run the active campaign’s
 | --- | --- |
 | Runs while Oppvera Watch is **open** (minimized is OK) | Run after you **quit** the app |
 | Uses your last **Run** providers (or ChatGPT + Claude by default) | Start captures from hosted Oppvera or email reports |
-| At most **once per calendar week** per Mac | Phone home on a timer — see below |
+| At most **once per calendar week** per computer | Phone home on a timer — see below |
 
-**Trust and network behavior:** With weekly check enabled, the app looks at the **local clock every 5 minutes** to see whether it is time to start a run. Those checks are **on-device only** (no Oppvera API calls, no telemetry ping). Data leaves this Mac only when you **capture** answers and **sync** them, same as a manual run.
+**Trust and network behavior:** With weekly check enabled, the app looks at the **local clock every 5 minutes** to see whether it is time to start a run. Those checks are **on-device only** (no Oppvera API calls, no telemetry ping). Data leaves this computer only when you **capture** answers and **sync** them, same as a manual run.
 
 Hosted Oppvera can send **visibility report emails** on its own schedule; that email does **not** open ChatGPT or start Watch.
 
 ### Multiple campaigns and group runs
 
-One Mac can hold several paired campaigns. Only the **active** campaign drives **Query bank** and **Run → Run query bank**.
+One computer can hold several paired campaigns. Only the **active** campaign drives **Query bank** and **Run → Run query bank**.
 
 To run **2–4 campaigns in one session** (sequential: each campaign’s full query bank, then the next, same provider logins), open **Advanced**:
 
@@ -58,7 +58,7 @@ Choose campaigns and providers, then **Run selected campaigns**. Runs are not pa
 Capture logs appear in Chromium DevTools.
 
 - Alpha builds open the panel at the bottom when Oppvera Watch starts.
-- Choose **View → Toggle Developer Tools**, or press Option-Command-I (⌥⌘I).
+- Choose **View → Toggle Developer Tools**, or press Option-Command-I (⌥⌘I) on a Mac, or Ctrl+Shift+I on Windows.
 - Use the **Console** tab.
 
 See [apps/desktop/README.md](apps/desktop/README.md) for `WATCH_OPEN_DEVTOOLS` and verbose capture logging.
@@ -67,7 +67,7 @@ See [apps/desktop/README.md](apps/desktop/README.md) for `WATCH_OPEN_DEVTOOLS` a
 
 | Who | Need |
 | --- | --- |
-| Anyone capturing | Apple silicon macOS, Python 3.10+, network, and a pairing code per campaign you capture |
+| Anyone capturing | macOS or Windows, Python 3.10+, network, and a pairing code per campaign you capture |
 | Signed-in captures | Your consumer logins in the Camoufox window |
 | Developers | Node.js 20+, pnpm 10+, this git checkout |
 
@@ -82,6 +82,8 @@ pnpm dev:desktop
 
 To build a `.dmg` and publish it, see [docs/runbooks/releasing-macos.md](docs/runbooks/releasing-macos.md).
 
+Camoufox is pinned in `apps/desktop/src/python.ts` (`CAMOUFOX_PIP_SPEC`). It does not track the newest PyPI release on its own. Before a release, compare that pin with [camoufox on PyPI](https://pypi.org/project/camoufox/) and follow [apps/desktop/README.md](apps/desktop/README.md#camoufox-package-pin).
+
 ## Data that stays on the Mac
 
 Under `~/Library/Application Support/Oppvera Watch/`:
@@ -93,6 +95,16 @@ Under `~/Library/Application Support/Oppvera Watch/`:
 Camoufox’s Firefox build is cached at `~/Library/Caches/camoufox` (the Camoufox installer has no custom directory flag).
 
 Watch uploads question text, answer markdown, citations, provider labels, and ids. It never uploads cookies, `storageState`, passwords, or localStorage.
+
+## Internal staff previews
+
+Partner installs use [GitHub Releases → Latest](https://github.com/oppvera/oppvera-watch/releases/latest) (Visibility download). For **internal QA only**:
+
+| Release | Status |
+| --- | --- |
+| [v0.7.4-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.4-preview) | **Current** staff preview (macOS DMG; Windows installer when posted). Tracks [PR #34](https://github.com/oppvera/oppvera-watch/pull/34). |
+| [v0.7.3-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.3-preview) | **Deprecated** — superseded by 0.7.4; **assets removed**. Do not install. |
+| [v0.7.2-windows-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.2-windows-preview) | **Deprecated** — broken query-bank capture; **assets removed**. Do not install. |
 
 ## Documentation
 

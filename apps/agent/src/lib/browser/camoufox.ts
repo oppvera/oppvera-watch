@@ -27,8 +27,11 @@ import os
 import sys
 
 try:
-    from browserforge.fingerprints import Fingerprint, Screen
     from camoufox.addons import DefaultAddons
+    try:
+        from camoufox.fingerprints import Screen
+    except ImportError:
+        from browserforge.fingerprints import Screen
     from camoufox.pkgman import OS_NAME
     from camoufox.utils import launch_options
 except Exception as exc:
@@ -47,9 +50,6 @@ if isinstance(payload.get("window"), list):
 
 if isinstance(payload.get("webgl_config"), list):
     payload["webgl_config"] = tuple(payload["webgl_config"])
-
-if isinstance(payload.get("fingerprint"), dict):
-    payload["fingerprint"] = Fingerprint(**payload["fingerprint"])
 
 if isinstance(payload.get("exclude_addons"), list):
     payload["exclude_addons"] = [DefaultAddons[item] for item in payload["exclude_addons"]]
@@ -861,11 +861,17 @@ export async function resolveCamoufoxLaunchOptions(args: {
 		const message = stderr || toErrorMessage(error);
 		const installHint =
 			"Install Camoufox in the runtime image, for example: python3 -m pip install 'cloverlabs-camoufox[geoip]' && python3 -m camoufox set official/stable && python3 -m camoufox fetch";
+		const importMarker = "CAMOUFOX_IMPORT_ERROR::";
+		const importDetail = message.includes(importMarker)
+			? message.split(importMarker).pop()?.split("\n")[0]?.trim() || ""
+			: "";
 		throw new ExternalServiceError(
 			args.provider,
-			message.includes("CAMOUFOX_IMPORT_ERROR::")
-				? `Camoufox is not installed for ${python}. ${installHint}`
-				: `Failed to resolve Camoufox launch options: ${message}`,
+			importDetail
+				? `Camoufox Python import failed: ${importDetail}`
+				: message.includes("No module named 'camoufox'")
+					? `Camoufox is not installed for ${python}. ${installHint}`
+					: `Failed to resolve Camoufox launch options: ${message}`,
 		);
 	}
 }

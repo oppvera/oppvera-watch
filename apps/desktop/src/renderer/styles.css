@@ -161,6 +161,14 @@ button:disabled {
   margin: 0;
 }
 
+#pythonProgressDetail {
+  margin: 4px 0 0;
+}
+
+#pythonProgressDetail[hidden] {
+  display: none;
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -335,6 +343,45 @@ ul {
 
 #python-status {
   margin: 0;
+  max-width: 280px;
+}
+
+#python-status .status-link {
+  display: inline;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--teal);
+  font: inherit;
+  text-align: right;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.coverage-dialog a {
+  color: var(--teal);
+}
+
+.help-steps {
+  margin: 0 0 16px;
+  padding-left: 1.25em;
+}
+
+.help-steps li + li {
+  margin-top: 10px;
+}
+
+.help-steps span {
+  display: block;
+  margin-top: 6px;
+}
+
+.help-steps span[hidden] {
+  display: none;
 }
 
 .coverage-dialog {

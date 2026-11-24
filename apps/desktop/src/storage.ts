@@ -244,7 +244,7 @@ export function saveDevice(record: DeviceRecord): void {
 
 export function setActiveCampaign(campaignId: string): void {
 	if (!deviceByCampaign(campaignId)) {
-		throw new Error("That campaign is not paired on this Mac.");
+		throw new Error("That campaign is not paired on this computer.");
 	}
 	const prefs = readPrefs();
 	writePrefs({ ...prefs, activeCampaignId: campaignId });

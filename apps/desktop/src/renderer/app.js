@@ -66,6 +66,64 @@ function text(id, value) {
   if (el) el.textContent = value || "";
 }
 
+function openCamoufoxHelp() {
+  const dialog = document.getElementById("camoufoxHelpDialog");
+  if (!dialog || typeof dialog.showModal !== "function") return;
+  const windows = /Windows/i.test(navigator.userAgent);
+  const macNote = document.getElementById("pythonMacNote");
+  const windowsNote = document.getElementById("pythonWindowsNote");
+  const downloadLink = document.getElementById("pythonDownloadLink");
+  if (macNote) macNote.hidden = windows;
+  if (windowsNote) windowsNote.hidden = !windows;
+  if (downloadLink) {
+    downloadLink.href = windows
+      ? "https://www.python.org/downloads/windows/"
+      : "https://www.python.org/downloads/macos/";
+  }
+  if (!dialog.open) dialog.showModal();
+}
+
+function setPythonProgressDetail(detail) {
+  const el = document.getElementById("pythonProgressDetail");
+  if (!el) return;
+  el.textContent = detail || "";
+  el.hidden = !detail;
+}
+
+function showPythonProgress(progress) {
+  if (!progress) return;
+  const label = progress.label || "Setting up Camoufox";
+  const headline = progress.step
+    ? `Step ${progress.step} of ${progress.total}: ${label}.`
+    : `${label}.`;
+  text("pythonHelp", headline);
+  setPythonProgressDetail(progress.detail || "");
+  const status = document.getElementById("python-status");
+  if (status && pythonBusy) status.textContent = headline;
+  const setup = document.getElementById("setupPython");
+  if (setup && setup.classList.contains("busy")) setup.textContent = label;
+}
+
+function renderPythonStatus(state) {
+  const el = document.getElementById("python-status");
+  if (!el) return;
+  const message = (state.python && state.python.message) || "";
+  const ready = Boolean(state.python && state.python.ok);
+  el.replaceChildren();
+  if (!message) return;
+  if (ready) {
+    el.textContent = message;
+    return;
+  }
+  const link = document.createElement("button");
+  link.type = "button";
+  link.className = "status-link";
+  link.textContent = message;
+  link.title = "How to set up Camoufox";
+  link.addEventListener("click", openCamoufoxHelp);
+  el.appendChild(link);
+}
+
 function setError(message) {
   text("error", message);
 }
@@ -135,10 +193,11 @@ const RUN_DISPLAY = {
   perplexity: "Perplexity",
 };
 
-const PRIMARY_AUTH = ["chatgpt", "claude"];
-const EXPERIMENTAL_AUTH = ["gemini", "google", "perplexity"];
-const PRIMARY_RUN = ["chatgpt", "claude"];
-const EXPERIMENTAL_RUN = ["gemini", "ai-overview", "perplexity"];
+const PRIMARY_GROUP_TITLE = "AI Search Platforms";
+const PRIMARY_AUTH = ["chatgpt", "claude", "gemini", "google"];
+const EXPERIMENTAL_AUTH = ["perplexity"];
+const PRIMARY_RUN = ["chatgpt", "claude", "gemini", "ai-overview"];
+const EXPERIMENTAL_RUN = ["perplexity"];
 
 function displayName(map, id) {
   return map[id] || id;
@@ -245,7 +304,7 @@ function renderSync(state) {
 
   if (pending > 0) {
     card.classList.add("sync-card--pending");
-    headline.textContent = `${pending} ${captureWord(pending)} waiting on this Mac`;
+    headline.textContent = `${pending} ${captureWord(pending)} waiting on this computer`;
     detail.textContent =
       "Sync sends answer text to Oppvera for scoring. You can sync now or after a run finishes.";
     return;
@@ -321,9 +380,10 @@ function render(state) {
     state.appVersionLabel ||
       (state.appVersion ? `Oppvera Watch v${state.appVersion}` : "Oppvera Watch"),
   );
-  text("python-status", state.python && state.python.message);
+  renderPythonStatus(state);
   if (!pythonBusy) {
     text("pythonHelp", state.python && state.python.message);
+    setPythonProgressDetail("");
   }
   const pythonReady = Boolean(state.python && state.python.ok);
   const setupPython = document.getElementById("setupPython");
@@ -396,7 +456,7 @@ function render(state) {
     if (apiBase && state.device.api_base) apiBase.value = state.device.api_base;
     if (pairBtn) pairBtn.textContent = "Add campaign";
   } else {
-    text("campaignHint", "Pair this Mac to a campaign to start.");
+    text("campaignHint", "Pair this computer to a campaign to start.");
     if (pairStatus) pairStatus.textContent = "Not paired.";
     if (pairBtn) pairBtn.textContent = "Add campaign";
   }
@@ -529,19 +589,9 @@ function render(state) {
       row.appendChild(actions);
       target.appendChild(row);
     };
-    const primaryBox = addGroup(
-      providerList,
-      "ChatGPT and Claude",
-      "ChatGPT: free and Plus. Claude: free only.",
-      false,
-    );
+    const primaryBox = addGroup(providerList, PRIMARY_GROUP_TITLE, "", false);
     for (const provider of groups.primary) renderAuthRow(provider, primaryBox);
-    const experimentalBox = addGroup(
-      providerList,
-      "Experimental",
-      "Gemini, Google, and Perplexity: free accounts tested.",
-      true,
-    );
+    const experimentalBox = addGroup(providerList, "Experimental", "", true);
     for (const provider of groups.experimental) {
       renderAuthRow(provider, experimentalBox);
     }
@@ -581,12 +631,7 @@ function render(state) {
       );
       target.appendChild(label);
     };
-    const primaryBox = addGroup(
-      container,
-      "ChatGPT and Claude",
-      "ChatGPT: free and Plus. Claude: free only.",
-      false,
-    );
+    const primaryBox = addGroup(container, PRIMARY_GROUP_TITLE, "", false);
     for (const provider of groups.primary) {
       renderRunRow(provider, primaryBox, false);
     }
@@ -672,6 +717,18 @@ try {
       showTab(tab.dataset.tab);
     });
   });
+
+  const camoufoxHelpGo = document.getElementById("camoufoxHelpGo");
+  if (camoufoxHelpGo) {
+    camoufoxHelpGo.addEventListener("click", () => {
+      const dialog = document.getElementById("camoufoxHelpDialog");
+      if (dialog && typeof dialog.close === "function") dialog.close();
+      userPickedTab = true;
+      showTab("providers");
+      const setupPython = document.getElementById("setupPython");
+      if (setupPython && !setupPython.hidden) setupPython.focus();
+    });
+  }
 
   const coverageDialog = document.getElementById("coverageDialog");
   const coverageHelpBtn = document.getElementById("coverageHelpBtn");
@@ -826,7 +883,11 @@ try {
     if (!api || typeof api.setupPython !== "function") return;
     pythonBusy = true;
     setError("");
-    text("pythonHelp", "Setting up Camoufox Python… this can take a few minutes.");
+    showPythonProgress({
+      step: 0,
+      total: 4,
+      label: "Starting Camoufox setup",
+    });
     const setupPython = document.getElementById("setupPython");
     const retryPython = document.getElementById("retryPython");
     if (setupPython) setupPython.hidden = true;
@@ -849,6 +910,7 @@ try {
       const message = error.message || String(error);
       setError(message);
       text("pythonHelp", message);
+      setPythonProgressDetail("");
     } finally {
       pythonBusy = false;
       if (button && button.id === "setupPython") {
@@ -930,6 +992,13 @@ try {
         setBusy(stopRun, false, "Stop", "Stopping…");
       }
     };
+  }
+
+  if (api && typeof api.onPythonProgress === "function") {
+    api.onPythonProgress((progress) => {
+      if (!pythonBusy) return;
+      showPythonProgress(progress);
+    });
   }
 
   if (api && typeof api.onLog === "function") {
