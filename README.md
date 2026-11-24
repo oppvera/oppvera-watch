@@ -94,6 +94,15 @@ Camoufox’s Firefox build is cached at `~/Library/Caches/camoufox` (the Camoufo
 
 Watch uploads question text, answer markdown, citations, provider labels, and ids. It never uploads cookies, `storageState`, passwords, or localStorage.
 
+## Internal staff previews
+
+Partner installs use [GitHub Releases → Latest](https://github.com/oppvera/oppvera-watch/releases/latest) (Visibility download). For **internal QA only**:
+
+| Release | Status |
+| --- | --- |
+| [v0.7.3-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.3-preview) | **Current** staff preview (macOS DMG; Windows installer when posted). Tracks [PR #34](https://github.com/oppvera/oppvera-watch/pull/34). |
+| [v0.7.2-windows-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.2-windows-preview) | **Deprecated** — broken query-bank capture; **assets removed**. Do not install. |
+
 ## Documentation
 
 - [apps/desktop/README.md](apps/desktop/README.md) — desktop develop notes
