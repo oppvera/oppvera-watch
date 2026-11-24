@@ -28,7 +28,7 @@ import sys
 
 try:
     from camoufox.addons import DefaultAddons
-    from camoufox.fingerprints import Screen
+    from browserforge.fingerprints import Screen
     from camoufox.pkgman import OS_NAME
     from camoufox.utils import launch_options
 except Exception as exc:
@@ -858,11 +858,17 @@ export async function resolveCamoufoxLaunchOptions(args: {
 		const message = stderr || toErrorMessage(error);
 		const installHint =
 			"Install Camoufox in the runtime image, for example: python3 -m pip install 'cloverlabs-camoufox[geoip]' && python3 -m camoufox set official/stable && python3 -m camoufox fetch";
+		const importMarker = "CAMOUFOX_IMPORT_ERROR::";
+		const importDetail = message.includes(importMarker)
+			? message.split(importMarker).pop()?.split("\n")[0]?.trim() || ""
+			: "";
 		throw new ExternalServiceError(
 			args.provider,
-			message.includes("CAMOUFOX_IMPORT_ERROR::")
-				? `Camoufox is not installed for ${python}. ${installHint}`
-				: `Failed to resolve Camoufox launch options: ${message}`,
+			importDetail
+				? `Camoufox Python import failed: ${importDetail}`
+				: message.includes("No module named 'camoufox'")
+					? `Camoufox is not installed for ${python}. ${installHint}`
+					: `Failed to resolve Camoufox launch options: ${message}`,
 		);
 	}
 }
