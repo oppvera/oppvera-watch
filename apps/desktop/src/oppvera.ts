@@ -116,6 +116,39 @@ export async function pairDevice(input: {
 	};
 }
 
+export type DeviceIdentity = {
+	campaign_id: string;
+	campaign_name: string;
+	company_id: string | null;
+	company_name: string;
+	brand_domain: string;
+};
+
+export async function fetchDeviceIdentity(
+	device: DeviceRecord,
+): Promise<DeviceIdentity | null> {
+	const response = await probeFetch(device, "/api/probe/device");
+	if (response.status === 404) return null;
+	if (!response.ok) {
+		throw new Error(await readDetail(response));
+	}
+	const payload = (await response.json()) as Partial<DeviceIdentity>;
+	if (!payload.campaign_id || typeof payload.campaign_name !== "string") {
+		return null;
+	}
+	return {
+		campaign_id: payload.campaign_id,
+		campaign_name: payload.campaign_name,
+		company_id: payload.company_id ?? null,
+		company_name:
+			typeof payload.company_name === "string" ? payload.company_name : "",
+		brand_domain:
+			typeof payload.brand_domain === "string"
+				? payload.brand_domain
+				: device.brand_domain,
+	};
+}
+
 export async function fetchQueryBank(device: DeviceRecord): Promise<QueryBankItem[]> {
 	const response = await probeFetch(
 		device,

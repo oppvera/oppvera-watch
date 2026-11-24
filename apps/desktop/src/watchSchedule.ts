@@ -104,6 +104,11 @@ export type RunSchedule = {
 	weekday: number;
 	hour: number;
 	companyIds: string[];
+	/**
+	 * Campaigns included in a company schedule.
+	 * Null means every paired campaign under companyIds (schedules saved before selection).
+	 */
+	campaignIds: string[] | null;
 	lastAutoRunWeek: string | null;
 };
 
@@ -134,6 +139,16 @@ export function normalizeRunSchedule(
 	if (companyIds.length === 0) return null;
 	const weekly = normalizeWeeklySchedule(raw);
 	const kind: ScheduleKind = raw.kind === "custom" ? "custom" : "company";
+	const campaignIds =
+		kind === "company" && Array.isArray(raw.campaignIds)
+			? [
+					...new Set(
+						raw.campaignIds
+							.map((id) => (typeof id === "string" ? id.trim() : ""))
+							.filter(Boolean),
+					),
+				]
+			: null;
 	return {
 		id: raw.id.trim(),
 		kind,
@@ -141,6 +156,7 @@ export function normalizeRunSchedule(
 		weekday: weekly.weekday,
 		hour: weekly.hour,
 		companyIds: kind === "company" ? [companyIds[0]!] : companyIds,
+		campaignIds,
 		lastAutoRunWeek: weekly.lastAutoRunWeek,
 	};
 }
@@ -156,6 +172,57 @@ export function normalizeRunSchedules(raw: unknown): RunSchedule[] {
 		schedules.push(schedule);
 	}
 	return schedules;
+}
+
+export function campaignIdsForRunSchedules(
+	due: RunSchedule[],
+	devices: Array<{
+		campaign_id: string;
+		company_id?: string | null;
+		company_name?: string | null;
+	}>,
+	allSchedules: RunSchedule[] = due,
+): string[] {
+	const pairedByCompany = new Map<string, string[]>();
+	for (const device of devices) {
+		const key = companyScheduleKey(device);
+		const list = pairedByCompany.get(key) ?? [];
+		list.push(device.campaign_id);
+		pairedByCompany.set(key, list);
+	}
+	const selectedByCompany = new Map<string, string[] | null>();
+	for (const schedule of allSchedules) {
+		if (schedule.kind !== "company") continue;
+		const companyId = schedule.companyIds[0];
+		if (companyId) selectedByCompany.set(companyId, schedule.campaignIds);
+	}
+	const ids: string[] = [];
+	const seen = new Set<string>();
+	const addCompany = (companyId: string, limit: string[] | null | undefined) => {
+		const paired = pairedByCompany.get(companyId) ?? [];
+		const allowed =
+			limit == null ? paired : paired.filter((id) => limit.includes(id));
+		for (const id of allowed) {
+			if (seen.has(id)) continue;
+			seen.add(id);
+			ids.push(id);
+		}
+	};
+	for (const schedule of due) {
+		if (schedule.kind === "company") {
+			addCompany(schedule.companyIds[0] ?? "", schedule.campaignIds);
+			continue;
+		}
+		for (const companyId of schedule.companyIds) {
+			addCompany(
+				companyId,
+				selectedByCompany.has(companyId)
+					? selectedByCompany.get(companyId)
+					: null,
+			);
+		}
+	}
+	return ids;
 }
 
 export function isRunScheduleDue(schedule: RunSchedule, now = new Date()): boolean {

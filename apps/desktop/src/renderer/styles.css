@@ -612,6 +612,19 @@ ul {
   border-top: 1px solid var(--line);
 }
 
+.company-block.schedule-paused {
+  background: #e4eaee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 12px 4px;
+}
+
+.schedule-paused-note {
+  margin: 0 0 10px;
+  color: #4b5962;
+  font-weight: 600;
+}
+
 .company-block h3 {
   margin: 0 0 8px;
   font-size: 16px;
@@ -624,7 +637,8 @@ ul {
   margin: 0 0 8px;
 }
 
-.campaign-row label {
+.campaign-row label,
+.campaign-row .campaign-name {
   display: inline-flex;
   align-items: center;
   gap: 8px;

@@ -13,6 +13,7 @@ import {
 	saveDevice,
 	saveRunSchedule,
 	setActiveCampaign,
+	updateDeviceLabels,
 	setMaxGroupSize,
 	listCaptures,
 } from "./storage.ts";
@@ -58,6 +59,35 @@ describe("device store", () => {
 	afterEach(() => {
 		rmSync(root, { recursive: true, force: true });
 		delete process.env.WATCH_SUPPORT_ROOT;
+	});
+
+	it("updates a campaign name without changing the selected campaign", () => {
+		saveDevice(sampleDevice("camp-a", "Alpha"));
+		saveDevice(sampleDevice("camp-b", "Beta"));
+		setActiveCampaign("camp-a");
+		assert.equal(
+			updateDeviceLabels("camp-b", {
+				campaign_name: "Beta renamed",
+				company_name: "Acme Labs",
+			}),
+			true,
+		);
+		const renamed = listDevices().find((device) => device.campaign_id === "camp-b");
+		assert.equal(renamed?.campaign_name, "Beta renamed");
+		assert.equal(renamed?.company_name, "Acme Labs");
+		assert.equal(readDevice()?.campaign_id, "camp-a");
+		assert.equal(
+			updateDeviceLabels("camp-b", {
+				campaign_name: "Beta renamed",
+				company_name: "Acme Labs",
+			}),
+			false,
+		);
+		assert.equal(updateDeviceLabels("camp-b", { campaign_name: "  " }), false);
+		assert.equal(
+			listDevices().find((device) => device.campaign_id === "camp-b")?.campaign_name,
+			"Beta renamed",
+		);
 	});
 
 	it("migrates device.json into devices.json and stamps captures", () => {
@@ -130,6 +160,7 @@ describe("device store", () => {
 		assert.equal(prefs.schedules[0]?.weekday, 2);
 		assert.equal(prefs.schedules[0]?.hour, 15);
 		assert.equal(prefs.schedules[0]?.lastAutoRunWeek, "2026-W40");
+		assert.equal(prefs.schedules[0]?.campaignIds, null);
 		assert.equal(readPrefs().schedules.length, 1);
 	});
 
@@ -159,5 +190,30 @@ describe("device store", () => {
 		});
 		assert.equal(readPrefs().schedules[0]?.lastAutoRunWeek, null);
 		assert.equal(readPrefs().schedules[0]?.hour, 11);
+	});
+
+	it("saves a subset of campaigns and rejects an empty selection", () => {
+		saveDevice(sampleDevice("camp-a", "Alpha"));
+		saveRunSchedule({
+			kind: "company",
+			enabled: true,
+			weekday: 1,
+			hour: 9,
+			companyIds: ["co-1"],
+			campaignIds: ["camp-a", "camp-c"],
+		});
+		assert.deepEqual(readPrefs().schedules[0]?.campaignIds, ["camp-a", "camp-c"]);
+		assert.throws(
+			() =>
+				saveRunSchedule({
+					kind: "company",
+					enabled: true,
+					weekday: 1,
+					hour: 9,
+					companyIds: ["co-1"],
+					campaignIds: [],
+				}),
+			/at least one campaign/,
+		);
 	});
 });

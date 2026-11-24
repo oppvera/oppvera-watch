@@ -40,7 +40,7 @@ Open **Advanced settings** with the button on **Settings**. Clicking the version
 
 Advanced settings is for running more than the one selected campaign:
 
-- Each company has one weekday and local hour. Every paired campaign under that company runs then, including campaigns you pair later.
+- Each company has one weekday and local hour. Check the campaigns to include. **Select all** checks every campaign under that company. **Pause** grays that company and stops the automatic run until you press **Resume**. **Run now** still starts the checked campaigns. A campaign you pair later stays unchecked until you add it and save. The radio that selects one campaign stays on Settings.
 - **Custom schedule** runs several companies together on one day and hour. You can save more than one custom row, so Tuesday and Thursday can each have their own mix.
 - **Run now** under a company, or under a custom row, runs those campaigns one after another. There is no cap on how many campaigns are included.
 - If two schedules are due at the same time, each campaign still runs once, in order.

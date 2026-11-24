@@ -74,6 +74,27 @@ function showTab(tabId) {
   document.querySelectorAll(".panel").forEach((panel) => {
     panel.classList.toggle("active", panel.id === tabId);
   });
+  if (tabId === "pair") refreshCampaignLabels();
+}
+
+let labelRefreshSeq = 0;
+
+function refreshCampaignLabels() {
+  if (!api || typeof api.refreshLabels !== "function") {
+    return api && api.getState ? api.getState().then(render) : Promise.resolve();
+  }
+  const request = ++labelRefreshSeq;
+  return api
+    .refreshLabels()
+    .then((state) => {
+      if (request !== labelRefreshSeq) return;
+      if (state) render(state);
+    })
+    .catch((error) => {
+      console.warn("[watch] campaign name refresh failed", error);
+      if (request !== labelRefreshSeq || !api.getState) return;
+      return api.getState().then(render);
+    });
 }
 
 function text(id, value) {
@@ -449,23 +470,10 @@ function hourField(value) {
   return input;
 }
 
-function enableField(checked) {
-  const label = document.createElement("label");
-  label.className = "checkbox-row";
-  const box = document.createElement("input");
-  box.type = "checkbox";
-  box.dataset.field = "enabled";
-  box.checked = Boolean(checked);
-  label.append(box, document.createTextNode(" Enable"));
-  return label;
-}
-
 function fieldsFrom(root) {
-  const enabled = root.querySelector("[data-field=enabled]");
   const weekday = root.querySelector("[data-field=weekday]");
   const hour = root.querySelector("[data-field=hour]");
   return {
-    enabled: Boolean(enabled && enabled.checked),
     weekday: Number(weekday ? weekday.value : 1),
     hour: Number(hour ? hour.value : 9),
   };
@@ -480,7 +488,8 @@ function campaignIdsForKeys(keys) {
 
 async function saveSchedule(payload, button, draftId) {
   if (!api || typeof api.saveRunSchedule !== "function") return;
-  setBusy(button, true, "Save", "Saving…");
+  const idle = button.textContent;
+  setBusy(button, true, idle, "Saving…");
   try {
     const state = await api.saveRunSchedule(payload);
     if (draftId) customDrafts = customDrafts.filter((row) => row.id !== draftId);
@@ -488,8 +497,16 @@ async function saveSchedule(payload, button, draftId) {
   } catch (error) {
     setError(error.message || String(error));
   } finally {
-    setBusy(button, false, "Save", "Saving…");
+    setBusy(button, false, idle, "Saving…");
   }
+}
+
+function selectedCampaignIdsForCompanies(keys) {
+  const wanted = new Set(keys);
+  const boxes = [...document.querySelectorAll("#companyScheduleList input.campaign-check")];
+  const relevant = boxes.filter((box) => wanted.has(box.dataset.company));
+  if (!relevant.length) return campaignIdsForKeys(keys);
+  return relevant.filter((box) => box.checked).map((box) => box.value);
 }
 
 async function runCompanyKeys(keys, button) {
@@ -497,9 +514,12 @@ async function runCompanyKeys(keys, button) {
     setError("Choose at least one company.");
     return;
   }
-  const ids = campaignIdsForKeys(keys);
+  await runCampaignIds(selectedCampaignIdsForCompanies(keys), button);
+}
+
+async function runCampaignIds(ids, button) {
   if (!ids.length) {
-    setError("Pair a campaign for that company first.");
+    setError("Choose at least one campaign.");
     return;
   }
   if (!api || typeof api.startGroupRun !== "function") return;
@@ -521,6 +541,23 @@ function pairButtonLabel(state) {
 function appendCampaignRow(parent, campaign, state, radioName) {
   const row = document.createElement("div");
   row.className = "campaign-row";
+  const remove = document.createElement("button");
+  remove.className = "ghost";
+  remove.type = "button";
+  remove.textContent = "Remove";
+  remove.disabled = state.running;
+  remove.onclick = async () => {
+    if (!api) return;
+    render(await api.unpair({ campaignId: campaign.campaign_id }));
+  };
+  if (!radioName) {
+    const name = document.createElement("span");
+    name.className = "campaign-name";
+    name.textContent = campaign.campaign_name;
+    row.append(name, remove);
+    parent.appendChild(row);
+    return;
+  }
   const label = document.createElement("label");
   const radio = document.createElement("input");
   radio.type = "radio";
@@ -537,15 +574,6 @@ function appendCampaignRow(parent, campaign, state, radioName) {
     }
   };
   label.append(radio, document.createTextNode(` ${campaign.campaign_name}`));
-  const remove = document.createElement("button");
-  remove.className = "ghost";
-  remove.type = "button";
-  remove.textContent = "Remove";
-  remove.disabled = state.running;
-  remove.onclick = async () => {
-    if (!api) return;
-    render(await api.unpair({ campaignId: campaign.campaign_id }));
-  };
   row.append(label, remove);
   parent.appendChild(row);
 }
@@ -574,9 +602,9 @@ function renderStoredCampaigns(state) {
 }
 
 function appendScheduleFields(parent, saved, running) {
+  const paused = Boolean(saved && saved.enabled === false);
   const fields = document.createElement("div");
   fields.className = "schedule-fields";
-  fields.appendChild(enableField(saved ? saved.enabled : false));
   const dayLabel = document.createElement("label");
   dayLabel.append(
     document.createTextNode("Day"),
@@ -591,6 +619,11 @@ function appendScheduleFields(parent, saved, running) {
   parent.appendChild(fields);
   const actions = document.createElement("div");
   actions.className = "schedule-actions";
+  const pause = document.createElement("button");
+  pause.type = "button";
+  pause.className = "ghost";
+  pause.textContent = paused ? "Resume" : "Pause";
+  pause.disabled = running;
   const save = document.createElement("button");
   save.type = "button";
   save.className = "ghost";
@@ -601,9 +634,18 @@ function appendScheduleFields(parent, saved, running) {
   run.className = "primary";
   run.textContent = "Run now";
   run.disabled = running;
-  actions.append(save, run);
+  actions.append(pause, save, run);
   parent.appendChild(actions);
-  return { fields, actions, save, run };
+  return { fields, actions, save, run, pause, paused };
+}
+
+function markSchedulePaused(block, paused) {
+  block.classList.toggle("schedule-paused", paused);
+  if (!paused) return;
+  const note = document.createElement("p");
+  note.className = "schedule-paused-note";
+  note.textContent = "Paused. This will not run on its own.";
+  block.appendChild(note);
 }
 
 function renderCompanySchedules(state) {
@@ -627,22 +669,103 @@ function renderCompanySchedules(state) {
     const title = document.createElement("h3");
     title.textContent = group.name;
     block.appendChild(title);
+    markSchedulePaused(block, Boolean(saved && saved.enabled === false));
+    const included = document.createElement("p");
+    included.className = "hint";
+    included.textContent =
+      "Check the campaigns to run on the day and hour below. Select all checks every campaign under this company. Pause stops the automatic run and grays this section.";
+    block.appendChild(included);
+    const selected = new Set(
+      saved && Array.isArray(saved.campaignIds)
+        ? saved.campaignIds
+        : group.campaigns.map((campaign) => campaign.campaign_id),
+    );
+    const campaignBoxes = [];
+    const selectAllRow = document.createElement("div");
+    selectAllRow.className = "campaign-row";
+    const selectAllLabel = document.createElement("label");
+    const selectAll = document.createElement("input");
+    selectAll.type = "checkbox";
+    selectAll.disabled = state.running;
+    selectAllLabel.append(selectAll, document.createTextNode(" Select all"));
+    selectAllRow.appendChild(selectAllLabel);
+    block.appendChild(selectAllRow);
     for (const campaign of group.campaigns) {
-      appendCampaignRow(block, campaign, state, "activeCampaignAdvanced");
+      const row = document.createElement("div");
+      row.className = "campaign-row";
+      const label = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.className = "campaign-check";
+      box.dataset.company = group.key;
+      box.value = campaign.campaign_id;
+      box.checked = selected.has(campaign.campaign_id);
+      box.disabled = state.running;
+      label.append(box, document.createTextNode(` ${campaign.campaign_name}`));
+      const remove = document.createElement("button");
+      remove.className = "ghost";
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.disabled = state.running;
+      remove.onclick = async () => {
+        if (!api) return;
+        render(await api.unpair({ campaignId: campaign.campaign_id }));
+      };
+      row.append(label, remove);
+      block.appendChild(row);
+      campaignBoxes.push(box);
     }
+    const syncSelectAll = () => {
+      const checked = campaignBoxes.filter((box) => box.checked).length;
+      selectAll.checked = checked === campaignBoxes.length && campaignBoxes.length > 0;
+      selectAll.indeterminate = checked > 0 && checked < campaignBoxes.length;
+    };
+    syncSelectAll();
+    selectAll.onchange = () => {
+      for (const box of campaignBoxes) box.checked = selectAll.checked;
+      selectAll.indeterminate = false;
+    };
+    for (const box of campaignBoxes) box.onchange = syncSelectAll;
+    const chosenIds = () =>
+      campaignBoxes.filter((box) => box.checked).map((box) => box.value);
     const controls = appendScheduleFields(block, saved, state.running);
     controls.save.onclick = () => {
+      const campaignIds = chosenIds();
+      if (!campaignIds.length) {
+        setError("Choose at least one campaign.");
+        return;
+      }
       void saveSchedule(
         {
           id: `company:${group.key}`,
           kind: "company",
           companyIds: [group.key],
+          campaignIds,
+          enabled: !controls.paused,
           ...fieldsFrom(controls.fields),
         },
         controls.save,
       );
     };
-    controls.run.onclick = () => void runCompanyKeys([group.key], controls.run);
+    controls.pause.onclick = () => {
+      const campaignIds = chosenIds();
+      if (!campaignIds.length) {
+        setError("Choose at least one campaign.");
+        return;
+      }
+      void saveSchedule(
+        {
+          id: `company:${group.key}`,
+          kind: "company",
+          companyIds: [group.key],
+          campaignIds,
+          enabled: controls.paused ? true : false,
+          ...fieldsFrom(controls.fields),
+        },
+        controls.pause,
+      );
+    };
+    controls.run.onclick = () => void runCampaignIds(chosenIds(), controls.run);
     list.appendChild(block);
   }
   if ((state.campaigns || []).length > 1) {
@@ -673,6 +796,7 @@ function renderCustomSchedules(state) {
   for (const entry of rows) {
     const block = document.createElement("section");
     block.className = "company-block";
+    markSchedulePaused(block, Boolean(!entry.draft && entry.row.enabled === false));
     const boxes = document.createElement("div");
     boxes.className = "company-checks";
     for (const group of groups) {
@@ -697,9 +821,30 @@ function renderCustomSchedules(state) {
           id: entry.draft ? entry.row.id : entry.row.id,
           kind: "custom",
           companyIds,
+          enabled: !controls.paused,
           ...fieldsFrom(controls.fields),
         },
         controls.save,
+        entry.draft ? entry.row.id : undefined,
+      );
+    };
+    controls.pause.onclick = () => {
+      const companyIds = [...boxes.querySelectorAll("input:checked")].map(
+        (input) => input.value,
+      );
+      if (!companyIds.length) {
+        setError("Choose at least one company.");
+        return;
+      }
+      void saveSchedule(
+        {
+          id: entry.draft ? entry.row.id : entry.row.id,
+          kind: "custom",
+          companyIds,
+          enabled: controls.paused ? true : false,
+          ...fieldsFrom(controls.fields),
+        },
+        controls.pause,
         entry.draft ? entry.row.id : undefined,
       );
     };
@@ -1039,6 +1184,7 @@ try {
 
   const advancedDialog = document.getElementById("advancedDialog");
   function openAdvanced() {
+    refreshCampaignLabels();
     if (advancedDialog && typeof advancedDialog.showModal === "function") {
       advancedDialog.showModal();
     }
@@ -1307,7 +1453,7 @@ try {
 
   if (api && typeof api.onState === "function") {
     api.onState(render);
-    api.getState().then(render).catch((error) => {
+    refreshCampaignLabels().catch((error) => {
       text("pairStatus", error.message || String(error));
     });
   } else {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+	campaignIdsForRunSchedules,
 	companyScheduleKey,
 	dueRunSchedules,
 	formatRunScheduleLine,
@@ -104,6 +105,49 @@ describe("watchSchedule", () => {
 		assert.equal(
 			formatRunScheduleLine(thursdaySchedule, ["Posit", "Acme"]),
 			"Posit, Acme — Thursdays about 9:00 AM",
+		);
+	});
+
+	it("runs checked campaigns and treats a missing selection as every campaign", () => {
+		const devices = [
+			{ campaign_id: "c1", company_id: "asimily" },
+			{ campaign_id: "c2", company_id: "asimily" },
+			{ campaign_id: "c3", company_id: "asimily" },
+		];
+		const selected = normalizeRunSchedule({
+			id: "company:asimily",
+			kind: "company",
+			enabled: true,
+			weekday: 1,
+			hour: 9,
+			companyIds: ["asimily"],
+			campaignIds: ["c1", "c3"],
+		});
+		const legacy = normalizeRunSchedule({
+			id: "company:asimily",
+			kind: "company",
+			enabled: true,
+			weekday: 1,
+			hour: 9,
+			companyIds: ["asimily"],
+		});
+		const custom = normalizeRunSchedule({
+			id: "custom:mix",
+			kind: "custom",
+			enabled: true,
+			weekday: 4,
+			hour: 9,
+			companyIds: ["asimily"],
+		});
+		assert.ok(selected);
+		assert.ok(legacy);
+		assert.ok(custom);
+		assert.equal(legacy.campaignIds, null);
+		assert.deepEqual(campaignIdsForRunSchedules([selected], devices), ["c1", "c3"]);
+		assert.deepEqual(campaignIdsForRunSchedules([legacy], devices), ["c1", "c2", "c3"]);
+		assert.deepEqual(
+			campaignIdsForRunSchedules([custom], devices, [selected, custom]),
+			["c1", "c3"],
 		);
 	});
 });

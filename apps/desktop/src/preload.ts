@@ -17,12 +17,14 @@ contextBridge.exposeInMainWorld("watch", {
 		weekday: number;
 		hour: number;
 		companyIds: string[];
+		campaignIds?: string[] | null;
 	}) => ipcRenderer.invoke("watch:saveRunSchedule", payload),
 	removeRunSchedule: (id: string) =>
 		ipcRenderer.invoke("watch:removeRunSchedule", id),
 	startGroupRun: (payload: { providers?: string[]; campaignIds: string[] }) =>
 		ipcRenderer.invoke("watch:startGroupRun", payload),
 	refreshBank: () => ipcRenderer.invoke("watch:refreshBank"),
+	refreshLabels: () => ipcRenderer.invoke("watch:refreshLabels"),
 	connectProvider: (provider: string) =>
 		ipcRenderer.invoke("watch:connectProvider", provider),
 	resetProvider: (provider: string) =>

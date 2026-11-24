@@ -59,6 +59,7 @@ export type RunScheduleInput = {
 	weekday: number;
 	hour: number;
 	companyIds: string[];
+	campaignIds?: string[] | null;
 };
 
 export function clampMaxGroupSize(value: unknown): number {
@@ -296,6 +297,31 @@ export function saveDevice(record: DeviceRecord): void {
 	writePrefs({ ...prefs, activeCampaignId: record.campaign_id });
 }
 
+export function updateDeviceLabels(
+	campaignId: string,
+	labels: { campaign_name?: string; company_name?: string },
+): boolean {
+	const campaign_name = labels.campaign_name?.trim() ?? "";
+	if (!campaign_name) return false;
+	const devices = listDevices();
+	const index = devices.findIndex((device) => device.campaign_id === campaignId);
+	if (index < 0) return false;
+	const current = devices[index]!;
+	const company_name = labels.company_name?.trim()
+		? labels.company_name.trim()
+		: current.company_name;
+	if (
+		current.campaign_name === campaign_name &&
+		current.company_name === company_name
+	) {
+		return false;
+	}
+	const next = devices.slice();
+	next[index] = { ...current, campaign_name, company_name };
+	writeDevices(next);
+	return true;
+}
+
 export function setActiveCampaign(campaignId: string): void {
 	if (!deviceByCampaign(campaignId)) {
 		throw new Error("That campaign is not paired on this computer.");
@@ -324,6 +350,18 @@ export function saveRunSchedule(input: RunScheduleInput): WatchPrefs {
 		throw new Error("Choose at least one company.");
 	}
 	const kind = input.kind === "custom" ? "custom" : "company";
+	const campaignIds = Array.isArray(input.campaignIds)
+		? [
+				...new Set(
+					input.campaignIds
+						.map((id) => (typeof id === "string" ? id.trim() : ""))
+						.filter(Boolean),
+				),
+			]
+		: null;
+	if (kind === "company" && campaignIds && campaignIds.length === 0) {
+		throw new Error("Choose at least one campaign.");
+	}
 	const scopedIds = kind === "company" ? [companyIds[0]!] : companyIds;
 	let id = input.id?.trim() || "";
 	if (kind === "company") {
@@ -339,6 +377,7 @@ export function saveRunSchedule(input: RunScheduleInput): WatchPrefs {
 		weekday: input.weekday,
 		hour: input.hour,
 		companyIds: scopedIds,
+		campaignIds: kind === "company" ? campaignIds : null,
 		lastAutoRunWeek: existing?.lastAutoRunWeek ?? null,
 	});
 	if (!schedule) throw new Error("Choose at least one company.");

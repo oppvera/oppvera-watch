@@ -24,7 +24,12 @@ import {
 	setProviderAccountLabel,
 } from "@oneglanse/agent/auth-sessions";
 import type { QueryBankItem } from "./oppvera.js";
-import { fetchQueryBank, pairDevice, uploadCaptures } from "./oppvera.js";
+import {
+	fetchDeviceIdentity,
+	fetchQueryBank,
+	pairDevice,
+	uploadCaptures,
+} from "./oppvera.js";
 import { ensureSupportDirs } from "./paths.js";
 import { pythonStatus, setupCamoufoxEnv } from "./python.js";
 import { applyDesktopRuntimeEnv } from "./runtimeEnv.js";
@@ -38,6 +43,7 @@ import {
 	readPrefs,
 	removeDevice,
 	saveDevice,
+	updateDeviceLabels,
 	setActiveCampaign,
 	setLastRunProviders,
 	setMaxGroupSize,
@@ -63,6 +69,7 @@ import {
 	WATCH_VERSION,
 } from "./version.js";
 import {
+	campaignIdsForRunSchedules,
 	companyScheduleKey,
 	dueRunSchedules,
 	formatRunScheduleLine,
@@ -276,16 +283,7 @@ function companyLabel(companyId: string, devices: DeviceRecord[]): string {
 }
 
 function campaignIdsForSchedules(schedules: RunSchedule[]): string[] {
-	const keys = new Set(schedules.flatMap((schedule) => schedule.companyIds));
-	const ids: string[] = [];
-	const seen = new Set<string>();
-	for (const device of listDevices()) {
-		const key = companyScheduleKey(device);
-		if (!keys.has(key) || seen.has(device.campaign_id)) continue;
-		seen.add(device.campaign_id);
-		ids.push(device.campaign_id);
-	}
-	return ids;
+	return campaignIdsForRunSchedules(schedules, listDevices(), readPrefs().schedules);
 }
 
 function automaticProviders(): Provider[] {
@@ -387,6 +385,46 @@ async function pushState(): Promise<AppState> {
 	const state = await snapshot();
 	win?.webContents.send("watch:state", state);
 	return state;
+}
+
+let labelRefresh: Promise<boolean> | null = null;
+
+async function refreshPairedLabelsOnce(): Promise<boolean> {
+	let changed = false;
+	for (const device of listDevices()) {
+		try {
+			const identity = await fetchDeviceIdentity(device);
+			if (!identity || identity.campaign_id !== device.campaign_id) continue;
+			if (
+				updateDeviceLabels(device.campaign_id, {
+					campaign_name: identity.campaign_name,
+					company_name: identity.company_name,
+				})
+			) {
+				changed = true;
+			}
+		} catch (error) {
+			console.error(
+				`[watch] campaign name refresh failed for ${device.campaign_id}:`,
+				error,
+			);
+		}
+	}
+	return changed;
+}
+
+function refreshPairedLabels(): Promise<boolean> {
+	if (labelRefresh) return labelRefresh;
+	labelRefresh = refreshPairedLabelsOnce().finally(() => {
+		labelRefresh = null;
+	});
+	return labelRefresh;
+}
+
+function publishLabelRefresh(): void {
+	void refreshPairedLabels().then((changed) => {
+		if (changed) return pushState();
+	});
 }
 
 function isElectronBinary(bin: string): boolean {
@@ -625,6 +663,9 @@ const createWindow = () => {
 		}
 		return { action: "deny" };
 	});
+	win.on("focus", () => {
+		publishLabelRefresh();
+	});
 	void win.loadFile(join(here, "renderer", "index.html"));
 };
 
@@ -656,6 +697,7 @@ app.whenReady().then(async () => {
 	}
 	hydrateRunItemsFromPrefs();
 	createWindow();
+	publishLabelRefresh();
 	startScheduleTimer();
 });
 
@@ -730,6 +772,11 @@ ipcMain.handle("watch:saveRunSchedule", async (_event, payload: RunScheduleInput
 
 ipcMain.handle("watch:removeRunSchedule", async (_event, id: string) => {
 	removeRunSchedule(id);
+	return pushState();
+});
+
+ipcMain.handle("watch:refreshLabels", async () => {
+	await refreshPairedLabels();
 	return pushState();
 });
 
