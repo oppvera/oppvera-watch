@@ -63,7 +63,7 @@
         <p>Questions come from the campaign query bank. Edit them in Oppvera, not here.</p>
         <p class="hint">
           Check the questions to include on the next run. Leave all checked for a
-          full bank run.
+          full bank run. Opening this tab loads the latest questions.
         </p>
         <div class="query-bank-toolbar">
           <button id="selectAllQueries" class="ghost" type="button">
@@ -139,6 +139,15 @@
           Retry failed only
         </button>
         <button id="stopRun" class="ghost" type="button">Stop</button>
+        <details id="runQueryDetails" class="campaign-questions">
+          <summary id="runQuerySummary">Questions</summary>
+          <p class="hint">
+            From the campaign selected in Settings. Opening this tab loads the
+            latest questions.
+          </p>
+          <button id="refreshBankRun" class="ghost" type="button">Refresh bank</button>
+          <ul id="runQueryPreview" class="query-list"></ul>
+        </details>
         <ul id="runProgress"></ul>
       </section>
       <section id="sync" class="panel">
@@ -304,6 +313,12 @@
           a scheduled run.
         </p>
         <div id="companyScheduleList"></div>
+        <h3>Questions</h3>
+        <p class="hint">
+          Questions for the campaigns you check. Each campaign stays collapsed
+          until you open it.
+        </p>
+        <div id="campaignQuestions"></div>
         <h3>Custom schedule</h3>
         <p class="hint">
           Choose several companies to run together on one day and hour. Each company uses the campaigns checked above.

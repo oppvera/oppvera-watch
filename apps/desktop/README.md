@@ -9,14 +9,14 @@ Pair once per campaign from that campaign’s Visibility page. **Settings** stor
 - One pairing code per campaign (from each campaign’s Visibility page in Oppvera).
 - The list is grouped by company. The radio selects one campaign. **Query bank** and **Run → Run query bank** use that campaign only.
 - Tokens live in `devices.json`. The selected campaign id and schedules live in `watch.json` under app support.
-- **Query bank** lists buyer questions with checkboxes (**Select all** / **Deselect all**).
+- **Query bank** lists buyer questions with checkboxes (**Select all** / **Deselect all**). Opening **Query bank** or **Run** loads the latest questions for the campaign selected in Settings. **Run** lists those questions under the run buttons.
 - After a run, **Retry failed only** re-runs failed provider slots from the last manifest without re-capturing successes.
 
 ## Schedules (Advanced settings)
 
 Open **Advanced settings** from the button on **Settings**. The footer version label does not open it.
 
-Each company has one local weekday and hour. Check the campaigns to include, or use **Select all**. **Pause** grays that company and stops the automatic run until **Resume**. **Run now** still starts the checked campaigns. A campaign paired later stays unchecked until you add it and save. The radio that selects one campaign stays on Settings. **Custom schedule** runs several companies together on one day and hour, using the campaigns checked under each company. You can save more than one custom schedule, so Tuesday and Thursday can each have their own mix. There is no cap on how many campaigns run.
+Each company has one local weekday and hour. Check the campaigns to include, or use **Select all**. The questions for those campaigns appear below, collapsed by campaign. **Pause** grays that company and stops the automatic run until **Resume**. **Run now** still starts the checked campaigns. A campaign paired later stays unchecked until you add it and save. The radio that selects one campaign stays on Settings. **Custom schedule** runs several companies together on one day and hour, using the campaigns checked under each company. You can save more than one custom schedule, so Tuesday and Thursday can each have their own mix. There is no cap on how many campaigns run.
 
 **Run now** under a company, or under a custom schedule, runs those campaigns one after another using the last Run providers, or ChatGPT and Claude when you have not run yet. Providers still run one at a time within each campaign. There is no parallel multi-campaign capture. If two schedules are due at the same hour, each campaign runs once.
 

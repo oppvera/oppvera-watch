@@ -75,6 +75,97 @@ function showTab(tabId) {
     panel.classList.toggle("active", panel.id === tabId);
   });
   if (tabId === "pair") refreshCampaignLabels();
+  if (tabId === "bank" || tabId === "run") refreshQueryBank();
+}
+
+let bankRefreshSeq = 0;
+
+function refreshQueryBank() {
+  if (!api || typeof api.refreshBank !== "function") return Promise.resolve();
+  if (latestState && (latestState.running || !latestState.paired)) return Promise.resolve();
+  const request = ++bankRefreshSeq;
+  return api
+    .refreshBank()
+    .then((state) => {
+      if (request !== bankRefreshSeq) return;
+      if (state) render(state);
+    })
+    .catch((error) => {
+      if (request !== bankRefreshSeq) return;
+      setError(error.message || String(error));
+    });
+}
+
+let campaignQuestionSeq = 0;
+
+function scheduleCampaignQuestionLoad() {
+  const list = document.getElementById("campaignQuestions");
+  if (!list) return;
+  const ids = [
+    ...document.querySelectorAll("#companyScheduleList input.campaign-check:checked"),
+  ].map((box) => box.value);
+  const request = ++campaignQuestionSeq;
+  if (!ids.length) {
+    list.replaceChildren();
+    const note = document.createElement("p");
+    note.className = "hint";
+    note.textContent = "Check a campaign to see its questions.";
+    list.appendChild(note);
+    return;
+  }
+  if (!api || typeof api.campaignBanks !== "function") return;
+  list.replaceChildren();
+  const loading = document.createElement("p");
+  loading.className = "hint";
+  loading.textContent = "Loading questions…";
+  list.appendChild(loading);
+  void api
+    .campaignBanks(ids)
+    .then((banks) => {
+      if (request !== campaignQuestionSeq) return;
+      renderCampaignQuestionBanks(list, banks || []);
+    })
+    .catch((error) => {
+      if (request !== campaignQuestionSeq) return;
+      list.replaceChildren();
+      setError(error.message || String(error));
+    });
+}
+
+function renderCampaignQuestionBanks(list, banks) {
+  list.replaceChildren();
+  for (const bank of banks) {
+    const details = document.createElement("details");
+    details.className = "campaign-questions";
+    const summary = document.createElement("summary");
+    const queries = bank.queries || [];
+    const count = queries.length;
+    const name = bank.campaign_name || "Campaign";
+    summary.textContent = `${name} · ${count} question${count === 1 ? "" : "s"}`;
+    details.appendChild(summary);
+    if (bank.error) {
+      const note = document.createElement("p");
+      note.className = "hint";
+      note.textContent = bank.error;
+      details.appendChild(note);
+    }
+    const items = document.createElement("ul");
+    items.className = "query-list";
+    if (!count) {
+      const empty = document.createElement("li");
+      empty.textContent = "No questions in this campaign yet.";
+      items.appendChild(empty);
+    } else {
+      for (const query of queries) {
+        const item = document.createElement("li");
+        item.textContent = query.text;
+        items.appendChild(item);
+      }
+    }
+    details.appendChild(items);
+    details.open = banks.length === 1 && count > 0 && count <= 8;
+    list.appendChild(details);
+  }
 }
 
 let labelRefreshSeq = 0;
@@ -724,8 +815,14 @@ function renderCompanySchedules(state) {
     selectAll.onchange = () => {
       for (const box of campaignBoxes) box.checked = selectAll.checked;
       selectAll.indeterminate = false;
+      scheduleCampaignQuestionLoad();
     };
-    for (const box of campaignBoxes) box.onchange = syncSelectAll;
+    for (const box of campaignBoxes) {
+      box.onchange = () => {
+        syncSelectAll();
+        scheduleCampaignQuestionLoad();
+      };
+    }
     const chosenIds = () =>
       campaignBoxes.filter((box) => box.checked).map((box) => box.value);
     const controls = appendScheduleFields(block, saved, state.running);
@@ -1126,6 +1223,27 @@ function render(state) {
       appendRunProgressLine(progress, item, prefix);
     }
   }
+  const runQueryPreview = document.getElementById("runQueryPreview");
+  if (runQueryPreview) {
+    const queries = state.queries || [];
+    const summary = document.getElementById("runQuerySummary");
+    const name = state.device ? state.device.campaign_name : "Selected campaign";
+    if (summary) {
+      summary.textContent = `${name} · ${queries.length} question${queries.length === 1 ? "" : "s"}`;
+    }
+    runQueryPreview.replaceChildren();
+    if (!queries.length) {
+      const empty = document.createElement("li");
+      empty.textContent = "No questions yet. Add them in Oppvera, then open this tab again.";
+      runQueryPreview.appendChild(empty);
+    } else {
+      for (const query of queries) {
+        const item = document.createElement("li");
+        item.textContent = query.text;
+        runQueryPreview.appendChild(item);
+      }
+    }
+  }
   const groupProgress = document.getElementById("groupProgress");
   if (groupProgress) {
     groupProgress.innerHTML = "";
@@ -1188,6 +1306,7 @@ try {
     if (advancedDialog && typeof advancedDialog.showModal === "function") {
       advancedDialog.showModal();
     }
+    scheduleCampaignQuestionLoad();
   }
   const openAdvancedBtn = document.getElementById("openAdvancedBtn");
   if (openAdvancedBtn) openAdvancedBtn.addEventListener("click", openAdvanced);
@@ -1270,8 +1389,15 @@ try {
   }
   const refreshBank = document.getElementById("refreshBank");
   if (refreshBank) {
-    refreshBank.onclick = () =>
-      api && api.refreshBank().catch((error) => setError(error.message));
+    refreshBank.onclick = () => {
+      void refreshQueryBank();
+    };
+  }
+  const refreshBankRun = document.getElementById("refreshBankRun");
+  if (refreshBankRun) {
+    refreshBankRun.onclick = () => {
+      void refreshQueryBank();
+    };
   }
   const selectAllQueries = document.getElementById("selectAllQueries");
   if (selectAllQueries) {

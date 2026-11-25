@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld("watch", {
 	startGroupRun: (payload: { providers?: string[]; campaignIds: string[] }) =>
 		ipcRenderer.invoke("watch:startGroupRun", payload),
 	refreshBank: () => ipcRenderer.invoke("watch:refreshBank"),
+	campaignBanks: (campaignIds: string[]) =>
+		ipcRenderer.invoke("watch:campaignBanks", campaignIds),
 	refreshLabels: () => ipcRenderer.invoke("watch:refreshLabels"),
 	connectProvider: (provider: string) =>
 		ipcRenderer.invoke("watch:connectProvider", provider),

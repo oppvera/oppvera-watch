@@ -366,6 +366,24 @@ ul {
   margin-bottom: 8px;
 }
 
+.campaign-questions {
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--card);
+}
+
+.campaign-questions summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.campaign-questions .query-list,
+.campaign-questions .hint {
+  margin-top: 8px;
+}
+
 .error {
   color: #b42318;
   min-height: 1.4em;

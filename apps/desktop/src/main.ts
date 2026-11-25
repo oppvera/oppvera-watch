@@ -665,6 +665,12 @@ const createWindow = () => {
 	});
 	win.on("focus", () => {
 		publishLabelRefresh();
+		if (running) return;
+		void refreshActiveBank()
+			.then(() => pushState())
+			.catch((error) => {
+				console.error("[watch] query bank refresh failed:", error);
+			});
 	});
 	void win.loadFile(join(here, "renderer", "index.html"));
 };
@@ -787,10 +793,45 @@ ipcMain.handle("watch:refreshBank", async () => {
 		await refreshActiveBank();
 		lastError = null;
 	} catch (error) {
-		queries = [];
-		throw error;
+		lastError = error instanceof Error ? error.message : String(error);
 	}
 	return pushState();
+});
+
+ipcMain.handle("watch:campaignBanks", async (_event, campaignIds: string[]) => {
+	const wanted = new Set(
+		(Array.isArray(campaignIds) ? campaignIds : []).filter(
+			(id): id is string => typeof id === "string" && id.trim().length > 0,
+		),
+	);
+	const banks: Array<{
+		campaign_id: string;
+		campaign_name: string;
+		queries: QueryBankItem[];
+		error?: string;
+	}> = [];
+	for (const device of listDevices()) {
+		if (!wanted.has(device.campaign_id)) continue;
+		try {
+			banks.push({
+				campaign_id: device.campaign_id,
+				campaign_name: device.campaign_name,
+				queries: await fetchQueryBank(device),
+			});
+		} catch (error) {
+			banks.push({
+				campaign_id: device.campaign_id,
+				campaign_name: device.campaign_name,
+				queries: [],
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+	return banks.sort(
+		(a, b) =>
+			(campaignIds || []).indexOf(a.campaign_id) -
+			(campaignIds || []).indexOf(b.campaign_id),
+	);
 });
 
 ipcMain.handle("watch:connectProvider", async (_event, provider: AuthProvider) => {
