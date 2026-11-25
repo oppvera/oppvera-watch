@@ -24,7 +24,12 @@ import {
 	setProviderAccountLabel,
 } from "@oneglanse/agent/auth-sessions";
 import type { QueryBankItem } from "./oppvera.js";
-import { fetchQueryBank, pairDevice, uploadCaptures } from "./oppvera.js";
+import {
+	fetchDeviceIdentity,
+	fetchQueryBank,
+	pairDevice,
+	uploadCaptures,
+} from "./oppvera.js";
 import { ensureSupportDirs } from "./paths.js";
 import { pythonStatus, setupCamoufoxEnv } from "./python.js";
 import { applyDesktopRuntimeEnv } from "./runtimeEnv.js";
@@ -38,14 +43,17 @@ import {
 	readPrefs,
 	removeDevice,
 	saveDevice,
+	updateDeviceLabels,
 	setActiveCampaign,
 	setLastRunProviders,
 	setMaxGroupSize,
-	setWeeklySchedule,
-	markWeeklyAutoRun,
+	saveRunSchedule,
+	removeRunSchedule,
+	markRunSchedules,
 	assertGroupSize,
 	writeCapture,
 	saveLastRunManifest,
+	type RunScheduleInput,
 } from "./storage.js";
 import type { StoredCapture } from "./ingest.js";
 import {
@@ -61,12 +69,14 @@ import {
 	WATCH_VERSION,
 } from "./version.js";
 import {
-	formatWeeklyScheduleLabel,
-	isWeeklyRunDue,
+	campaignIdsForRunSchedules,
+	companyScheduleKey,
+	dueRunSchedules,
+	formatRunScheduleLine,
 	isoWeekKey,
 	SCHEDULE_POLL_INTERVAL_MS,
 	SCHEDULE_PRIVACY_NOTE,
-	type WeeklySchedulePrefs,
+	type RunSchedule,
 } from "./watchSchedule.js";
 import {
 	buildItemsForProviders,
@@ -112,7 +122,8 @@ type AppState = {
 	appVersion: string;
 	appVersionLabel: string;
 	scheduleNote: string;
-	weeklySchedule: WeeklySchedulePrefs;
+	schedules: RunSchedule[];
+	scheduleSummaries: string[];
 	schedulePrivacyNote: string;
 };
 
@@ -220,11 +231,21 @@ async function snapshot(): Promise<AppState> {
 	} catch (error) {
 		console.error("[watch] provider status failed:", error);
 	}
+	const prefs = readPrefs();
+	const devices = listDevices();
+	const scheduleSummaries = prefs.schedules
+		.filter((schedule) => schedule.enabled)
+		.map((schedule) =>
+			formatRunScheduleLine(
+				schedule,
+				schedule.companyIds.map((id) => companyLabel(id, devices)),
+			),
+		);
 	return {
 		paired: Boolean(device),
 		device: publicDevice(device),
-		campaigns: listDevices().map((row) => publicDevice(row)!),
-		maxGroupSize: readPrefs().maxGroupSize,
+		campaigns: devices.map((row) => publicDevice(row)!),
+		maxGroupSize: prefs.maxGroupSize,
 		queries,
 		providers,
 		runtimeProviders: PROVIDER_LIST.map((id) => ({
@@ -244,34 +265,79 @@ async function snapshot(): Promise<AppState> {
 		python: { ok: python.ok, message: python.message },
 		appVersion: WATCH_VERSION.version,
 		appVersionLabel: formatWatchVersionLabel(),
-		scheduleNote: formatWeeklyScheduleLabel(readPrefs().weeklySchedule),
-		weeklySchedule: readPrefs().weeklySchedule,
+		scheduleNote: scheduleSummaries.length
+			? scheduleSummaries.join(". ")
+			: "No scheduled run yet. Open Advanced settings to choose a day.",
+		schedules: prefs.schedules,
+		scheduleSummaries,
 		schedulePrivacyNote: SCHEDULE_PRIVACY_NOTE,
 	};
 }
 
+function companyLabel(companyId: string, devices: DeviceRecord[]): string {
+	const match = devices.find((device) => companyScheduleKey(device) === companyId);
+	if (match?.company_name?.trim()) return match.company_name.trim();
+	if (companyId.startsWith("name:")) return companyId.slice("name:".length) || "No company";
+	if (companyId === "none") return "No company";
+	return "Company";
+}
+
+function campaignIdsForSchedules(schedules: RunSchedule[]): string[] {
+	return campaignIdsForRunSchedules(schedules, listDevices(), readPrefs().schedules);
+}
+
+function automaticProviders(): Provider[] {
+	const last = readPrefs().lastRunProviders;
+	return selectedProviders(last.length > 0 ? last : DEFAULT_AUTO_RUN_PROVIDERS);
+}
+
 const DEFAULT_AUTO_RUN_PROVIDERS: Provider[] = ["chatgpt", "claude"];
+
+async function captureCampaignIds(
+	ids: string[],
+	providers: Provider[],
+): Promise<void> {
+	for (let index = 0; index < ids.length; index += 1) {
+		if (runCancelled) break;
+		const campaignId = ids[index]!;
+		const device = deviceByCampaign(campaignId);
+		if (!device) {
+			lastError = `Campaign ${campaignId} is not paired.`;
+			continue;
+		}
+		let bank: QueryBankItem[] = [];
+		try {
+			bank = await fetchQueryBank(device);
+		} catch (error) {
+			lastError = error instanceof Error ? error.message : String(error);
+			continue;
+		}
+		if (bank.length === 0) {
+			lastError = `${device.campaign_name} query bank is empty.`;
+			continue;
+		}
+		try {
+			await captureCampaign({
+				device,
+				bank,
+				providers,
+				replaceItems: index === 0,
+			});
+		} catch (error) {
+			lastError = error instanceof Error ? error.message : String(error);
+		}
+	}
+}
 
 async function runScheduledBankIfDue(): Promise<void> {
 	if (running) return;
-	const prefs = readPrefs();
-	if (!isWeeklyRunDue(prefs.weeklySchedule)) return;
-	const device = readDevice();
-	if (!device) return;
-	if (queries.length === 0) {
-		try {
-			await refreshActiveBank();
-		} catch {
-			return;
-		}
-	}
-	if (queries.length === 0) return;
-	const providers =
-		prefs.lastRunProviders.length > 0
-			? prefs.lastRunProviders
-			: DEFAULT_AUTO_RUN_PROVIDERS;
+	const due = dueRunSchedules(readPrefs().schedules, new Date());
+	if (due.length === 0) return;
+	const campaignIds = campaignIdsForSchedules(due);
+	if (campaignIds.length === 0) return;
+	let providers: Provider[];
 	try {
-		selectedProviders(providers);
+		providers = automaticProviders();
 	} catch {
 		return;
 	}
@@ -279,17 +345,20 @@ async function runScheduledBankIfDue(): Promise<void> {
 	if (!python.ok) return;
 	running = true;
 	runCancelled = false;
+	runItems = [];
 	try {
-		await captureCampaign({
-			device,
-			bank: queries,
-			providers,
-			replaceItems: true,
-		});
+		await captureCampaignIds(campaignIds, providers);
 		setLastRunProviders(providers);
-		markWeeklyAutoRun(isoWeekKey(new Date()));
+		markRunSchedules(
+			due.map((schedule) => schedule.id),
+			isoWeekKey(new Date()),
+		);
 	} catch (error) {
 		lastError = error instanceof Error ? error.message : String(error);
+		markRunSchedules(
+			due.map((schedule) => schedule.id),
+			isoWeekKey(new Date()),
+		);
 	} finally {
 		activeChild = null;
 		running = false;
@@ -299,7 +368,7 @@ async function runScheduledBankIfDue(): Promise<void> {
 	if (Notification.isSupported()) {
 		new Notification({
 			title: "Oppvera Watch",
-			body: "Weekly query bank run finished. Open Sync to confirm uploads.",
+			body: "Scheduled query bank run finished. Open Sync to confirm uploads.",
 		}).show();
 	}
 }
@@ -316,6 +385,46 @@ async function pushState(): Promise<AppState> {
 	const state = await snapshot();
 	win?.webContents.send("watch:state", state);
 	return state;
+}
+
+let labelRefresh: Promise<boolean> | null = null;
+
+async function refreshPairedLabelsOnce(): Promise<boolean> {
+	let changed = false;
+	for (const device of listDevices()) {
+		try {
+			const identity = await fetchDeviceIdentity(device);
+			if (!identity || identity.campaign_id !== device.campaign_id) continue;
+			if (
+				updateDeviceLabels(device.campaign_id, {
+					campaign_name: identity.campaign_name,
+					company_name: identity.company_name,
+				})
+			) {
+				changed = true;
+			}
+		} catch (error) {
+			console.error(
+				`[watch] campaign name refresh failed for ${device.campaign_id}:`,
+				error,
+			);
+		}
+	}
+	return changed;
+}
+
+function refreshPairedLabels(): Promise<boolean> {
+	if (labelRefresh) return labelRefresh;
+	labelRefresh = refreshPairedLabelsOnce().finally(() => {
+		labelRefresh = null;
+	});
+	return labelRefresh;
+}
+
+function publishLabelRefresh(): void {
+	void refreshPairedLabels().then((changed) => {
+		if (changed) return pushState();
+	});
 }
 
 function isElectronBinary(bin: string): boolean {
@@ -554,6 +663,15 @@ const createWindow = () => {
 		}
 		return { action: "deny" };
 	});
+	win.on("focus", () => {
+		publishLabelRefresh();
+		if (running) return;
+		void refreshActiveBank()
+			.then(() => pushState())
+			.catch((error) => {
+				console.error("[watch] query bank refresh failed:", error);
+			});
+	});
 	void win.loadFile(join(here, "renderer", "index.html"));
 };
 
@@ -585,6 +703,7 @@ app.whenReady().then(async () => {
 	}
 	hydrateRunItemsFromPrefs();
 	createWindow();
+	publishLabelRefresh();
 	startScheduleTimer();
 });
 
@@ -652,20 +771,20 @@ ipcMain.handle("watch:setMaxGroupSize", async (_event, value: number) => {
 	return pushState();
 });
 
-ipcMain.handle(
-	"watch:setWeeklySchedule",
-	async (
-		_event,
-		payload: { enabled: boolean; weekday: number; hour: number },
-	) => {
-		setWeeklySchedule({
-			enabled: Boolean(payload.enabled),
-			weekday: payload.weekday,
-			hour: payload.hour,
-		});
-		return pushState();
-	},
-);
+ipcMain.handle("watch:saveRunSchedule", async (_event, payload: RunScheduleInput) => {
+	saveRunSchedule(payload);
+	return pushState();
+});
+
+ipcMain.handle("watch:removeRunSchedule", async (_event, id: string) => {
+	removeRunSchedule(id);
+	return pushState();
+});
+
+ipcMain.handle("watch:refreshLabels", async () => {
+	await refreshPairedLabels();
+	return pushState();
+});
 
 ipcMain.handle("watch:refreshBank", async () => {
 	const device = readDevice();
@@ -674,10 +793,45 @@ ipcMain.handle("watch:refreshBank", async () => {
 		await refreshActiveBank();
 		lastError = null;
 	} catch (error) {
-		queries = [];
-		throw error;
+		lastError = error instanceof Error ? error.message : String(error);
 	}
 	return pushState();
+});
+
+ipcMain.handle("watch:campaignBanks", async (_event, campaignIds: string[]) => {
+	const wanted = new Set(
+		(Array.isArray(campaignIds) ? campaignIds : []).filter(
+			(id): id is string => typeof id === "string" && id.trim().length > 0,
+		),
+	);
+	const banks: Array<{
+		campaign_id: string;
+		campaign_name: string;
+		queries: QueryBankItem[];
+		error?: string;
+	}> = [];
+	for (const device of listDevices()) {
+		if (!wanted.has(device.campaign_id)) continue;
+		try {
+			banks.push({
+				campaign_id: device.campaign_id,
+				campaign_name: device.campaign_name,
+				queries: await fetchQueryBank(device),
+			});
+		} catch (error) {
+			banks.push({
+				campaign_id: device.campaign_id,
+				campaign_name: device.campaign_name,
+				queries: [],
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+	return banks.sort(
+		(a, b) =>
+			(campaignIds || []).indexOf(a.campaign_id) -
+			(campaignIds || []).indexOf(b.campaign_id),
+	);
 });
 
 ipcMain.handle("watch:connectProvider", async (_event, provider: AuthProvider) => {
@@ -1019,46 +1173,23 @@ ipcMain.handle(
 	"watch:startGroupRun",
 	async (
 		_event,
-		payload: { providers: Provider[]; campaignIds: string[] },
+		payload: { providers?: Provider[]; campaignIds: string[] },
 	) => {
+		if (running) throw new Error("A run is already in progress.");
 		const ids = [...new Set(payload.campaignIds || [])].filter(Boolean);
-		assertGroupSize(ids.length, readPrefs().maxGroupSize);
-		const selected = selectedProviders(payload);
+		assertGroupSize(ids.length);
+		const selected =
+			payload.providers && payload.providers.length > 0
+				? selectedProviders(payload.providers)
+				: automaticProviders();
 		await refreshPython();
 		if (!python.ok) throw new Error(python.message);
 		running = true;
 		runCancelled = false;
 		runItems = [];
 		try {
-			for (const campaignId of ids) {
-				if (runCancelled) break;
-				const device = deviceByCampaign(campaignId);
-				if (!device) {
-					lastError = `Campaign ${campaignId} is not paired.`;
-					continue;
-				}
-				let bank: QueryBankItem[] = [];
-				try {
-					bank = await fetchQueryBank(device);
-				} catch (error) {
-					lastError = error instanceof Error ? error.message : String(error);
-					continue;
-				}
-				if (bank.length === 0) {
-					lastError = `${device.campaign_name} query bank is empty.`;
-					continue;
-				}
-				try {
-					await captureCampaign({
-						device,
-						bank,
-						providers: selected,
-						replaceItems: false,
-					});
-				} catch (error) {
-					lastError = error instanceof Error ? error.message : String(error);
-				}
-			}
+			await captureCampaignIds(ids, selected);
+			setLastRunProviders(selected);
 		} finally {
 			activeChild = null;
 			running = false;

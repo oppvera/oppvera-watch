@@ -10,11 +10,23 @@ contextBridge.exposeInMainWorld("watch", {
 		ipcRenderer.invoke("watch:setActiveCampaign", campaignId),
 	setMaxGroupSize: (value: number) =>
 		ipcRenderer.invoke("watch:setMaxGroupSize", value),
-	setWeeklySchedule: (payload: { enabled: boolean; weekday: number; hour: number }) =>
-		ipcRenderer.invoke("watch:setWeeklySchedule", payload),
-	startGroupRun: (payload: { providers: string[]; campaignIds: string[] }) =>
+	saveRunSchedule: (payload: {
+		id?: string;
+		kind: "company" | "custom";
+		enabled: boolean;
+		weekday: number;
+		hour: number;
+		companyIds: string[];
+		campaignIds?: string[] | null;
+	}) => ipcRenderer.invoke("watch:saveRunSchedule", payload),
+	removeRunSchedule: (id: string) =>
+		ipcRenderer.invoke("watch:removeRunSchedule", id),
+	startGroupRun: (payload: { providers?: string[]; campaignIds: string[] }) =>
 		ipcRenderer.invoke("watch:startGroupRun", payload),
 	refreshBank: () => ipcRenderer.invoke("watch:refreshBank"),
+	campaignBanks: (campaignIds: string[]) =>
+		ipcRenderer.invoke("watch:campaignBanks", campaignIds),
+	refreshLabels: () => ipcRenderer.invoke("watch:refreshLabels"),
 	connectProvider: (provider: string) =>
 		ipcRenderer.invoke("watch:connectProvider", provider),
 	resetProvider: (provider: string) =>

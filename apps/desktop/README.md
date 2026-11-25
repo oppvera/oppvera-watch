@@ -2,29 +2,25 @@
 
 Desktop capture client for hosted Oppvera, on macOS and Windows. Current version is **0.8.0** (`version` in `package.json`). The footer and About panel read that value.
 
-Pair once per campaign from that campaign’s Visibility page. **Settings** lists every paired campaign, lets you add or remove campaigns, and chooses the **active** one used by the query bank and the **Run** tab. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
+Pair once per campaign from that campaign’s Visibility page. **Settings** stores every paired campaign under its company and lets you select **one**. Query bank and **Run** use that campaign. Paste another code on Settings to store another campaign. Open **Advanced settings** with the button on Settings when you want several campaigns to run on a schedule. Clicking the footer version label does not open Advanced settings. Provider logins are shared across campaigns. Pending captures sync with the token for the campaign they were captured under.
 
-## Weekly check (Settings)
-
-Optional **weekly check** runs the active campaign’s query bank on a weekday + hour (local time) while the app is open. Minimized is fine; quitting Watch stops the schedule.
-
-When enabled, the main process checks the local clock every **5 minutes** (`SCHEDULE_POLL_INTERVAL_MS` in `src/watchSchedule.ts`). That loop does **not** call Oppvera; uploads happen only after capture + sync. The Settings panel and `SCHEDULE_PRIVACY_NOTE` string document this for users.
-
-## Multiple campaigns
+## One campaign at a time (Settings)
 
 - One pairing code per campaign (from each campaign’s Visibility page in Oppvera).
-- Tokens live in `devices.json`; the active campaign id and max group size live in `watch.json` under app support.
-- **Query bank** lists buyer questions with checkboxes (**Select all** / **Deselect all**). **Run → Run query bank** captures the checked questions for the active campaign only.
+- The list is grouped by company. The radio selects one campaign. **Query bank** and **Run → Run query bank** use that campaign only.
+- Tokens live in `devices.json`. The selected campaign id and schedules live in `watch.json` under app support.
+- **Query bank** lists buyer questions with checkboxes (**Select all** / **Deselect all**). Opening **Query bank** or **Run** loads the latest questions for the campaign selected in Settings. **Run** lists those questions under the run buttons.
 - After a run, **Retry failed only** re-runs failed provider slots from the last manifest without re-capturing successes.
 
-## Advanced: sequential group runs
+## Schedules (Advanced settings)
 
-Group runs are **not** on the **Run** tab. Open the **Advanced** dialog from the footer:
+Open **Advanced settings** from the button on **Settings**. The footer version label does not open it.
 
-- **Option-click** (⌥-click) the version label (`Oppvera Watch v…` at the bottom of the window), or
-- **Click that label seven times** within about two seconds.
+Each company has one local weekday and hour. Check the campaigns to include, or use **Select all**. The questions for those campaigns appear below, collapsed by campaign. **Pause** grays that company and stops the automatic run until **Resume**. **Run now** still starts the checked campaigns. A campaign paired later stays unchecked until you add it and save. The radio that selects one campaign stays on Settings. **Custom schedule** runs several companies together on one day and hour, using the campaigns checked under each company. You can save more than one custom schedule, so Tuesday and Thursday can each have their own mix. There is no cap on how many campaigns run.
 
-In Advanced you can set **Max campaigns in a group** (2–4), select campaigns and providers, then **Run selected campaigns**. Watch runs one campaign’s query bank to completion, then the next, using the same saved provider logins. Providers still run one at a time within each campaign. There is no parallel multi-campaign capture.
+**Run now** under a company, or under a custom schedule, runs those campaigns one after another using the last Run providers, or ChatGPT and Claude when you have not run yet. Providers still run one at a time within each campaign. There is no parallel multi-campaign capture. If two schedules are due at the same hour, each campaign runs once.
+
+Oppvera Watch must stay open (minimized is fine). Quitting the app stops the schedule. Each saved schedule runs at most once per ISO week. The main process checks the local clock every **5 minutes** (`SCHEDULE_POLL_INTERVAL_MS` in `src/watchSchedule.ts`). That loop does **not** call Oppvera; uploads happen only after capture + sync. Advanced settings shows `SCHEDULE_PRIVACY_NOTE`.
 
 ## Developer console
 

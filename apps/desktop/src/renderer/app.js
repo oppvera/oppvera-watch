@@ -9,6 +9,20 @@ const querySelection = new Set();
 /** @type {Set<string>} */
 let knownQueryIds = new Set();
 let queryBankBootstrapped = false;
+let latestState = null;
+/** @type {{ id: string, companyIds: string[], weekday: number, hour: number, enabled: boolean }[]} */
+let customDrafts = [];
+let draftSeq = 0;
+
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 function resetQuerySelectionState() {
   querySelection.clear();
@@ -60,6 +74,118 @@ function showTab(tabId) {
   document.querySelectorAll(".panel").forEach((panel) => {
     panel.classList.toggle("active", panel.id === tabId);
   });
+  if (tabId === "pair") refreshCampaignLabels();
+  if (tabId === "bank" || tabId === "run") refreshQueryBank();
+}
+
+let bankRefreshSeq = 0;
+
+function refreshQueryBank() {
+  if (!api || typeof api.refreshBank !== "function") return Promise.resolve();
+  if (latestState && (latestState.running || !latestState.paired)) return Promise.resolve();
+  const request = ++bankRefreshSeq;
+  return api
+    .refreshBank()
+    .then((state) => {
+      if (request !== bankRefreshSeq) return;
+      if (state) render(state);
+    })
+    .catch((error) => {
+      if (request !== bankRefreshSeq) return;
+      setError(error.message || String(error));
+    });
+}
+
+let campaignQuestionSeq = 0;
+
+function scheduleCampaignQuestionLoad() {
+  const list = document.getElementById("campaignQuestions");
+  if (!list) return;
+  const ids = [
+    ...document.querySelectorAll("#companyScheduleList input.campaign-check:checked"),
+  ].map((box) => box.value);
+  const request = ++campaignQuestionSeq;
+  if (!ids.length) {
+    list.replaceChildren();
+    const note = document.createElement("p");
+    note.className = "hint";
+    note.textContent = "Check a campaign to see its questions.";
+    list.appendChild(note);
+    return;
+  }
+  if (!api || typeof api.campaignBanks !== "function") return;
+  list.replaceChildren();
+  const loading = document.createElement("p");
+  loading.className = "hint";
+  loading.textContent = "Loading questions…";
+  list.appendChild(loading);
+  void api
+    .campaignBanks(ids)
+    .then((banks) => {
+      if (request !== campaignQuestionSeq) return;
+      renderCampaignQuestionBanks(list, banks || []);
+    })
+    .catch((error) => {
+      if (request !== campaignQuestionSeq) return;
+      list.replaceChildren();
+      setError(error.message || String(error));
+    });
+}
+
+function renderCampaignQuestionBanks(list, banks) {
+  list.replaceChildren();
+  for (const bank of banks) {
+    const details = document.createElement("details");
+    details.className = "campaign-questions";
+    const summary = document.createElement("summary");
+    const queries = bank.queries || [];
+    const count = queries.length;
+    const name = bank.campaign_name || "Campaign";
+    summary.textContent = `${name} · ${count} question${count === 1 ? "" : "s"}`;
+    details.appendChild(summary);
+    if (bank.error) {
+      const note = document.createElement("p");
+      note.className = "hint";
+      note.textContent = bank.error;
+      details.appendChild(note);
+    }
+    const items = document.createElement("ul");
+    items.className = "query-list";
+    if (!count) {
+      const empty = document.createElement("li");
+      empty.textContent = "No questions in this campaign yet.";
+      items.appendChild(empty);
+    } else {
+      for (const query of queries) {
+        const item = document.createElement("li");
+        item.textContent = query.text;
+        items.appendChild(item);
+      }
+    }
+    details.appendChild(items);
+    details.open = banks.length === 1 && count > 0 && count <= 8;
+    list.appendChild(details);
+  }
+}
+
+let labelRefreshSeq = 0;
+
+function refreshCampaignLabels() {
+  if (!api || typeof api.refreshLabels !== "function") {
+    return api && api.getState ? api.getState().then(render) : Promise.resolve();
+  }
+  const request = ++labelRefreshSeq;
+  return api
+    .refreshLabels()
+    .then((state) => {
+      if (request !== labelRefreshSeq) return;
+      if (state) render(state);
+    })
+    .catch((error) => {
+      console.warn("[watch] campaign name refresh failed", error);
+      if (request !== labelRefreshSeq || !api.getState) return;
+      return api.getState().then(render);
+    });
 }
 
 function text(id, value) {
@@ -375,29 +501,505 @@ function renderSync(state) {
     "Run the query bank to capture answers, then sync or let a run upload automatically.";
 }
 
+function companyKey(campaign) {
+  const id = campaign && campaign.company_id && String(campaign.company_id).trim();
+  if (id) return id;
+  const name = campaign && campaign.company_name && String(campaign.company_name).trim();
+  return name ? `name:${name}` : "none";
+}
+
+function companyDisplayName(campaign) {
+  const name = campaign && campaign.company_name && String(campaign.company_name).trim();
+  return name || "No company";
+}
+
+function groupCampaignsByCompany(campaigns) {
+  const groups = new Map();
+  for (const campaign of campaigns || []) {
+    const key = companyKey(campaign);
+    if (!groups.has(key)) {
+      groups.set(key, { key, name: companyDisplayName(campaign), campaigns: [] });
+    }
+    groups.get(key).campaigns.push(campaign);
+  }
+  for (const group of groups.values()) {
+    group.campaigns.sort((a, b) =>
+      String(a.campaign_name || "").localeCompare(String(b.campaign_name || "")),
+    );
+  }
+  return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function scheduleEditorFocused() {
+  const active = document.activeElement;
+  if (!active) return false;
+  const tag = active.tagName;
+  if (tag !== "INPUT" && tag !== "SELECT" && tag !== "TEXTAREA") return false;
+  return Boolean(active.closest("#companyScheduleList, #customScheduleList"));
+}
+
+function weekdaySelect(selected) {
+  const select = document.createElement("select");
+  select.dataset.field = "weekday";
+  WEEKDAYS.forEach((name, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = name;
+    option.selected = index === Number(selected);
+    select.appendChild(option);
+  });
+  return select;
+}
+
+function hourField(value) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "0";
+  input.max = "23";
+  input.dataset.field = "hour";
+  input.value = String(value ?? 9);
+  return input;
+}
+
+function fieldsFrom(root) {
+  const weekday = root.querySelector("[data-field=weekday]");
+  const hour = root.querySelector("[data-field=hour]");
+  return {
+    weekday: Number(weekday ? weekday.value : 1),
+    hour: Number(hour ? hour.value : 9),
+  };
+}
+
+function campaignIdsForKeys(keys) {
+  const wanted = new Set(keys);
+  return ((latestState && latestState.campaigns) || [])
+    .filter((campaign) => wanted.has(companyKey(campaign)))
+    .map((campaign) => campaign.campaign_id);
+}
+
+async function saveSchedule(payload, button, draftId) {
+  if (!api || typeof api.saveRunSchedule !== "function") return;
+  const idle = button.textContent;
+  setBusy(button, true, idle, "Saving…");
+  try {
+    const state = await api.saveRunSchedule(payload);
+    if (draftId) customDrafts = customDrafts.filter((row) => row.id !== draftId);
+    render(state);
+  } catch (error) {
+    setError(error.message || String(error));
+  } finally {
+    setBusy(button, false, idle, "Saving…");
+  }
+}
+
+function selectedCampaignIdsForCompanies(keys) {
+  const wanted = new Set(keys);
+  const boxes = [...document.querySelectorAll("#companyScheduleList input.campaign-check")];
+  const relevant = boxes.filter((box) => wanted.has(box.dataset.company));
+  if (!relevant.length) return campaignIdsForKeys(keys);
+  return relevant.filter((box) => box.checked).map((box) => box.value);
+}
+
+async function runCompanyKeys(keys, button) {
+  if (!keys.length) {
+    setError("Choose at least one company.");
+    return;
+  }
+  await runCampaignIds(selectedCampaignIdsForCompanies(keys), button);
+}
+
+async function runCampaignIds(ids, button) {
+  if (!ids.length) {
+    setError("Choose at least one campaign.");
+    return;
+  }
+  if (!api || typeof api.startGroupRun !== "function") return;
+  setError("");
+  setBusy(button, true, "Run now", "Running…");
+  try {
+    render(await api.startGroupRun({ campaignIds: ids, providers: [] }));
+  } catch (error) {
+    setError(error.message || String(error));
+  } finally {
+    setBusy(button, false, "Run now", "Running…");
+  }
+}
+
+function pairButtonLabel(state) {
+  return state && (state.campaigns || []).length ? "Add campaign" : "Pair campaign";
+}
+
+function appendCampaignRow(parent, campaign, state, radioName) {
+  const row = document.createElement("div");
+  row.className = "campaign-row";
+  const remove = document.createElement("button");
+  remove.className = "ghost";
+  remove.type = "button";
+  remove.textContent = "Remove";
+  remove.disabled = state.running;
+  remove.onclick = async () => {
+    if (!api) return;
+    render(await api.unpair({ campaignId: campaign.campaign_id }));
+  };
+  if (!radioName) {
+    const name = document.createElement("span");
+    name.className = "campaign-name";
+    name.textContent = campaign.campaign_name;
+    row.append(name, remove);
+    parent.appendChild(row);
+    return;
+  }
+  const label = document.createElement("label");
+  const radio = document.createElement("input");
+  radio.type = "radio";
+  radio.name = radioName;
+  radio.value = campaign.campaign_id;
+  radio.checked = state.device && state.device.campaign_id === campaign.campaign_id;
+  radio.disabled = state.running;
+  radio.onchange = async () => {
+    if (!api || typeof api.setActiveCampaign !== "function") return;
+    try {
+      render(await api.setActiveCampaign(campaign.campaign_id));
+    } catch (error) {
+      setError(error.message || String(error));
+    }
+  };
+  label.append(radio, document.createTextNode(` ${campaign.campaign_name}`));
+  row.append(label, remove);
+  parent.appendChild(row);
+}
+
+function renderStoredCampaigns(state) {
+  const list = document.getElementById("campaignList");
+  if (!list) return;
+  list.innerHTML = "";
+  const campaigns = state.campaigns || [];
+  if (!campaigns.length) {
+    list.hidden = true;
+    return;
+  }
+  list.hidden = false;
+  for (const group of groupCampaignsByCompany(campaigns)) {
+    const block = document.createElement("section");
+    block.className = "company-block";
+    const title = document.createElement("h3");
+    title.textContent = group.name;
+    block.appendChild(title);
+    for (const campaign of group.campaigns) {
+      appendCampaignRow(block, campaign, state, "activeCampaignSettings");
+    }
+    list.appendChild(block);
+  }
+}
+
+function appendScheduleFields(parent, saved, running) {
+  const paused = Boolean(saved && saved.enabled === false);
+  const fields = document.createElement("div");
+  fields.className = "schedule-fields";
+  const dayLabel = document.createElement("label");
+  dayLabel.append(
+    document.createTextNode("Day"),
+    weekdaySelect(saved ? saved.weekday : 1),
+  );
+  const hourLabel = document.createElement("label");
+  hourLabel.append(
+    document.createTextNode("Hour (local, 24h)"),
+    hourField(saved ? saved.hour : 9),
+  );
+  fields.append(dayLabel, hourLabel);
+  parent.appendChild(fields);
+  const actions = document.createElement("div");
+  actions.className = "schedule-actions";
+  const pause = document.createElement("button");
+  pause.type = "button";
+  pause.className = "ghost";
+  pause.textContent = paused ? "Resume" : "Pause";
+  pause.disabled = running;
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "ghost";
+  save.textContent = "Save";
+  save.disabled = running;
+  const run = document.createElement("button");
+  run.type = "button";
+  run.className = "primary";
+  run.textContent = "Run now";
+  run.disabled = running;
+  actions.append(pause, save, run);
+  parent.appendChild(actions);
+  return { fields, actions, save, run, pause, paused };
+}
+
+function markSchedulePaused(block, paused) {
+  block.classList.toggle("schedule-paused", paused);
+  if (!paused) return;
+  const note = document.createElement("p");
+  note.className = "schedule-paused-note";
+  note.textContent = "Paused. This will not run on its own.";
+  block.appendChild(note);
+}
+
+function renderCompanySchedules(state) {
+  const list = document.getElementById("companyScheduleList");
+  if (!list || scheduleEditorFocused()) return;
+  list.innerHTML = "";
+  const groups = groupCampaignsByCompany(state.campaigns);
+  if (!groups.length) {
+    const empty = document.createElement("p");
+    empty.className = "hint";
+    empty.textContent = "Pair a campaign to schedule it by company.";
+    list.appendChild(empty);
+    return;
+  }
+  for (const group of groups) {
+    const saved = (state.schedules || []).find(
+      (row) => row.kind === "company" && row.companyIds && row.companyIds[0] === group.key,
+    );
+    const block = document.createElement("section");
+    block.className = "company-block";
+    const title = document.createElement("h3");
+    title.textContent = group.name;
+    block.appendChild(title);
+    markSchedulePaused(block, Boolean(saved && saved.enabled === false));
+    const included = document.createElement("p");
+    included.className = "hint";
+    included.textContent =
+      "Check the campaigns to run on the day and hour below. Select all checks every campaign under this company. Pause stops the automatic run and grays this section.";
+    block.appendChild(included);
+    const selected = new Set(
+      saved && Array.isArray(saved.campaignIds)
+        ? saved.campaignIds
+        : group.campaigns.map((campaign) => campaign.campaign_id),
+    );
+    const campaignBoxes = [];
+    const selectAllRow = document.createElement("div");
+    selectAllRow.className = "campaign-row";
+    const selectAllLabel = document.createElement("label");
+    const selectAll = document.createElement("input");
+    selectAll.type = "checkbox";
+    selectAll.disabled = state.running;
+    selectAllLabel.append(selectAll, document.createTextNode(" Select all"));
+    selectAllRow.appendChild(selectAllLabel);
+    block.appendChild(selectAllRow);
+    for (const campaign of group.campaigns) {
+      const row = document.createElement("div");
+      row.className = "campaign-row";
+      const label = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.className = "campaign-check";
+      box.dataset.company = group.key;
+      box.value = campaign.campaign_id;
+      box.checked = selected.has(campaign.campaign_id);
+      box.disabled = state.running;
+      label.append(box, document.createTextNode(` ${campaign.campaign_name}`));
+      const remove = document.createElement("button");
+      remove.className = "ghost";
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.disabled = state.running;
+      remove.onclick = async () => {
+        if (!api) return;
+        render(await api.unpair({ campaignId: campaign.campaign_id }));
+      };
+      row.append(label, remove);
+      block.appendChild(row);
+      campaignBoxes.push(box);
+    }
+    const syncSelectAll = () => {
+      const checked = campaignBoxes.filter((box) => box.checked).length;
+      selectAll.checked = checked === campaignBoxes.length && campaignBoxes.length > 0;
+      selectAll.indeterminate = checked > 0 && checked < campaignBoxes.length;
+    };
+    syncSelectAll();
+    selectAll.onchange = () => {
+      for (const box of campaignBoxes) box.checked = selectAll.checked;
+      selectAll.indeterminate = false;
+      scheduleCampaignQuestionLoad();
+    };
+    for (const box of campaignBoxes) {
+      box.onchange = () => {
+        syncSelectAll();
+        scheduleCampaignQuestionLoad();
+      };
+    }
+    const chosenIds = () =>
+      campaignBoxes.filter((box) => box.checked).map((box) => box.value);
+    const controls = appendScheduleFields(block, saved, state.running);
+    controls.save.onclick = () => {
+      const campaignIds = chosenIds();
+      if (!campaignIds.length) {
+        setError("Choose at least one campaign.");
+        return;
+      }
+      void saveSchedule(
+        {
+          id: `company:${group.key}`,
+          kind: "company",
+          companyIds: [group.key],
+          campaignIds,
+          enabled: !controls.paused,
+          ...fieldsFrom(controls.fields),
+        },
+        controls.save,
+      );
+    };
+    controls.pause.onclick = () => {
+      const campaignIds = chosenIds();
+      if (!campaignIds.length) {
+        setError("Choose at least one campaign.");
+        return;
+      }
+      void saveSchedule(
+        {
+          id: `company:${group.key}`,
+          kind: "company",
+          companyIds: [group.key],
+          campaignIds,
+          enabled: controls.paused ? true : false,
+          ...fieldsFrom(controls.fields),
+        },
+        controls.pause,
+      );
+    };
+    controls.run.onclick = () => void runCampaignIds(chosenIds(), controls.run);
+    list.appendChild(block);
+  }
+  if ((state.campaigns || []).length > 1) {
+    const all = document.createElement("button");
+    all.className = "ghost";
+    all.type = "button";
+    all.textContent = "Remove all campaigns";
+    all.disabled = state.running;
+    all.onclick = async () => {
+      if (!api) return;
+      render(await api.unpair({ all: true }));
+    };
+    list.appendChild(all);
+  }
+}
+
+function renderCustomSchedules(state) {
+  const list = document.getElementById("customScheduleList");
+  if (!list || scheduleEditorFocused()) return;
+  list.innerHTML = "";
+  const groups = groupCampaignsByCompany(state.campaigns);
+  const rows = [
+    ...(state.schedules || [])
+      .filter((row) => row.kind === "custom")
+      .map((row) => ({ draft: false, row })),
+    ...customDrafts.map((row) => ({ draft: true, row })),
+  ];
+  for (const entry of rows) {
+    const block = document.createElement("section");
+    block.className = "company-block";
+    markSchedulePaused(block, Boolean(!entry.draft && entry.row.enabled === false));
+    const boxes = document.createElement("div");
+    boxes.className = "company-checks";
+    for (const group of groups) {
+      const label = document.createElement("label");
+      label.className = "checkbox-row";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = group.key;
+      box.checked = (entry.row.companyIds || []).includes(group.key);
+      box.disabled = state.running;
+      label.append(box, document.createTextNode(` ${group.name}`));
+      boxes.appendChild(label);
+    }
+    block.appendChild(boxes);
+    const controls = appendScheduleFields(block, entry.row, state.running);
+    controls.save.onclick = () => {
+      const companyIds = [...boxes.querySelectorAll("input:checked")].map(
+        (input) => input.value,
+      );
+      void saveSchedule(
+        {
+          id: entry.draft ? entry.row.id : entry.row.id,
+          kind: "custom",
+          companyIds,
+          enabled: !controls.paused,
+          ...fieldsFrom(controls.fields),
+        },
+        controls.save,
+        entry.draft ? entry.row.id : undefined,
+      );
+    };
+    controls.pause.onclick = () => {
+      const companyIds = [...boxes.querySelectorAll("input:checked")].map(
+        (input) => input.value,
+      );
+      if (!companyIds.length) {
+        setError("Choose at least one company.");
+        return;
+      }
+      void saveSchedule(
+        {
+          id: entry.draft ? entry.row.id : entry.row.id,
+          kind: "custom",
+          companyIds,
+          enabled: controls.paused ? true : false,
+          ...fieldsFrom(controls.fields),
+        },
+        controls.pause,
+        entry.draft ? entry.row.id : undefined,
+      );
+    };
+    controls.run.onclick = () => {
+      const companyIds = [...boxes.querySelectorAll("input:checked")].map(
+        (input) => input.value,
+      );
+      void runCompanyKeys(companyIds, controls.run);
+    };
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "ghost";
+    remove.textContent = "Remove";
+    remove.disabled = state.running;
+    remove.onclick = async () => {
+      if (entry.draft) {
+        customDrafts = customDrafts.filter((row) => row.id !== entry.row.id);
+        if (latestState) render(latestState);
+        return;
+      }
+      if (!api || typeof api.removeRunSchedule !== "function") return;
+      render(await api.removeRunSchedule(entry.row.id));
+    };
+    controls.actions.appendChild(remove);
+    list.appendChild(block);
+  }
+}
+
+function renderScheduleSummary(state) {
+  const box = document.getElementById("scheduleSummary");
+  if (!box) return;
+  box.innerHTML = "";
+  const lines = state.scheduleSummaries || [];
+  if (!lines.length) {
+    const note = document.createElement("p");
+    note.className = "hint";
+    note.textContent = "No scheduled run yet.";
+    box.appendChild(note);
+    return;
+  }
+  for (const line of lines) {
+    const note = document.createElement("p");
+    note.className = "status";
+    note.textContent = line;
+    box.appendChild(note);
+  }
+}
+
 function renderWeeklySchedule(state) {
-  const schedule = state.weeklySchedule;
-  if (!schedule) return;
-  const enabled = document.getElementById("weeklyEnabled");
-  const weekday = document.getElementById("weeklyWeekday");
-  const hour = document.getElementById("weeklyHour");
-  if (enabled && document.activeElement !== enabled) {
-    enabled.checked = Boolean(schedule.enabled);
-  }
-  if (weekday && document.activeElement !== weekday) {
-    weekday.value = String(schedule.weekday ?? 1);
-  }
-  if (hour && document.activeElement !== hour) {
-    hour.value = String(schedule.hour ?? 9);
-  }
-  text("weeklyScheduleNote", state.scheduleNote || "");
-  if (state.schedulePrivacyNote) {
-    text("weeklySchedulePrivacy", state.schedulePrivacyNote);
-  }
+  if (state.schedulePrivacyNote) text("advancedPrivacy", state.schedulePrivacyNote);
+  renderScheduleSummary(state);
+  renderCompanySchedules(state);
+  renderCustomSchedules(state);
 }
 
 function render(state) {
   if (!state) return;
+  latestState = state;
   renderWeeklySchedule(state);
   text(
     "appVersion",
@@ -415,71 +1017,22 @@ function render(state) {
   setError(state.lastError || "");
   const pairBtn = document.getElementById("pairBtn");
   const pairStatus = document.getElementById("pairStatus");
-  const campaigns = state.campaigns || [];
-  const campaignList = document.getElementById("campaignList");
-  if (campaignList) {
-    campaignList.innerHTML = "";
-    for (const campaign of campaigns) {
-      const row = document.createElement("div");
-      row.className = "row";
-      const label = document.createElement("label");
-      label.className = "campaign-active";
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "activeCampaign";
-      radio.value = campaign.campaign_id;
-      radio.checked = state.device && state.device.campaign_id === campaign.campaign_id;
-      radio.disabled = state.running;
-      radio.onchange = async () => {
-        if (!api || typeof api.setActiveCampaign !== "function") return;
-        try {
-          render(await api.setActiveCampaign(campaign.campaign_id));
-        } catch (error) {
-          setError(error.message || String(error));
-        }
-      };
-      label.append(
-        radio,
-        document.createTextNode(
-          ` ${campaign.company_name} / ${campaign.campaign_name}`,
-        ),
-      );
-      const remove = document.createElement("button");
-      remove.className = "ghost";
-      remove.type = "button";
-      remove.textContent = "Remove";
-      remove.disabled = state.running;
-      remove.onclick = async () => {
-        if (!api) return;
-        render(await api.unpair({ campaignId: campaign.campaign_id }));
-      };
-      row.append(label, remove);
-      campaignList.appendChild(row);
-    }
-    if (campaigns.length > 1) {
-      const all = document.createElement("button");
-      all.className = "ghost";
-      all.type = "button";
-      all.textContent = "Remove all campaigns";
-      all.disabled = state.running;
-      all.onclick = async () => {
-        if (!api) return;
-        render(await api.unpair({ all: true }));
-      };
-      campaignList.appendChild(all);
-    }
-  }
+  renderStoredCampaigns(state);
   if (state.paired && state.device) {
     const summary = `${state.device.company_name} / ${state.device.campaign_name}`;
     text("campaignHint", summary);
     if (pairStatus) pairStatus.textContent = state.device.api_base;
     const apiBase = document.getElementById("apiBase");
     if (apiBase && state.device.api_base) apiBase.value = state.device.api_base;
-    if (pairBtn) pairBtn.textContent = "Add campaign";
+    if (pairBtn && document.activeElement !== pairBtn) {
+      pairBtn.textContent = pairButtonLabel(state);
+    }
   } else {
     text("campaignHint", "Pair this computer to a campaign to start.");
     if (pairStatus) pairStatus.textContent = "Not paired.";
-    if (pairBtn) pairBtn.textContent = "Add campaign";
+    if (pairBtn && document.activeElement !== pairBtn) {
+      pairBtn.textContent = pairButtonLabel(state);
+    }
   }
   if (!didInitialTab && !userPickedTab) {
     didInitialTab = true;
@@ -662,7 +1215,6 @@ function render(state) {
     }
   }
   fillRunProviderList(document.getElementById("runProviders"));
-  fillRunProviderList(document.getElementById("groupProviders"));
   const progress = document.getElementById("runProgress");
   if (progress) {
     progress.innerHTML = "";
@@ -671,47 +1223,33 @@ function render(state) {
       appendRunProgressLine(progress, item, prefix);
     }
   }
+  const runQueryPreview = document.getElementById("runQueryPreview");
+  if (runQueryPreview) {
+    const queries = state.queries || [];
+    const summary = document.getElementById("runQuerySummary");
+    const name = state.device ? state.device.campaign_name : "Selected campaign";
+    if (summary) {
+      summary.textContent = `${name} · ${queries.length} question${queries.length === 1 ? "" : "s"}`;
+    }
+    runQueryPreview.replaceChildren();
+    if (!queries.length) {
+      const empty = document.createElement("li");
+      empty.textContent = "No questions yet. Add them in Oppvera, then open this tab again.";
+      runQueryPreview.appendChild(empty);
+    } else {
+      for (const query of queries) {
+        const item = document.createElement("li");
+        item.textContent = query.text;
+        runQueryPreview.appendChild(item);
+      }
+    }
+  }
   const groupProgress = document.getElementById("groupProgress");
   if (groupProgress) {
     groupProgress.innerHTML = "";
     for (const item of state.runItems || []) {
       const prefix = `${item.campaign_name || "Campaign"} · `;
       appendRunProgressLine(groupProgress, item, prefix);
-    }
-  }
-  const maxGroup = document.getElementById("maxGroupSize");
-  if (maxGroup && document.activeElement !== maxGroup) {
-    maxGroup.value = String(state.maxGroupSize || 2);
-  }
-  const groupCampaigns = document.getElementById("groupCampaigns");
-  if (groupCampaigns) {
-    const previous = new Set(
-      [...groupCampaigns.querySelectorAll("input:checked")].map((input) => input.value),
-    );
-    const had = Boolean(groupCampaigns.querySelector("input"));
-    groupCampaigns.innerHTML = "";
-    const cap = Number(state.maxGroupSize || 2);
-    const list = state.campaigns || [];
-    for (const campaign of list) {
-      const label = document.createElement("label");
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.value = campaign.campaign_id;
-      box.disabled = state.running;
-      box.checked = had
-        ? previous.has(campaign.campaign_id)
-        : state.device && state.device.campaign_id === campaign.campaign_id;
-      label.append(
-        box,
-        document.createTextNode(` ${campaign.company_name} / ${campaign.campaign_name}`),
-      );
-      groupCampaigns.appendChild(label);
-    }
-    const checked = [...groupCampaigns.querySelectorAll("input:checked")];
-    if (checked.length > cap) {
-      checked.slice(cap).forEach((input) => {
-        input.checked = false;
-      });
     }
   }
   renderSync(state);
@@ -763,62 +1301,36 @@ try {
   }
 
   const advancedDialog = document.getElementById("advancedDialog");
-  const appVersion = document.getElementById("appVersion");
-  let versionClicks = 0;
-  let versionClickTimer = 0;
   function openAdvanced() {
+    refreshCampaignLabels();
     if (advancedDialog && typeof advancedDialog.showModal === "function") {
       advancedDialog.showModal();
     }
+    scheduleCampaignQuestionLoad();
   }
-  if (appVersion) {
-    appVersion.addEventListener("click", (event) => {
-      if (event.altKey) {
-        openAdvanced();
-        versionClicks = 0;
-        return;
-      }
-      versionClicks += 1;
-      window.clearTimeout(versionClickTimer);
-      versionClickTimer = window.setTimeout(() => {
-        versionClicks = 0;
-      }, 2000);
-      if (versionClicks >= 7) {
-        versionClicks = 0;
-        openAdvanced();
-      }
+  const openAdvancedBtn = document.getElementById("openAdvancedBtn");
+  if (openAdvancedBtn) openAdvancedBtn.addEventListener("click", openAdvanced);
+  const advancedForm = document.getElementById("advancedForm");
+  if (advancedForm) {
+    advancedForm.addEventListener("submit", (event) => {
+      const submitter = event.submitter;
+      if (submitter && submitter.value === "close") return;
+      event.preventDefault();
     });
   }
-  const maxGroup = document.getElementById("maxGroupSize");
-  if (maxGroup) {
-    maxGroup.onchange = async () => {
-      if (!api || typeof api.setMaxGroupSize !== "function") return;
-      try {
-        render(await api.setMaxGroupSize(Number(maxGroup.value)));
-      } catch (error) {
-        setError(error.message || String(error));
-      }
-    };
-  }
-  const startGroupRun = document.getElementById("startGroupRun");
-  if (startGroupRun) {
-    startGroupRun.onclick = async () => {
-      const campaignIds = [
-        ...document.querySelectorAll("#groupCampaigns input:checked"),
-      ].map((input) => input.value);
-      const selected = [
-        ...document.querySelectorAll("#groupProviders input:checked"),
-      ].map((input) => input.value);
-      setError("");
-      setBusy(startGroupRun, true, "Run selected campaigns", "Running…");
-      try {
-        await api.startGroupRun({ providers: selected, campaignIds });
-      } catch (error) {
-        setError(error.message || String(error));
-      } finally {
-        setBusy(startGroupRun, false, "Run selected campaigns", "Running…");
-      }
-    };
+  const addCustomSchedule = document.getElementById("addCustomSchedule");
+  if (addCustomSchedule) {
+    addCustomSchedule.addEventListener("click", () => {
+      draftSeq += 1;
+      customDrafts.push({
+        id: `draft:${draftSeq}`,
+        companyIds: [],
+        weekday: 1,
+        hour: 9,
+        enabled: true,
+      });
+      if (latestState) render(latestState);
+    });
   }
 
   const pairForm = document.getElementById("pairForm");
@@ -830,14 +1342,14 @@ try {
       setError("");
       text("pairError", "");
       text("pairStatus", "Pairing…");
-        setBusy(pairBtn, true, "Add campaign", "Pairing…");
+        setBusy(pairBtn, true, "Pair campaign", "Pairing…");
       if (!api || typeof api.pair !== "function") {
         const msg =
           "Watch preload failed to load. Quit the app fully, then run pnpm --filter @oppvera/watch-desktop dev.";
         setError(msg);
         text("pairError", msg);
         text("pairStatus", msg);
-        setBusy(pairBtn, false, "Add campaign", "Pairing…");
+        setBusy(pairBtn, false, "Pair campaign", "Pairing…");
         return;
       }
       try {
@@ -861,7 +1373,7 @@ try {
         text("pairError", message);
         text("pairStatus", message);
       } finally {
-        setBusy(pairBtn, false, "Add campaign", "Pairing…");
+        setBusy(pairBtn, false, "Pair campaign", "Pairing…");
       }
     });
   }
@@ -877,8 +1389,15 @@ try {
   }
   const refreshBank = document.getElementById("refreshBank");
   if (refreshBank) {
-    refreshBank.onclick = () =>
-      api && api.refreshBank().catch((error) => setError(error.message));
+    refreshBank.onclick = () => {
+      void refreshQueryBank();
+    };
+  }
+  const refreshBankRun = document.getElementById("refreshBankRun");
+  if (refreshBankRun) {
+    refreshBankRun.onclick = () => {
+      void refreshQueryBank();
+    };
   }
   const selectAllQueries = document.getElementById("selectAllQueries");
   if (selectAllQueries) {
@@ -1058,31 +1577,9 @@ try {
     closeAccountLabelDialog(null);
   });
 
-  const weeklyForm = document.getElementById("weeklyScheduleForm");
-  weeklyForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!api || typeof api.setWeeklySchedule !== "function") return;
-    const enabled = document.getElementById("weeklyEnabled");
-    const weekday = document.getElementById("weeklyWeekday");
-    const hour = document.getElementById("weeklyHour");
-    const saveBtn = document.getElementById("saveWeeklySchedule");
-    setBusy(saveBtn, true, "Save schedule", "Saving…");
-    try {
-      await api.setWeeklySchedule({
-        enabled: Boolean(enabled?.checked),
-        weekday: Number(weekday?.value ?? 1),
-        hour: Number(hour?.value ?? 9),
-      });
-    } catch (error) {
-      setError(error.message || String(error));
-    } finally {
-      setBusy(saveBtn, false, "Save schedule", "Saving…");
-    }
-  });
-
   if (api && typeof api.onState === "function") {
     api.onState(render);
-    api.getState().then(render).catch((error) => {
+    refreshCampaignLabels().catch((error) => {
       text("pairStatus", error.message || String(error));
     });
   } else {

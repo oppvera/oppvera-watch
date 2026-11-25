@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
 	chmodSync,
 	existsSync,
@@ -12,8 +13,12 @@ import type { Provider } from "@oneglanse/types";
 import type { StoredCapture } from "./ingest.js";
 import { ensureSupportDirs } from "./paths.js";
 import {
+	companyScheduleKey,
 	DEFAULT_WEEKLY_SCHEDULE,
+	normalizeRunSchedule,
+	normalizeRunSchedules,
 	normalizeWeeklySchedule,
+	type RunSchedule,
 	type WeeklySchedulePrefs,
 } from "./watchSchedule.js";
 import type { RunItemRecord } from "./runPlan.js";
@@ -42,8 +47,19 @@ export type WatchPrefs = {
 	activeCampaignId: string | null;
 	maxGroupSize: number;
 	weeklySchedule: WeeklySchedulePrefs;
+	schedules: RunSchedule[];
 	lastRunProviders: Provider[];
 	lastRunManifest: LastRunManifest | null;
+};
+
+export type RunScheduleInput = {
+	id?: string;
+	kind: RunSchedule["kind"];
+	enabled: boolean;
+	weekday: number;
+	hour: number;
+	companyIds: string[];
+	campaignIds?: string[] | null;
 };
 
 export function clampMaxGroupSize(value: unknown): number {
@@ -55,13 +71,9 @@ export function clampMaxGroupSize(value: unknown): number {
 	);
 }
 
-export function assertGroupSize(count: number, maxGroupSize: number): void {
-	const max = clampMaxGroupSize(maxGroupSize);
+export function assertGroupSize(count: number, _maxGroupSize?: number): void {
 	if (count < 1) {
 		throw new Error("Select at least one campaign.");
-	}
-	if (count > max) {
-		throw new Error(`A group run can include at most ${max} campaigns.`);
 	}
 }
 
@@ -94,32 +106,40 @@ function normalizeLastRunManifest(
 	return { campaign_id: raw.campaign_id.trim(), items };
 }
 
+type LoadedPrefs = WatchPrefs & { schedulesDefined: boolean };
+
 function defaultPrefs(): WatchPrefs {
 	return {
 		activeCampaignId: null,
 		maxGroupSize: DEFAULT_MAX_GROUP_SIZE,
 		weeklySchedule: { ...DEFAULT_WEEKLY_SCHEDULE },
+		schedules: [],
 		lastRunProviders: [],
 		lastRunManifest: null,
 	};
 }
 
-function readPrefsFile(): WatchPrefs {
+function readPrefsFile(): LoadedPrefs {
 	const { prefsFile } = ensureSupportDirs();
-	if (!existsSync(prefsFile)) return defaultPrefs();
+	if (!existsSync(prefsFile)) return { ...defaultPrefs(), schedulesDefined: true };
 	try {
-		const raw = JSON.parse(readFileSync(prefsFile, "utf8")) as Partial<WatchPrefs>;
+		const raw = JSON.parse(readFileSync(prefsFile, "utf8")) as Partial<WatchPrefs> & {
+			schedules?: unknown;
+		};
+		const schedulesDefined = Array.isArray(raw.schedules);
 		return {
 			activeCampaignId: raw.activeCampaignId ?? null,
 			maxGroupSize: clampMaxGroupSize(raw.maxGroupSize),
 			weeklySchedule: normalizeWeeklySchedule(raw.weeklySchedule),
+			schedules: schedulesDefined ? normalizeRunSchedules(raw.schedules) : [],
+			schedulesDefined,
 			lastRunProviders: Array.isArray(raw.lastRunProviders)
 				? raw.lastRunProviders.filter((id): id is Provider => typeof id === "string")
 				: [],
 			lastRunManifest: normalizeLastRunManifest(raw.lastRunManifest),
 		};
 	} catch {
-		return defaultPrefs();
+		return { ...defaultPrefs(), schedulesDefined: true };
 	}
 }
 
@@ -132,6 +152,7 @@ function writePrefs(prefs: WatchPrefs): void {
 				activeCampaignId: prefs.activeCampaignId,
 				maxGroupSize: clampMaxGroupSize(prefs.maxGroupSize),
 				weeklySchedule: normalizeWeeklySchedule(prefs.weeklySchedule),
+				schedules: normalizeRunSchedules(prefs.schedules),
 				lastRunProviders: prefs.lastRunProviders,
 				lastRunManifest: prefs.lastRunManifest,
 			},
@@ -139,6 +160,28 @@ function writePrefs(prefs: WatchPrefs): void {
 			2,
 		)}\n`,
 	);
+}
+
+function legacySchedulesFromWeekly(
+	prefs: WatchPrefs,
+	devices: DeviceRecord[],
+): RunSchedule[] {
+	if (!prefs.weeklySchedule.enabled) return [];
+	const device =
+		devices.find((row) => row.campaign_id === prefs.activeCampaignId) ??
+		devices[0];
+	if (!device) return [];
+	const key = companyScheduleKey(device);
+	const schedule = normalizeRunSchedule({
+		id: `company:${key}`,
+		kind: "company",
+		enabled: true,
+		weekday: prefs.weeklySchedule.weekday,
+		hour: prefs.weeklySchedule.hour,
+		companyIds: [key],
+		lastAutoRunWeek: prefs.weeklySchedule.lastAutoRunWeek,
+	});
+	return schedule ? [schedule] : [];
 }
 
 function readDevicesFile(): DeviceRecord[] {
@@ -203,20 +246,32 @@ export function listDevices(): DeviceRecord[] {
 
 export function readPrefs(): WatchPrefs {
 	migrateLegacyDevice();
-	const prefs = readPrefsFile();
+	const loaded = readPrefsFile();
 	const devices = readDevicesFile();
-	if (
+	let prefs: WatchPrefs = {
+		activeCampaignId: loaded.activeCampaignId,
+		maxGroupSize: loaded.maxGroupSize,
+		weeklySchedule: loaded.weeklySchedule,
+		schedules: loaded.schedules,
+		lastRunProviders: loaded.lastRunProviders,
+		lastRunManifest: loaded.lastRunManifest,
+	};
+	let dirty = false;
+	if (!loaded.schedulesDefined) {
+		prefs = { ...prefs, schedules: legacySchedulesFromWeekly(prefs, devices) };
+		dirty = true;
+	}
+	const activeOk =
 		prefs.activeCampaignId &&
-		devices.some((device) => device.campaign_id === prefs.activeCampaignId)
-	) {
-		return prefs;
+		devices.some((device) => device.campaign_id === prefs.activeCampaignId);
+	if (!activeOk) {
+		const next = devices[0]?.campaign_id ?? null;
+		if (next !== prefs.activeCampaignId) {
+			prefs = { ...prefs, activeCampaignId: next };
+			dirty = true;
+		}
 	}
-	const next = devices[0]?.campaign_id ?? null;
-	if (next !== prefs.activeCampaignId) {
-		const updated = { ...prefs, activeCampaignId: next };
-		writePrefs(updated);
-		return updated;
-	}
+	if (dirty) writePrefs(prefs);
 	return prefs;
 }
 
@@ -238,8 +293,33 @@ export function saveDevice(record: DeviceRecord): void {
 	);
 	devices.push(record);
 	writeDevices(devices);
-	const prefs = readPrefsFile();
+	const prefs = readPrefs();
 	writePrefs({ ...prefs, activeCampaignId: record.campaign_id });
+}
+
+export function updateDeviceLabels(
+	campaignId: string,
+	labels: { campaign_name?: string; company_name?: string },
+): boolean {
+	const campaign_name = labels.campaign_name?.trim() ?? "";
+	if (!campaign_name) return false;
+	const devices = listDevices();
+	const index = devices.findIndex((device) => device.campaign_id === campaignId);
+	if (index < 0) return false;
+	const current = devices[index]!;
+	const company_name = labels.company_name?.trim()
+		? labels.company_name.trim()
+		: current.company_name;
+	if (
+		current.campaign_name === campaign_name &&
+		current.company_name === company_name
+	) {
+		return false;
+	}
+	const next = devices.slice();
+	next[index] = { ...current, campaign_name, company_name };
+	writeDevices(next);
+	return true;
 }
 
 export function setActiveCampaign(campaignId: string): void {
@@ -257,21 +337,90 @@ export function setMaxGroupSize(value: number): WatchPrefs {
 	return next;
 }
 
-export function setWeeklySchedule(patch: Partial<WeeklySchedulePrefs>): WatchPrefs {
+export function saveRunSchedule(input: RunScheduleInput): WatchPrefs {
+	const prefs = readPrefs();
+	const companyIds = [
+		...new Set(
+			(input.companyIds || [])
+				.map((id) => (typeof id === "string" ? id.trim() : ""))
+				.filter(Boolean),
+		),
+	];
+	if (companyIds.length === 0) {
+		throw new Error("Choose at least one company.");
+	}
+	const kind = input.kind === "custom" ? "custom" : "company";
+	const campaignIds = Array.isArray(input.campaignIds)
+		? [
+				...new Set(
+					input.campaignIds
+						.map((id) => (typeof id === "string" ? id.trim() : ""))
+						.filter(Boolean),
+				),
+			]
+		: null;
+	if (kind === "company" && campaignIds && campaignIds.length === 0) {
+		throw new Error("Choose at least one campaign.");
+	}
+	const scopedIds = kind === "company" ? [companyIds[0]!] : companyIds;
+	let id = input.id?.trim() || "";
+	if (kind === "company") {
+		id = `company:${scopedIds[0]}`;
+	} else if (!id || id.startsWith("draft:") || !prefs.schedules.some((row) => row.id === id)) {
+		id = `custom:${randomUUID()}`;
+	}
+	const existing = prefs.schedules.find((row) => row.id === id);
+	const schedule = normalizeRunSchedule({
+		id,
+		kind,
+		enabled: input.enabled,
+		weekday: input.weekday,
+		hour: input.hour,
+		companyIds: scopedIds,
+		campaignIds: kind === "company" ? campaignIds : null,
+		lastAutoRunWeek: existing?.lastAutoRunWeek ?? null,
+	});
+	if (!schedule) throw new Error("Choose at least one company.");
+	if (
+		existing &&
+		(existing.weekday !== schedule.weekday || existing.hour !== schedule.hour)
+	) {
+		schedule.lastAutoRunWeek = null;
+	}
+	const schedules = prefs.schedules.filter((row) => {
+		if (row.id === id) return false;
+		if (kind === "company" && row.kind === "company" && row.companyIds[0] === scopedIds[0]) {
+			return false;
+		}
+		return true;
+	});
+	schedules.push(schedule);
+	const next = { ...prefs, schedules };
+	writePrefs(next);
+	return next;
+}
+
+export function removeRunSchedule(id: string): WatchPrefs {
 	const prefs = readPrefs();
 	const next = {
 		...prefs,
-		weeklySchedule: normalizeWeeklySchedule({
-			...prefs.weeklySchedule,
-			...patch,
-		}),
+		schedules: prefs.schedules.filter((row) => row.id !== id),
 	};
 	writePrefs(next);
 	return next;
 }
 
-export function markWeeklyAutoRun(weekKey: string): WatchPrefs {
-	return setWeeklySchedule({ lastAutoRunWeek: weekKey });
+export function markRunSchedules(ids: string[], weekKey: string): WatchPrefs {
+	const marked = new Set(ids);
+	const prefs = readPrefs();
+	const next = {
+		...prefs,
+		schedules: prefs.schedules.map((row) =>
+			marked.has(row.id) ? { ...row, lastAutoRunWeek: weekKey } : row,
+		),
+	};
+	writePrefs(next);
+	return next;
 }
 
 export function setLastRunProviders(providers: Provider[]): WatchPrefs {
@@ -291,7 +440,7 @@ export function saveLastRunManifest(manifest: LastRunManifest | null): WatchPref
 export function removeDevice(campaignId: string): void {
 	const devices = listDevices().filter((device) => device.campaign_id !== campaignId);
 	writeDevices(devices);
-	const prefs = readPrefsFile();
+	const prefs = readPrefs();
 	if (prefs.activeCampaignId === campaignId) {
 		writePrefs({ ...prefs, activeCampaignId: devices[0]?.campaign_id ?? null });
 	}
@@ -300,7 +449,7 @@ export function removeDevice(campaignId: string): void {
 export function clearDevice(): void {
 	migrateLegacyDevice();
 	writeDevices([]);
-	const prefs = readPrefsFile();
+	const prefs = readPrefs();
 	writePrefs({ ...prefs, activeCampaignId: null });
 	const { deviceFile } = ensureSupportDirs();
 	if (existsSync(deviceFile)) rmSync(deviceFile, { force: true });
