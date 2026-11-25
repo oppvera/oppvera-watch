@@ -113,8 +113,8 @@ Partner installs use [GitHub Releases → Latest](https://github.com/oppvera/opp
 
 | Release | Status |
 | --- | --- |
-| [v0.8.0](https://github.com/oppvera/oppvera-watch/pull/39) | **Current** (0.8.0). Run from this branch with `pnpm dev:desktop` until a release installer is posted. Tracks [PR #39](https://github.com/oppvera/oppvera-watch/pull/39). |
-| [v0.7.4-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.4-preview) | **Deprecated** — superseded by 0.8.0. |
+| [v0.8.0-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.8.0-preview) | **Current** staff preview (macOS DMG). Not Latest — Latest stays [v0.7.1](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.1). Tracks merged [PR #39](https://github.com/oppvera/oppvera-watch/pull/39). |
+| [v0.7.4-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.4-preview) | **Deprecated** — superseded by 0.8.0. Do not install. |
 | [v0.7.3-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.3-preview) | **Deprecated** — superseded by 0.7.4; **assets removed**. Do not install. |
 | [v0.7.2-windows-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.2-windows-preview) | **Deprecated** — broken query-bank capture; **assets removed**. Do not install. |
 
