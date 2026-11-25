@@ -2,13 +2,17 @@
 
 # Oppvera Watch
 
-**Oppvera Watch** is a **desktop capture client** for [Oppvera](https://oppvera.com), on macOS and Windows. It opens real consumer AI product UIs (ChatGPT, Claude, Gemini, Perplexity, Google AI Overview), records what those pages render, and uploads **answer text and citations** to a paired campaign.
+**Oppvera Watch** is a desktop application that uses browser automation on macOS and Windows computer. It is like a software robot that you give instructions to. You can assign it tedious and repetitive tasks such as asking the same 50 questions to ChatGPT every week and recording the results in a spreadsheet.
+Following your saved instructions, Oppvera Watch will automatically open up a special browser called Camoufox per a schedule you set. It then automatically goes to ChatGPT, Claude, Gemini, Perplexity, Google AI Overview and asks the questions you have organized into campaigns.  
 
-GEO scores, dashboards, and query-bank editing live on **hosted Oppvera**. This app does not score, chart, or store analytics locally.
+Oppvera Watch will then read the responses and citations. It will automatically upload the information to your private account on your cloud-based analysis system in [Oppvera](https://oppvera.com).
+
+You are free to connect Oppvera Watch to a different analysis engine.
+
+GEO scores, dashboards, and query-bank editing live on **hosted Oppvera**. 
 
 **Status (October 2026):** macOS client **0.6.0-alpha** pairs to Oppvera, runs the campaign query bank, queues captures offline (including failed checks), and syncs to the shared visibility store. Failed checks upload as outcomes so Oppvera does not treat them as “brand absent.” Schedules stay on this computer; hosted email does not start a capture. Hosted Oppvera scores rows, filters Watch vs Probe on the campaign visibility page, and shows a UI-vs-API compare panel when both sources exist for the same bank question. Engineering detail: [docs/plans/README.md](docs/plans/README.md).
 
-The capture engine started as a fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). This repository is the desktop client. Original OneGlanse features (dashboard, Docker, analysis keys) live on that upstream repo if you need to look them up. Do not merge `oneglanse/main`.
 
 ## Install
 
@@ -109,7 +113,8 @@ Partner installs use [GitHub Releases → Latest](https://github.com/oppvera/opp
 
 | Release | Status |
 | --- | --- |
-| [v0.7.4-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.4-preview) | **Current** staff preview (macOS DMG; Windows installer when posted). Tracks [PR #34](https://github.com/oppvera/oppvera-watch/pull/34). |
+| [v0.8.0](https://github.com/oppvera/oppvera-watch/pull/39) | **Current** (0.8.0). Run from this branch with `pnpm dev:desktop` until a release installer is posted. Tracks [PR #39](https://github.com/oppvera/oppvera-watch/pull/39). |
+| [v0.7.4-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.4-preview) | **Deprecated** — superseded by 0.8.0. |
 | [v0.7.3-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.3-preview) | **Deprecated** — superseded by 0.7.4; **assets removed**. Do not install. |
 | [v0.7.2-windows-preview](https://github.com/oppvera/oppvera-watch/releases/tag/v0.7.2-windows-preview) | **Deprecated** — broken query-bank capture; **assets removed**. Do not install. |
 
@@ -125,12 +130,10 @@ Partner installs use [GitHub Releases → Latest](https://github.com/oppvera/opp
 This project is **MIT licensed**. See [LICENSE](LICENSE).
 
 - Original capture project: **Aryaman Todkar / OneGlanse**
-- This fork and desktop product: **Craig Oda / Oppvera Watch**
+- This desktop product: **Craig Oda / Oppvera Watch**
 
-Suggested credit:
-
-> Based on [OneGlanse](https://github.com/aryamantodkar/oneglanse) (MIT) and [Oppvera Watch](https://github.com/oppvera/oppvera-watch) (MIT).
-
-**Trademark note:** "OneGlanse" is the upstream project name. Oppvera Watch is an independent fork and is not an official OneGlanse release.
+**Trademark note:** "OneGlanse" is the upstream project name. Oppvera Watch is independent and is not an official OneGlanse release.
 
 Application code is MIT. Camoufox, Playwright, Electron, and other packages ship under their own licenses.
+
+Long ago, the capture engine started as a fork of [OneGlanse](https://github.com/aryamantodkar/oneglanse). This repository is the desktop client. Original OneGlanse features (dashboard, Docker, analysis keys) live on that upstream repo if you need to look them up. Do not merge `oneglanse/main`.
